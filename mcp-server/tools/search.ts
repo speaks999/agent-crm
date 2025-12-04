@@ -95,7 +95,18 @@ export function registerSearchTools(server: any, supabase: SupabaseClient) {
                 };
 
                 return {
-                    content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }],
+                    content: [{ type: 'text', text: `Account summary for ${accountResult.data?.name || 'Unknown'}` }],
+                    structuredContent: {
+                        dashboard: {
+                            accounts: 1,
+                            contacts: summary.stats.totalContacts,
+                            deals: summary.stats.totalDeals,
+                            openDeals: summary.stats.openDeals,
+                            recentActivity: interactions.slice(0, 5).map(i => 
+                                `${i.type}: ${i.summary || 'No summary'}`
+                            ),
+                        },
+                    },
                 };
             } catch (error: any) {
                 return {
@@ -142,7 +153,10 @@ export function registerSearchTools(server: any, supabase: SupabaseClient) {
                 }));
 
                 return {
-                    content: [{ type: 'text', text: JSON.stringify({ stageStats, totalDeals: dealsResult.data?.length || 0 }, null, 2) }],
+                    content: [{ type: 'text', text: `Pipeline view: ${dealsResult.data?.length || 0} deal(s) across ${Object.keys(stageStats).length} stage(s)` }],
+                    structuredContent: {
+                        deals: dealsResult.data || [],
+                    },
                 };
             } catch (error: any) {
                 return {
@@ -165,6 +179,10 @@ export const searchToolDefinitions = [
             },
             required: ['query'],
         },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Searching CRM...',
+            'openai/toolInvocation/invoked': 'Search completed',
+        },
     },
     {
         name: 'get_account_summary',
@@ -176,6 +194,11 @@ export const searchToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/dashboard.html',
+            'openai/toolInvocation/invoking': 'Loading account summary...',
+            'openai/toolInvocation/invoked': 'Account summary loaded',
+        },
     },
     {
         name: 'get_deal_pipeline_view',
@@ -185,6 +208,11 @@ export const searchToolDefinitions = [
             properties: {
                 pipeline_id: { type: 'string', description: 'Optional pipeline UUID to filter by' },
             },
+        },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/deals.html',
+            'openai/toolInvocation/invoking': 'Loading pipeline view...',
+            'openai/toolInvocation/invoked': 'Pipeline view loaded',
         },
     },
 ];

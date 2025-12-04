@@ -34,6 +34,11 @@ export declare const contactToolDefinitions: ({
         };
         required: string[];
     };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
+    };
 } | {
     name: string;
     description: string;
@@ -53,6 +58,11 @@ export declare const contactToolDefinitions: ({
         };
         required: string[];
     };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
+    };
 } | {
     name: string;
     description: string;
@@ -71,6 +81,11 @@ export declare const contactToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -108,6 +123,11 @@ export declare const contactToolDefinitions: ({
             };
         };
         required: string[];
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=contacts.d.ts.map

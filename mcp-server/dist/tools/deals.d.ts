@@ -39,6 +39,11 @@ export declare const dealToolDefinitions: ({
         };
         required: string[];
     };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
+    };
 } | {
     name: string;
     description: string;
@@ -58,6 +63,11 @@ export declare const dealToolDefinitions: ({
             status?: undefined;
         };
         required: string[];
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -88,6 +98,11 @@ export declare const dealToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -131,6 +146,11 @@ export declare const dealToolDefinitions: ({
         };
         required: string[];
     };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
+    };
 } | {
     name: string;
     description: string;
@@ -153,6 +173,11 @@ export declare const dealToolDefinitions: ({
             status?: undefined;
         };
         required: string[];
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -177,6 +202,11 @@ export declare const dealToolDefinitions: ({
             close_date?: undefined;
         };
         required: string[];
+    };
+    _meta: {
+        'openai/outputTemplate': string;
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=deals.d.ts.map

@@ -31,7 +31,10 @@ export function registerContactTools(server: any, supabase: SupabaseClient) {
             }
 
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Contact "${data.first_name} ${data.last_name}" created successfully` }],
+                structuredContent: {
+                    contacts: [data],
+                },
             };
         }
 
@@ -53,7 +56,10 @@ export function registerContactTools(server: any, supabase: SupabaseClient) {
             }
 
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Retrieved contact: ${data.first_name} ${data.last_name}` }],
+                structuredContent: {
+                    contacts: [data],
+                },
             };
         }
 
@@ -77,7 +83,10 @@ export function registerContactTools(server: any, supabase: SupabaseClient) {
             }
 
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Found ${data?.length || 0} contact(s)` }],
+                structuredContent: {
+                    contacts: data || [],
+                },
             };
         }
 
@@ -100,8 +109,14 @@ export function registerContactTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
+            // Fetch updated list to return in structuredContent
+            const { data: allContacts } = await supabase.from('contacts').select('*');
+
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Contact "${data.first_name} ${data.last_name}" updated successfully` }],
+                structuredContent: {
+                    contacts: allContacts || [],
+                },
             };
         }
 
@@ -121,8 +136,14 @@ export function registerContactTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
+            // Fetch updated list to return in structuredContent
+            const { data: allContacts } = await supabase.from('contacts').select('*');
+
             return {
-                content: [{ type: 'text', text: `Contact ${id} deleted successfully` }],
+                content: [{ type: 'text', text: `Contact deleted successfully` }],
+                structuredContent: {
+                    contacts: allContacts || [],
+                },
             };
         }
     });
@@ -144,6 +165,11 @@ export const contactToolDefinitions = [
             },
             required: ['first_name', 'last_name'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/contacts.html',
+            'openai/toolInvocation/invoking': 'Creating contact...',
+            'openai/toolInvocation/invoked': 'Contact created successfully',
+        },
     },
     {
         name: 'get_contact',
@@ -155,6 +181,11 @@ export const contactToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/contacts.html',
+            'openai/toolInvocation/invoking': 'Retrieving contact...',
+            'openai/toolInvocation/invoked': 'Contact retrieved',
+        },
     },
     {
         name: 'list_contacts',
@@ -164,6 +195,11 @@ export const contactToolDefinitions = [
             properties: {
                 account_id: { type: 'string', description: 'Filter by account UUID' },
             },
+        },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/contacts.html',
+            'openai/toolInvocation/invoking': 'Loading contacts...',
+            'openai/toolInvocation/invoked': 'Contacts loaded',
         },
     },
     {
@@ -182,6 +218,11 @@ export const contactToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/contacts.html',
+            'openai/toolInvocation/invoking': 'Updating contact...',
+            'openai/toolInvocation/invoked': 'Contact updated',
+        },
     },
     {
         name: 'delete_contact',
@@ -192,6 +233,11 @@ export const contactToolDefinitions = [
                 id: { type: 'string', description: 'Contact UUID' },
             },
             required: ['id'],
+        },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/contacts.html',
+            'openai/toolInvocation/invoking': 'Deleting contact...',
+            'openai/toolInvocation/invoked': 'Contact deleted',
         },
     },
 ];

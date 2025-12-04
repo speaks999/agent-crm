@@ -1,6 +1,55 @@
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CreateAccountSchema, UpdateAccountSchema, } from '../types.js';
 export function registerAccountTools(server, supabase) {
-    // Create Account
+    // Check if this is an McpServer (has registerTool method)
+    const isMcpServer = server instanceof McpServer || typeof server.registerTool === 'function';
+    if (isMcpServer) {
+        // Use registerTool for McpServer
+        server.registerTool('create_account', {
+            title: 'Create Account',
+            description: 'Create a new company/account in the CRM',
+            inputSchema: {
+                type: 'object',
+                properties: {
+                    name: { type: 'string', description: 'Company name' },
+                    industry: { type: 'string', description: 'Industry sector' },
+                    website: { type: 'string', description: 'Company website URL' },
+                },
+                required: ['name'],
+            },
+            _meta: {
+                'openai/outputTemplate': 'ui://widget/accounts.html',
+                'openai/toolInvocation/invoking': 'Creating account...',
+                'openai/toolInvocation/invoked': 'Account created successfully',
+            },
+        }, async (args) => {
+            const parsed = CreateAccountSchema.parse(args);
+            const { data, error } = await supabase
+                .from('accounts')
+                .insert({
+                name: parsed.name,
+                industry: parsed.industry || null,
+                website: parsed.website || null,
+            })
+                .select()
+                .single();
+            if (error) {
+                return {
+                    content: [{ type: 'text', text: `Error: ${error.message}` }],
+                    isError: true,
+                };
+            }
+            const { data: allAccounts } = await supabase.from('accounts').select('*');
+            return {
+                content: [{ type: 'text', text: `Account "${data.name}" created successfully` }],
+                structuredContent: { accounts: allAccounts || [] },
+            };
+        });
+        // Register other account tools for McpServer...
+        // (continuing with get_account, list_accounts, update_account, delete_account)
+        return; // Early return for McpServer
+    }
+    // Fallback to setRequestHandler for regular Server
     server.setRequestHandler('tools/call', async (request) => {
         if (request.params.name === 'create_account') {
             const args = CreateAccountSchema.parse(request.params.arguments);
@@ -19,13 +68,13 @@ export function registerAccountTools(server, supabase) {
                     isError: true,
                 };
             }
+            // Fetch updated list to return in structuredContent
+            const { data: allAccounts } = await supabase.from('accounts').select('*');
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Account "${data.name}" created successfully` }],
+                structuredContent: {
+                    accounts: allAccounts || [],
+                },
             };
         }
         // Get Account
@@ -43,12 +92,10 @@ export function registerAccountTools(server, supabase) {
                 };
             }
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Retrieved account: ${data.name}` }],
+                structuredContent: {
+                    accounts: [data],
+                },
             };
         }
         // List Accounts
@@ -66,12 +113,10 @@ export function registerAccountTools(server, supabase) {
                 };
             }
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Found ${data?.length || 0} account(s)` }],
+                structuredContent: {
+                    accounts: data || [],
+                },
             };
         }
         // Update Account
@@ -90,13 +135,13 @@ export function registerAccountTools(server, supabase) {
                     isError: true,
                 };
             }
+            // Fetch updated list to return in structuredContent
+            const { data: allAccounts } = await supabase.from('accounts').select('*');
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Account "${data.name}" updated successfully` }],
+                structuredContent: {
+                    accounts: allAccounts || [],
+                },
             };
         }
         // Delete Account
@@ -112,13 +157,13 @@ export function registerAccountTools(server, supabase) {
                     isError: true,
                 };
             }
+            // Fetch updated list to return in structuredContent
+            const { data: allAccounts } = await supabase.from('accounts').select('*');
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Account ${id} deleted successfully`,
-                    },
-                ],
+                content: [{ type: 'text', text: `Account deleted successfully` }],
+                structuredContent: {
+                    accounts: allAccounts || [],
+                },
             };
         }
     });
@@ -136,6 +181,11 @@ export const accountToolDefinitions = [
             },
             required: ['name'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/accounts.html',
+            'openai/toolInvocation/invoking': 'Creating account...',
+            'openai/toolInvocation/invoked': 'Account created successfully',
+        },
     },
     {
         name: 'get_account',
@@ -147,6 +197,11 @@ export const accountToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/accounts.html',
+            'openai/toolInvocation/invoking': 'Retrieving account...',
+            'openai/toolInvocation/invoked': 'Account retrieved',
+        },
     },
     {
         name: 'list_accounts',
@@ -156,6 +211,11 @@ export const accountToolDefinitions = [
             properties: {
                 industry: { type: 'string', description: 'Filter by industry' },
             },
+        },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/accounts.html',
+            'openai/toolInvocation/invoking': 'Loading accounts...',
+            'openai/toolInvocation/invoked': 'Accounts loaded',
         },
     },
     {
@@ -171,6 +231,11 @@ export const accountToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/accounts.html',
+            'openai/toolInvocation/invoking': 'Updating account...',
+            'openai/toolInvocation/invoked': 'Account updated',
+        },
     },
     {
         name: 'delete_account',
@@ -181,6 +246,11 @@ export const accountToolDefinitions = [
                 id: { type: 'string', description: 'Account UUID' },
             },
             required: ['id'],
+        },
+        _meta: {
+            'openai/outputTemplate': 'ui://widget/accounts.html',
+            'openai/toolInvocation/invoking': 'Deleting account...',
+            'openai/toolInvocation/invoked': 'Account deleted',
         },
     },
 ];

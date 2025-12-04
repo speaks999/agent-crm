@@ -134,6 +134,10 @@ export const pipelineToolDefinitions = [
             },
             required: ['name', 'stages'],
         },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Creating pipeline...',
+            'openai/toolInvocation/invoked': 'Pipeline created successfully',
+        },
     },
     {
         name: 'get_pipeline',
@@ -145,6 +149,10 @@ export const pipelineToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Retrieving pipeline...',
+            'openai/toolInvocation/invoked': 'Pipeline retrieved',
+        },
     },
     {
         name: 'list_pipelines',
@@ -152,6 +160,10 @@ export const pipelineToolDefinitions = [
         inputSchema: {
             type: 'object',
             properties: {},
+        },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Loading pipelines...',
+            'openai/toolInvocation/invoked': 'Pipelines loaded',
         },
     },
     {
@@ -170,6 +182,10 @@ export const pipelineToolDefinitions = [
             },
             required: ['id'],
         },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Updating pipeline...',
+            'openai/toolInvocation/invoked': 'Pipeline updated',
+        },
     },
     {
         name: 'delete_pipeline',
@@ -180,6 +196,10 @@ export const pipelineToolDefinitions = [
                 id: { type: 'string', description: 'Pipeline UUID' },
             },
             required: ['id'],
+        },
+        _meta: {
+            'openai/toolInvocation/invoking': 'Deleting pipeline...',
+            'openai/toolInvocation/invoked': 'Pipeline deleted',
         },
     },
 ];

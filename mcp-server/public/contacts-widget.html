@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Contacts</title>
+    <style>
+      :root {
+        color: #0b0b0f;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        padding: 16px;
+        background: #f6f8fb;
+      }
+
+      main {
+        width: 100%;
+        max-width: 600px;
+        min-height: 300px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.25rem;
+        font-weight: 600;
+      }
+
+      .search-form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .search-form input {
+        flex: 1;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid #cad3e0;
+        font-size: 0.95rem;
+      }
+
+      .add-form {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        padding: 12px;
+        background: #f2f4fb;
+        border-radius: 12px;
+      }
+
+      .add-form input {
+        flex: 1;
+        padding: 8px 10px;
+        border-radius: 8px;
+        border: 1px solid #cad3e0;
+        font-size: 0.9rem;
+      }
+
+      .add-form button {
+        border: none;
+        border-radius: 8px;
+        background: #111bf5;
+        color: white;
+        font-weight: 600;
+        padding: 8px 16px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+
+      .add-form button:hover {
+        background: #0e16d4;
+      }
+
+      .contacts-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .contact-item {
+        background: #f2f4fb;
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .contact-info {
+        flex: 1;
+        min-width: 0;
+      }
+
+      .contact-name {
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+
+      .contact-details {
+        font-size: 0.85rem;
+        color: #6c768a;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+
+      .contact-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .contact-actions button {
+        border: none;
+        background: transparent;
+        color: #6c768a;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+      }
+
+      .contact-actions button:hover {
+        background: #e2e8f0;
+        color: #0b0b0f;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c768a;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 20px;
+        color: #6c768a;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h2>Contacts</h2>
+      <form class="search-form" id="search-form" autocomplete="off">
+        <input id="search-input" name="query" placeholder="Search contacts..." />
+      </form>
+      <form class="add-form" id="add-form" autocomplete="off">
+        <input id="first-name-input" name="first_name" placeholder="First name" required />
+        <input id="last-name-input" name="last_name" placeholder="Last name" required />
+        <input id="email-input" name="email" type="email" placeholder="Email" />
+        <button type="submit">Add</button>
+      </form>
+      <ul class="contacts-list" id="contacts-list"></ul>
+    </main>
+
+    <script type="module">
+      const listEl = document.querySelector("#contacts-list");
+      const formEl = document.querySelector("#add-form");
+      const searchFormEl = document.querySelector("#search-form");
+      const firstNameInput = document.querySelector("#first-name-input");
+      const lastNameInput = document.querySelector("#last-name-input");
+      const emailInput = document.querySelector("#email-input");
+      const searchInput = document.querySelector("#search-input");
+
+      let contacts = [...(window.openai?.toolOutput?.contacts ?? [])];
+      let filteredContacts = contacts;
+
+      const render = () => {
+        listEl.innerHTML = "";
+        
+        if (filteredContacts.length === 0) {
+          listEl.innerHTML = '<li class="empty-state">No contacts found</li>';
+          return;
+        }
+
+        filteredContacts.forEach((contact) => {
+          const li = document.createElement("li");
+          li.className = "contact-item";
+          li.dataset.id = contact.id;
+
+          const info = document.createElement("div");
+          info.className = "contact-info";
+
+          const name = document.createElement("div");
+          name.className = "contact-name";
+          name.textContent = `${contact.first_name} ${contact.last_name}`;
+
+          const details = document.createElement("div");
+          details.className = "contact-details";
+          
+          if (contact.email) {
+            const email = document.createElement("span");
+            email.textContent = contact.email;
+            details.appendChild(email);
+          }
+          
+          if (contact.phone) {
+            const phone = document.createElement("span");
+            phone.textContent = contact.phone;
+            details.appendChild(phone);
+          }
+          
+          if (contact.role) {
+            const role = document.createElement("span");
+            role.textContent = contact.role;
+            details.appendChild(role);
+          }
+
+          info.appendChild(name);
+          info.appendChild(details);
+
+          const actions = document.createElement("div");
+          actions.className = "contact-actions";
+          
+          const deleteBtn = document.createElement("button");
+          deleteBtn.textContent = "Delete";
+          deleteBtn.onclick = () => callContactTool("delete_contact", { id: contact.id });
+          actions.appendChild(deleteBtn);
+
+          li.appendChild(info);
+          li.appendChild(actions);
+          listEl.appendChild(li);
+        });
+      };
+
+      const updateFromResponse = (response) => {
+        if (response?.structuredContent?.contacts) {
+          contacts = response.structuredContent.contacts;
+          applySearchFilter();
+        }
+      };
+
+      const handleSetGlobals = (event) => {
+        const globals = event.detail?.globals;
+        if (!globals?.toolOutput?.contacts) return;
+        contacts = globals.toolOutput.contacts;
+        applySearchFilter();
+      };
+
+      window.addEventListener("openai:set_globals", handleSetGlobals, {
+        passive: true,
+      });
+
+      const applySearchFilter = () => {
+        const query = searchInput.value.toLowerCase().trim();
+        if (!query) {
+          filteredContacts = contacts;
+        } else {
+          filteredContacts = contacts.filter(
+            (c) =>
+              c.first_name?.toLowerCase().includes(query) ||
+              c.last_name?.toLowerCase().includes(query) ||
+              c.email?.toLowerCase().includes(query) ||
+              c.phone?.includes(query)
+          );
+        }
+        render();
+      };
+
+      const mutateContactsLocally = (name, payload) => {
+        if (name === "add_contact" || name === "create_contact") {
+          contacts = [
+            ...contacts,
+            {
+              id: crypto.randomUUID(),
+              first_name: payload.first_name,
+              last_name: payload.last_name,
+              email: payload.email || null,
+              phone: payload.phone || null,
+              role: payload.role || null,
+            },
+          ];
+        }
+
+        if (name === "delete_contact") {
+          contacts = contacts.filter((c) => c.id !== payload.id);
+        }
+
+        if (name === "update_contact") {
+          contacts = contacts.map((c) =>
+            c.id === payload.id ? { ...c, ...payload } : c
+          );
+        }
+
+        applySearchFilter();
+      };
+
+      const callContactTool = async (name, payload) => {
+        if (!window.openai?.tool) {
+          console.error("OpenAI tool API not available");
+          mutateContactsLocally(name, payload);
+          return;
+        }
+
+        try {
+          const response = await window.openai.tool(name, payload);
+          updateFromResponse(response);
+        } catch (error) {
+          console.error("Tool call failed:", error);
+          mutateContactsLocally(name, payload);
+        }
+      };
+
+      formEl.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(formEl);
+        const payload = {
+          first_name: formData.get("first_name"),
+          last_name: formData.get("last_name"),
+          email: formData.get("email") || null,
+        };
+
+        await callContactTool("create_contact", payload);
+        
+        firstNameInput.value = "";
+        lastNameInput.value = "";
+        emailInput.value = "";
+      });
+
+      searchInput.addEventListener("input", applySearchFilter);
+
+      // Initial render
+      applySearchFilter();
+    </script>
+  </body>
+</html>
+

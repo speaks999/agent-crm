@@ -39,6 +39,10 @@ export declare const interactionToolDefinitions: ({
         };
         required: string[];
     };
+    _meta: {
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
+    };
 } | {
     name: string;
     description: string;
@@ -58,6 +62,10 @@ export declare const interactionToolDefinitions: ({
             sentiment?: undefined;
         };
         required: string[];
+    };
+    _meta: {
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -85,6 +93,10 @@ export declare const interactionToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
+    };
+    _meta: {
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -127,6 +139,10 @@ export declare const interactionToolDefinitions: ({
             };
         };
         required: string[];
+    };
+    _meta: {
+        'openai/toolInvocation/invoking': string;
+        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=interactions.d.ts.map
