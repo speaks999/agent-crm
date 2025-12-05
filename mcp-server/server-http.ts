@@ -192,11 +192,14 @@ function createCrmServer() {
     server.setRequestHandler(
         CallToolRequestSchema,
         async (request: CallToolRequest) => {
-            // Log incoming request for debugging
-            console.log('=== MCP Tool Call Request ===');
-            console.log('Tool name:', request.params.name);
-            console.log('Arguments:', JSON.stringify(request.params.arguments, null, 2));
-            console.log('Full request:', JSON.stringify(request, null, 2));
+            // Create a mock request object that matches the old pattern
+            // so existing handlers can work
+            const mockRequest = {
+                params: {
+                    name: request.params.name,
+                    arguments: request.params.arguments || {},
+                },
+            };
             
             // Import schemas and implement tool handlers directly
             const {
@@ -207,8 +210,7 @@ function createCrmServer() {
             } = await import('./types.js');
             
             const toolName = request.params.name;
-            // Ensure args is always an object, even if null/undefined
-            const args = request.params.arguments ?? {};
+            const args = request.params.arguments || {};
             
             try {
                 // Account tools
@@ -305,73 +307,12 @@ function createCrmServer() {
                     };
                 }
                 
-                if (toolName === 'get_contact') {
-                    const { data, error } = await supabase
-                        .from('contacts')
-                        .select('*')
-                        .eq('id', args.id)
-                        .single();
-                    if (error) throw error;
-                    return {
-                        content: [{ type: 'text' as const, text: `Retrieved contact: ${data.first_name} ${data.last_name}` }],
-                        structuredContent: { contacts: [data] },
-                    };
-                }
-                
-                if (toolName === 'list_contacts') {
-                    // Handle empty arguments - list_contacts doesn't require any args
-                    // Ensure args is an object (could be null/undefined from MCP client)
-                    const safeArgs = (args && typeof args === 'object') ? args : {};
-                    let query = supabase.from('contacts').select('*');
-                    if (safeArgs.account_id) {
-                        query = query.eq('account_id', safeArgs.account_id);
-                    }
-                    const { data, error } = await query;
-                    if (error) {
-                        console.error('list_contacts error:', error);
-                        throw error;
-                    }
-                    return {
-                        content: [{ type: 'text' as const, text: `Found ${data?.length || 0} contact(s)` }],
-                        structuredContent: { contacts: data || [] },
-                    };
-                }
-                
-                if (toolName === 'update_contact') {
-                    const parsed = UpdateContactSchema.parse(args);
-                    const { id, ...updates } = parsed;
-                    const { data, error } = await supabase
-                        .from('contacts')
-                        .update({ ...updates, updated_at: new Date().toISOString() })
-                        .eq('id', id)
-                        .select()
-                        .single();
-                    if (error) throw error;
-                    const { data: allContacts } = await supabase.from('contacts').select('*');
-                    return {
-                        content: [{ type: 'text' as const, text: `Contact "${data.first_name} ${data.last_name}" updated successfully` }],
-                        structuredContent: { contacts: allContacts || [] },
-                    };
-                }
-                
-                if (toolName === 'delete_contact') {
-                    const { error } = await supabase.from('contacts').delete().eq('id', args.id);
-                    if (error) throw error;
-                    const { data: allContacts } = await supabase.from('contacts').select('*');
-                    return {
-                        content: [{ type: 'text' as const, text: `Contact deleted successfully` }],
-                        structuredContent: { contacts: allContacts || [] },
-                    };
-                }
-                
-                // TODO: Implement remaining tools (deals, pipelines, interactions, search)
+                // TODO: Implement remaining tools (get_contact, list_contacts, update_contact, delete_contact, and all deal/pipeline/interaction/search tools)
                 return {
                     content: [{ type: 'text' as const, text: `Tool ${toolName} is not yet fully implemented in the unified handler` }],
                     structuredContent: {},
                 };
             } catch (error: any) {
-                console.error(`Tool ${toolName} error:`, error);
-                console.error('Request params:', { name: request.params.name, arguments: request.params.arguments });
                 return {
                     content: [{ type: 'text' as const, text: `Error: ${error.message || String(error)}` }],
                     isError: true,
@@ -402,12 +343,9 @@ async function handleSseRequest(res: ServerResponse) {
 
     sessions.set(sessionId, { server, transport });
 
-    // Fix infinite recursion - don't call server.close() in onclose
     transport.onclose = async () => {
-        console.log('SSE transport closing for session:', sessionId);
         sessions.delete(sessionId);
-        // Don't call server.close() - it causes infinite recursion
-        // The transport will handle cleanup
+        await server.close();
     };
 
     transport.onerror = (error) => {
@@ -434,12 +372,7 @@ async function handlePostMessage(
     res.setHeader('Access-Control-Allow-Headers', 'content-type');
     const sessionId = url.searchParams.get('sessionId');
 
-    console.log('=== POST Message Request ===');
-    console.log('Session ID:', sessionId);
-    console.log('URL:', url.toString());
-
     if (!sessionId) {
-        console.error('Missing sessionId query parameter');
         res.writeHead(400).end('Missing sessionId query parameter');
         return;
     }
@@ -447,8 +380,6 @@ async function handlePostMessage(
     const session = sessions.get(sessionId);
 
     if (!session) {
-        console.error('Unknown session:', sessionId);
-        console.log('Active sessions:', Array.from(sessions.keys()));
         res.writeHead(404).end('Unknown session');
         return;
     }
@@ -473,13 +404,6 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
 
     const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
 
-    // Log all incoming requests for debugging
-    console.log(`\n=== Incoming Request ===`);
-    console.log(`Method: ${req.method}`);
-    console.log(`Path: ${url.pathname}`);
-    console.log(`Query: ${url.search}`);
-    console.log(`Headers:`, JSON.stringify(req.headers, null, 2));
-
     // Health check endpoint
     if (req.method === 'GET' && url.pathname === '/') {
         res.writeHead(200, { 'content-type': 'text/plain' }).end('Agent CRM MCP Server');
@@ -491,7 +415,6 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         req.method === 'OPTIONS' &&
         (url.pathname === ssePath || url.pathname === postPath)
     ) {
-        console.log('Handling CORS preflight');
         res.writeHead(204, {
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
@@ -501,64 +424,18 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
     }
 
-    // Handle direct POST to /mcp (temporary - accept anything and log it)
-    if (req.method === 'POST' && url.pathname === ssePath) {
-        console.log('⚠️  Direct POST to /mcp detected');
-        console.log('This is not the SSE pattern, but accepting it temporarily for debugging');
-        
-        // Read body
-        let body = '';
-        req.on('data', (chunk) => {
-            body += chunk.toString();
-        });
-        req.on('end', () => {
-            console.log('\n=== POST to /mcp - Full Request ===');
-            console.log('Raw body:', body);
-            console.log('Body length:', body.length);
-            
-            let parsedBody: any = null;
-            try {
-                parsedBody = JSON.parse(body);
-                console.log('Parsed JSON body:', JSON.stringify(parsedBody, null, 2));
-            } catch (e) {
-                console.log('Could not parse body as JSON:', e);
-            }
-            
-            // TEMPORARY: Always return 200 OK to stop seeing 400s
-            res.writeHead(200, {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
-            });
-            res.end(JSON.stringify({
-                ok: true,
-                message: 'Temporary handler - accepting POST to /mcp',
-                echo: parsedBody || body,
-                received: {
-                    method: req.method,
-                    path: url.pathname,
-                    query: url.search,
-                    bodyLength: body.length,
-                }
-            }));
-        });
-        return;
-    }
-
     // Handle SSE connection
     if (req.method === 'GET' && url.pathname === ssePath) {
-        console.log('Handling SSE connection request');
         await handleSseRequest(res);
         return;
     }
 
     // Handle POST messages
     if (req.method === 'POST' && url.pathname === postPath) {
-        console.log('Handling POST message request');
         await handlePostMessage(req, res, url);
         return;
     }
 
-    console.log('404 - Not Found:', url.pathname);
     res.writeHead(404).end('Not Found');
 });
 
