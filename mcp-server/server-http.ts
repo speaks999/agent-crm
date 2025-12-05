@@ -201,12 +201,18 @@ function createCrmServer() {
                 },
             };
             
-            // Import schemas and implement tool handlers directly
+            // Import all schemas needed for tool handlers
             const {
                 CreateAccountSchema,
                 UpdateAccountSchema,
                 CreateContactSchema,
                 UpdateContactSchema,
+                CreateDealSchema,
+                UpdateDealSchema,
+                CreatePipelineSchema,
+                UpdatePipelineSchema,
+                CreateInteractionSchema,
+                UpdateInteractionSchema,
             } = await import('./types.js');
             
             const toolName = request.params.name;
@@ -307,9 +313,383 @@ function createCrmServer() {
                     };
                 }
                 
-                // TODO: Implement remaining tools (get_contact, list_contacts, update_contact, delete_contact, and all deal/pipeline/interaction/search tools)
+                if (toolName === 'get_contact') {
+                    const { data, error } = await supabase
+                        .from('contacts')
+                        .select('*')
+                        .eq('id', args.id)
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Retrieved contact: ${data.first_name} ${data.last_name}` }],
+                        structuredContent: { contacts: [data] },
+                    };
+                }
+                
+                if (toolName === 'list_contacts') {
+                    let query = supabase.from('contacts').select('*');
+                    if (args.account_id) query = query.eq('account_id', args.account_id);
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Found ${data?.length || 0} contact(s)` }],
+                        structuredContent: { contacts: data || [] },
+                    };
+                }
+                
+                if (toolName === 'update_contact') {
+                    const parsed = UpdateContactSchema.parse(args);
+                    const { id, ...updates } = parsed;
+                    const { data, error } = await supabase
+                        .from('contacts')
+                        .update({ ...updates, updated_at: new Date().toISOString() })
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    const { data: allContacts } = await supabase.from('contacts').select('*');
+                    return {
+                        content: [{ type: 'text' as const, text: `Contact "${data.first_name} ${data.last_name}" updated successfully` }],
+                        structuredContent: { contacts: allContacts || [] },
+                    };
+                }
+                
+                if (toolName === 'delete_contact') {
+                    const { error } = await supabase.from('contacts').delete().eq('id', args.id);
+                    if (error) throw error;
+                    const { data: allContacts } = await supabase.from('contacts').select('*');
+                    return {
+                        content: [{ type: 'text' as const, text: `Contact deleted successfully` }],
+                        structuredContent: { contacts: allContacts || [] },
+                    };
+                }
+                
+                // Deal tools
+                if (toolName === 'create_deal') {
+                    const parsed = CreateDealSchema.parse(args);
+                    const { data, error } = await supabase
+                        .from('deals')
+                        .insert({
+                            name: parsed.name,
+                            account_id: parsed.account_id || null,
+                            pipeline_id: parsed.pipeline_id || null,
+                            amount: parsed.amount || null,
+                            stage: parsed.stage,
+                            close_date: parsed.close_date || null,
+                            status: parsed.status || 'open',
+                        })
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Deal "${data.name}" created successfully` }],
+                        structuredContent: { deals: [data] },
+                    };
+                }
+                
+                if (toolName === 'get_deal') {
+                    const { data, error } = await supabase
+                        .from('deals')
+                        .select('*')
+                        .eq('id', args.id)
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Retrieved deal: ${data.name}` }],
+                        structuredContent: { deals: [data] },
+                    };
+                }
+                
+                if (toolName === 'list_deals') {
+                    let query = supabase.from('deals').select('*');
+                    if (args.account_id) query = query.eq('account_id', args.account_id);
+                    if (args.pipeline_id) query = query.eq('pipeline_id', args.pipeline_id);
+                    if (args.status) query = query.eq('status', args.status);
+                    if (args.stage) query = query.eq('stage', args.stage);
+                    const { data, error } = await query;
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Found ${data?.length || 0} deal(s)` }],
+                        structuredContent: { deals: data || [] },
+                    };
+                }
+                
+                if (toolName === 'update_deal') {
+                    const parsed = UpdateDealSchema.parse(args);
+                    const { id, ...updates } = parsed;
+                    const { data, error } = await supabase
+                        .from('deals')
+                        .update({ ...updates, updated_at: new Date().toISOString() })
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Deal "${data.name}" updated successfully` }],
+                        structuredContent: { deals: [data] },
+                    };
+                }
+                
+                if (toolName === 'move_deal_stage') {
+                    const { data, error } = await supabase
+                        .from('deals')
+                        .update({ stage: args.stage, updated_at: new Date().toISOString() })
+                        .eq('id', args.id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Deal "${data.name}" moved to stage "${data.stage}"` }],
+                        structuredContent: { deals: [data] },
+                    };
+                }
+                
+                if (toolName === 'close_deal') {
+                    if (args.status !== 'won' && args.status !== 'lost') {
+                        throw new Error('Status must be "won" or "lost"');
+                    }
+                    const { data, error } = await supabase
+                        .from('deals')
+                        .update({ status: args.status, updated_at: new Date().toISOString() })
+                        .eq('id', args.id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Deal "${data.name}" closed as ${data.status}` }],
+                        structuredContent: { deals: [data] },
+                    };
+                }
+                
+                if (toolName === 'delete_deal') {
+                    const { error } = await supabase.from('deals').delete().eq('id', args.id);
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Deal deleted successfully` }],
+                        structuredContent: {},
+                    };
+                }
+                
+                // Pipeline tools
+                if (toolName === 'create_pipeline') {
+                    const parsed = CreatePipelineSchema.parse(args);
+                    const { data, error } = await supabase
+                        .from('pipelines')
+                        .insert({
+                            name: parsed.name,
+                            stages: parsed.stages,
+                        })
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Pipeline "${data.name}" created successfully` }],
+                        structuredContent: { pipelines: [data] },
+                    };
+                }
+                
+                if (toolName === 'get_pipeline') {
+                    const { data, error } = await supabase
+                        .from('pipelines')
+                        .select('*')
+                        .eq('id', args.id)
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Retrieved pipeline: ${data.name}` }],
+                        structuredContent: { pipelines: [data] },
+                    };
+                }
+                
+                if (toolName === 'list_pipelines') {
+                    const { data, error } = await supabase.from('pipelines').select('*');
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Found ${data?.length || 0} pipeline(s)` }],
+                        structuredContent: { pipelines: data || [] },
+                    };
+                }
+                
+                if (toolName === 'update_pipeline') {
+                    const parsed = UpdatePipelineSchema.parse(args);
+                    const { id, ...updates } = parsed;
+                    const { data, error } = await supabase
+                        .from('pipelines')
+                        .update(updates)
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Pipeline "${data.name}" updated successfully` }],
+                        structuredContent: { pipelines: [data] },
+                    };
+                }
+                
+                if (toolName === 'delete_pipeline') {
+                    const { error } = await supabase.from('pipelines').delete().eq('id', args.id);
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Pipeline deleted successfully` }],
+                        structuredContent: {},
+                    };
+                }
+                
+                // Interaction tools
+                if (toolName === 'create_interaction') {
+                    const parsed = CreateInteractionSchema.parse(args);
+                    const { data, error } = await supabase
+                        .from('interactions')
+                        .insert({
+                            type: parsed.type,
+                            contact_id: parsed.contact_id || null,
+                            deal_id: parsed.deal_id || null,
+                            summary: parsed.summary || null,
+                            transcript: parsed.transcript || null,
+                            audio_url: parsed.audio_url || null,
+                            sentiment: parsed.sentiment || null,
+                        })
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Interaction created successfully` }],
+                        structuredContent: { interactions: [data] },
+                    };
+                }
+                
+                if (toolName === 'get_interaction') {
+                    const { data, error } = await supabase
+                        .from('interactions')
+                        .select('*')
+                        .eq('id', args.id)
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Retrieved interaction` }],
+                        structuredContent: { interactions: [data] },
+                    };
+                }
+                
+                if (toolName === 'list_interactions') {
+                    let query = supabase.from('interactions').select('*');
+                    if (args.contact_id) query = query.eq('contact_id', args.contact_id);
+                    if (args.deal_id) query = query.eq('deal_id', args.deal_id);
+                    if (args.type) query = query.eq('type', args.type);
+                    const { data, error } = await query.order('created_at', { ascending: false });
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Found ${data?.length || 0} interaction(s)` }],
+                        structuredContent: { interactions: data || [] },
+                    };
+                }
+                
+                if (toolName === 'update_interaction') {
+                    const parsed = UpdateInteractionSchema.parse(args);
+                    const { id, ...updates } = parsed;
+                    const { data, error } = await supabase
+                        .from('interactions')
+                        .update(updates)
+                        .eq('id', id)
+                        .select()
+                        .single();
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Interaction updated successfully` }],
+                        structuredContent: { interactions: [data] },
+                    };
+                }
+                
+                if (toolName === 'delete_interaction') {
+                    const { error } = await supabase.from('interactions').delete().eq('id', args.id);
+                    if (error) throw error;
+                    return {
+                        content: [{ type: 'text' as const, text: `Interaction deleted successfully` }],
+                        structuredContent: {},
+                    };
+                }
+                
+                // Search tools
+                if (toolName === 'search_crm') {
+                    const searchTerm = `%${args.query}%`;
+                    const [accountsResult, contactsResult, dealsResult] = await Promise.all([
+                        supabase.from('accounts').select('*').or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
+                        supabase.from('contacts').select('*').or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+                        supabase.from('deals').select('*').ilike('name', searchTerm),
+                    ]);
+                    const results = {
+                        accounts: accountsResult.data || [],
+                        contacts: contactsResult.data || [],
+                        deals: dealsResult.data || [],
+                        total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
+                    };
+                    return {
+                        content: [{ type: 'text' as const, text: `Found ${results.total} result(s) for "${args.query}"` }],
+                        structuredContent: results,
+                    };
+                }
+                
+                if (toolName === 'get_account_summary') {
+                    const [accountResult, contactsResult, dealsResult] = await Promise.all([
+                        supabase.from('accounts').select('*').eq('id', args.id).single(),
+                        supabase.from('contacts').select('*').eq('account_id', args.id),
+                        supabase.from('deals').select('*').eq('account_id', args.id),
+                    ]);
+                    if (accountResult.error) throw accountResult.error;
+                    const contactIds = contactsResult.data?.map(c => c.id) || [];
+                    const dealIds = dealsResult.data?.map(d => d.id) || [];
+                    let interactions: any[] = [];
+                    if (contactIds.length > 0 || dealIds.length > 0) {
+                        const filters = [];
+                        if (contactIds.length > 0) filters.push(`contact_id.in.(${contactIds.join(',')})`);
+                        if (dealIds.length > 0) filters.push(`deal_id.in.(${dealIds.join(',')})`);
+                        const result = await supabase.from('interactions').select('*').or(filters.join(',')).order('created_at', { ascending: false });
+                        interactions = result.data || [];
+                    }
+                    const summary = {
+                        account: accountResult.data,
+                        contacts: contactsResult.data || [],
+                        deals: dealsResult.data || [],
+                        interactions: interactions || [],
+                        stats: {
+                            totalContacts: contactsResult.data?.length || 0,
+                            totalDeals: dealsResult.data?.length || 0,
+                            openDeals: dealsResult.data?.filter(d => d.status === 'open').length || 0,
+                            wonDeals: dealsResult.data?.filter(d => d.status === 'won').length || 0,
+                            totalInteractions: interactions?.length || 0,
+                        },
+                    };
+                    return {
+                        content: [{ type: 'text' as const, text: `Account summary for "${accountResult.data.name}"` }],
+                        structuredContent: summary,
+                    };
+                }
+                
+                if (toolName === 'get_deal_pipeline_view') {
+                    let query = supabase.from('deals').select('*');
+                    if (args.pipeline_id) query = query.eq('pipeline_id', args.pipeline_id);
+                    const dealsResult = await query;
+                    if (dealsResult.error) throw dealsResult.error;
+                    const dealsByStage: Record<string, any[]> = {};
+                    dealsResult.data?.forEach(deal => {
+                        if (!dealsByStage[deal.stage]) dealsByStage[deal.stage] = [];
+                        dealsByStage[deal.stage].push(deal);
+                    });
+                    const stageStats = Object.entries(dealsByStage).map(([stage, deals]) => ({
+                        stage,
+                        count: deals.length,
+                        totalValue: deals.reduce((sum, deal) => sum + (deal.amount || 0), 0),
+                        deals,
+                    }));
+                    return {
+                        content: [{ type: 'text' as const, text: `Pipeline view with ${dealsResult.data?.length || 0} deal(s)` }],
+                        structuredContent: { stageStats, totalDeals: dealsResult.data?.length || 0 },
+                    };
+                }
+                
+                // Unknown tool
                 return {
-                    content: [{ type: 'text' as const, text: `Tool ${toolName} is not yet fully implemented in the unified handler` }],
+                    content: [{ type: 'text' as const, text: `Unknown tool: ${toolName}` }],
                     structuredContent: {},
                 };
             } catch (error: any) {
