@@ -45,7 +45,7 @@ import { registerSearchTools } from './tools/search.js';
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-const PORT = Number(process.env.PORT || 8787);
+const PORT = Number(process.env.PORT || 3001);
 const MCP_PATH = '/mcp';
 
 if (!supabaseUrl || !supabaseKey) {
@@ -336,7 +336,7 @@ const ssePath = '/mcp';
 const postPath = '/mcp/messages';
 
 async function handleSseRequest(res: ServerResponse) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader("Access-Control-Allow-Origin", "*");
     const server = createCrmServer();
     const transport = new SSEServerTransport(postPath, res);
     const sessionId = transport.sessionId;
@@ -345,20 +345,21 @@ async function handleSseRequest(res: ServerResponse) {
 
     transport.onclose = async () => {
         sessions.delete(sessionId);
-        await server.close();
+        // Don't call server.close() here - it causes infinite recursion
+        // The server will be cleaned up when the transport closes
     };
 
     transport.onerror = (error) => {
-        console.error('SSE transport error', error);
+        console.error("SSE transport error", error);
     };
 
     try {
         await server.connect(transport);
     } catch (error) {
         sessions.delete(sessionId);
-        console.error('Failed to start SSE session', error);
+        console.error("Failed to start SSE session", error);
         if (!res.headersSent) {
-            res.writeHead(500).end('Failed to establish SSE connection');
+            res.writeHead(500).end("Failed to establish SSE connection");
         }
     }
 }
@@ -368,28 +369,28 @@ async function handlePostMessage(
     res: ServerResponse,
     url: URL
 ) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'content-type');
-    const sessionId = url.searchParams.get('sessionId');
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "content-type");
+    const sessionId = url.searchParams.get("sessionId");
 
     if (!sessionId) {
-        res.writeHead(400).end('Missing sessionId query parameter');
+        res.writeHead(400).end("Missing sessionId query parameter");
         return;
     }
 
     const session = sessions.get(sessionId);
 
     if (!session) {
-        res.writeHead(404).end('Unknown session');
+        res.writeHead(404).end("Unknown session");
         return;
     }
 
     try {
         await session.transport.handlePostMessage(req, res);
     } catch (error) {
-        console.error('Failed to process message', error);
+        console.error("Failed to process message", error);
         if (!res.headersSent) {
-            res.writeHead(500).end('Failed to process message');
+            res.writeHead(500).end("Failed to process message");
         }
     }
 }
@@ -410,33 +411,63 @@ const httpServer = createServer(async (req: IncomingMessage, res: ServerResponse
         return;
     }
 
-    // Handle CORS preflight
     if (
-        req.method === 'OPTIONS' &&
+        req.method === "OPTIONS" &&
         (url.pathname === ssePath || url.pathname === postPath)
     ) {
         res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'content-type',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "content-type",
         });
         res.end();
         return;
     }
 
-    // Handle SSE connection
-    if (req.method === 'GET' && url.pathname === ssePath) {
+    // Handle direct POST to /mcp (OpenAI Apps connector sends here)
+    if (req.method === "POST" && url.pathname === ssePath) {
+        console.log("\n=== POST /mcp REQUEST ===");
+        console.log("Headers:", JSON.stringify(req.headers, null, 2));
+        
+        let body = "";
+        req.on("data", (chunk) => {
+            body += chunk.toString();
+        });
+        req.on("end", () => {
+            console.log("Body:", body);
+            let parsedBody: any = null;
+            try {
+                parsedBody = JSON.parse(body);
+                console.log("Parsed:", JSON.stringify(parsedBody, null, 2));
+            } catch (e) {
+                console.log("Parse error:", e);
+            }
+            
+            // Return 200 OK as requested
+            res.writeHead(200, {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            });
+            res.end(JSON.stringify({
+                ok: true,
+                echo: parsedBody || body,
+                message: "Debug MCP endpoint reached.",
+            }));
+        });
+        return;
+    }
+
+    if (req.method === "GET" && url.pathname === ssePath) {
         await handleSseRequest(res);
         return;
     }
 
-    // Handle POST messages
-    if (req.method === 'POST' && url.pathname === postPath) {
+    if (req.method === "POST" && url.pathname === postPath) {
         await handlePostMessage(req, res, url);
         return;
     }
 
-    res.writeHead(404).end('Not Found');
+    res.writeHead(404).end("Not Found");
 });
 
 httpServer.on('clientError', (err: Error, socket) => {
