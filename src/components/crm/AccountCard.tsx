@@ -2,7 +2,7 @@
 
 import { Badge } from '@openai/apps-sdk-ui/components/Badge';
 import { Button } from '@openai/apps-sdk-ui/components/Button';
-import { Building, Globe } from '@openai/apps-sdk-ui/components/Icon';
+import { Building2, Globe } from 'lucide-react';
 
 interface Account {
     id: string;
@@ -18,7 +18,7 @@ export function AccountCard({ account }: { account: Account }) {
             <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
                     <div className="flex items-center gap-2">
-                        <Building className="size-5 text-secondary" />
+                        <Building2 className="size-5 text-secondary" />
                         <h3 className="font-semibold text-lg">{account.name}</h3>
                     </div>
 
