@@ -25,7 +25,7 @@ import { searchToolDefinitions } from './tools/search.js';
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
-const PORT = Number(process.env.PORT || 8787);
+const PORT = Number(process.env.PORT || 3001);
 const MCP_PATH = '/mcp';
 if (!supabaseUrl || !supabaseKey) {
     console.error('Error: Missing NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_URL/SUPABASE_ANON_KEY');
@@ -145,16 +145,18 @@ function createCrmServer() {
     // The existing tool handlers use 'tools/call' string pattern which doesn't work with the new Server
     // We need to use CallToolRequestSchema and route internally
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        // Log incoming request for debugging
-        console.log('=== MCP Tool Call Request ===');
-        console.log('Tool name:', request.params.name);
-        console.log('Arguments:', JSON.stringify(request.params.arguments, null, 2));
-        console.log('Full request:', JSON.stringify(request, null, 2));
-        // Import schemas and implement tool handlers directly
-        const { CreateAccountSchema, UpdateAccountSchema, CreateContactSchema, UpdateContactSchema, } = await import('./types.js');
+        // Create a mock request object that matches the old pattern
+        // so existing handlers can work
+        const mockRequest = {
+            params: {
+                name: request.params.name,
+                arguments: request.params.arguments || {},
+            },
+        };
+        // Import all schemas needed for tool handlers
+        const { CreateAccountSchema, UpdateAccountSchema, CreateContactSchema, UpdateContactSchema, CreateDealSchema, UpdateDealSchema, CreatePipelineSchema, UpdatePipelineSchema, CreateInteractionSchema, UpdateInteractionSchema, } = await import('./types.js');
         const toolName = request.params.name;
-        // Ensure args is always an object, even if null/undefined
-        const args = request.params.arguments ?? {};
+        const args = request.params.arguments || {};
         try {
             // Account tools
             if (toolName === 'create_account') {
@@ -265,18 +267,12 @@ function createCrmServer() {
                 };
             }
             if (toolName === 'list_contacts') {
-                // Handle empty arguments - list_contacts doesn't require any args
-                // Ensure args is an object (could be null/undefined from MCP client)
-                const safeArgs = (args && typeof args === 'object') ? args : {};
                 let query = supabase.from('contacts').select('*');
-                if (safeArgs.account_id) {
-                    query = query.eq('account_id', safeArgs.account_id);
-                }
+                if (args.account_id)
+                    query = query.eq('account_id', args.account_id);
                 const { data, error } = await query;
-                if (error) {
-                    console.error('list_contacts error:', error);
+                if (error)
                     throw error;
-                }
                 return {
                     content: [{ type: 'text', text: `Found ${data?.length || 0} contact(s)` }],
                     structuredContent: { contacts: data || [] },
@@ -309,15 +305,346 @@ function createCrmServer() {
                     structuredContent: { contacts: allContacts || [] },
                 };
             }
-            // TODO: Implement remaining tools (deals, pipelines, interactions, search)
+            // Deal tools
+            if (toolName === 'create_deal') {
+                const parsed = CreateDealSchema.parse(args);
+                const { data, error } = await supabase
+                    .from('deals')
+                    .insert({
+                    name: parsed.name,
+                    account_id: parsed.account_id || null,
+                    pipeline_id: parsed.pipeline_id || null,
+                    amount: parsed.amount || null,
+                    stage: parsed.stage,
+                    close_date: parsed.close_date || null,
+                    status: parsed.status || 'open',
+                })
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Deal "${data.name}" created successfully` }],
+                    structuredContent: { deals: [data] },
+                };
+            }
+            if (toolName === 'get_deal') {
+                const { data, error } = await supabase
+                    .from('deals')
+                    .select('*')
+                    .eq('id', args.id)
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Retrieved deal: ${data.name}` }],
+                    structuredContent: { deals: [data] },
+                };
+            }
+            if (toolName === 'list_deals') {
+                let query = supabase.from('deals').select('*');
+                if (args.account_id)
+                    query = query.eq('account_id', args.account_id);
+                if (args.pipeline_id)
+                    query = query.eq('pipeline_id', args.pipeline_id);
+                if (args.status)
+                    query = query.eq('status', args.status);
+                if (args.stage)
+                    query = query.eq('stage', args.stage);
+                const { data, error } = await query;
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Found ${data?.length || 0} deal(s)` }],
+                    structuredContent: { deals: data || [] },
+                };
+            }
+            if (toolName === 'update_deal') {
+                const parsed = UpdateDealSchema.parse(args);
+                const { id, ...updates } = parsed;
+                const { data, error } = await supabase
+                    .from('deals')
+                    .update({ ...updates, updated_at: new Date().toISOString() })
+                    .eq('id', id)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Deal "${data.name}" updated successfully` }],
+                    structuredContent: { deals: [data] },
+                };
+            }
+            if (toolName === 'move_deal_stage') {
+                const { data, error } = await supabase
+                    .from('deals')
+                    .update({ stage: args.stage, updated_at: new Date().toISOString() })
+                    .eq('id', args.id)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Deal "${data.name}" moved to stage "${data.stage}"` }],
+                    structuredContent: { deals: [data] },
+                };
+            }
+            if (toolName === 'close_deal') {
+                if (args.status !== 'won' && args.status !== 'lost') {
+                    throw new Error('Status must be "won" or "lost"');
+                }
+                const { data, error } = await supabase
+                    .from('deals')
+                    .update({ status: args.status, updated_at: new Date().toISOString() })
+                    .eq('id', args.id)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Deal "${data.name}" closed as ${data.status}` }],
+                    structuredContent: { deals: [data] },
+                };
+            }
+            if (toolName === 'delete_deal') {
+                const { error } = await supabase.from('deals').delete().eq('id', args.id);
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Deal deleted successfully` }],
+                    structuredContent: {},
+                };
+            }
+            // Pipeline tools
+            if (toolName === 'create_pipeline') {
+                const parsed = CreatePipelineSchema.parse(args);
+                const { data, error } = await supabase
+                    .from('pipelines')
+                    .insert({
+                    name: parsed.name,
+                    stages: parsed.stages,
+                })
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Pipeline "${data.name}" created successfully` }],
+                    structuredContent: { pipelines: [data] },
+                };
+            }
+            if (toolName === 'get_pipeline') {
+                const { data, error } = await supabase
+                    .from('pipelines')
+                    .select('*')
+                    .eq('id', args.id)
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Retrieved pipeline: ${data.name}` }],
+                    structuredContent: { pipelines: [data] },
+                };
+            }
+            if (toolName === 'list_pipelines') {
+                const { data, error } = await supabase.from('pipelines').select('*');
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Found ${data?.length || 0} pipeline(s)` }],
+                    structuredContent: { pipelines: data || [] },
+                };
+            }
+            if (toolName === 'update_pipeline') {
+                const parsed = UpdatePipelineSchema.parse(args);
+                const { id, ...updates } = parsed;
+                const { data, error } = await supabase
+                    .from('pipelines')
+                    .update(updates)
+                    .eq('id', id)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Pipeline "${data.name}" updated successfully` }],
+                    structuredContent: { pipelines: [data] },
+                };
+            }
+            if (toolName === 'delete_pipeline') {
+                const { error } = await supabase.from('pipelines').delete().eq('id', args.id);
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Pipeline deleted successfully` }],
+                    structuredContent: {},
+                };
+            }
+            // Interaction tools
+            if (toolName === 'create_interaction') {
+                const parsed = CreateInteractionSchema.parse(args);
+                const { data, error } = await supabase
+                    .from('interactions')
+                    .insert({
+                    type: parsed.type,
+                    contact_id: parsed.contact_id || null,
+                    deal_id: parsed.deal_id || null,
+                    summary: parsed.summary || null,
+                    transcript: parsed.transcript || null,
+                    audio_url: parsed.audio_url || null,
+                    sentiment: parsed.sentiment || null,
+                })
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Interaction created successfully` }],
+                    structuredContent: { interactions: [data] },
+                };
+            }
+            if (toolName === 'get_interaction') {
+                const { data, error } = await supabase
+                    .from('interactions')
+                    .select('*')
+                    .eq('id', args.id)
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Retrieved interaction` }],
+                    structuredContent: { interactions: [data] },
+                };
+            }
+            if (toolName === 'list_interactions') {
+                let query = supabase.from('interactions').select('*');
+                if (args.contact_id)
+                    query = query.eq('contact_id', args.contact_id);
+                if (args.deal_id)
+                    query = query.eq('deal_id', args.deal_id);
+                if (args.type)
+                    query = query.eq('type', args.type);
+                const { data, error } = await query.order('created_at', { ascending: false });
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Found ${data?.length || 0} interaction(s)` }],
+                    structuredContent: { interactions: data || [] },
+                };
+            }
+            if (toolName === 'update_interaction') {
+                const parsed = UpdateInteractionSchema.parse(args);
+                const { id, ...updates } = parsed;
+                const { data, error } = await supabase
+                    .from('interactions')
+                    .update(updates)
+                    .eq('id', id)
+                    .select()
+                    .single();
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Interaction updated successfully` }],
+                    structuredContent: { interactions: [data] },
+                };
+            }
+            if (toolName === 'delete_interaction') {
+                const { error } = await supabase.from('interactions').delete().eq('id', args.id);
+                if (error)
+                    throw error;
+                return {
+                    content: [{ type: 'text', text: `Interaction deleted successfully` }],
+                    structuredContent: {},
+                };
+            }
+            // Search tools
+            if (toolName === 'search_crm') {
+                const searchTerm = `%${args.query}%`;
+                const [accountsResult, contactsResult, dealsResult] = await Promise.all([
+                    supabase.from('accounts').select('*').or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
+                    supabase.from('contacts').select('*').or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+                    supabase.from('deals').select('*').ilike('name', searchTerm),
+                ]);
+                const results = {
+                    accounts: accountsResult.data || [],
+                    contacts: contactsResult.data || [],
+                    deals: dealsResult.data || [],
+                    total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
+                };
+                return {
+                    content: [{ type: 'text', text: `Found ${results.total} result(s) for "${args.query}"` }],
+                    structuredContent: results,
+                };
+            }
+            if (toolName === 'get_account_summary') {
+                const [accountResult, contactsResult, dealsResult] = await Promise.all([
+                    supabase.from('accounts').select('*').eq('id', args.id).single(),
+                    supabase.from('contacts').select('*').eq('account_id', args.id),
+                    supabase.from('deals').select('*').eq('account_id', args.id),
+                ]);
+                if (accountResult.error)
+                    throw accountResult.error;
+                const contactIds = contactsResult.data?.map(c => c.id) || [];
+                const dealIds = dealsResult.data?.map(d => d.id) || [];
+                let interactions = [];
+                if (contactIds.length > 0 || dealIds.length > 0) {
+                    const filters = [];
+                    if (contactIds.length > 0)
+                        filters.push(`contact_id.in.(${contactIds.join(',')})`);
+                    if (dealIds.length > 0)
+                        filters.push(`deal_id.in.(${dealIds.join(',')})`);
+                    const result = await supabase.from('interactions').select('*').or(filters.join(',')).order('created_at', { ascending: false });
+                    interactions = result.data || [];
+                }
+                const summary = {
+                    account: accountResult.data,
+                    contacts: contactsResult.data || [],
+                    deals: dealsResult.data || [],
+                    interactions: interactions || [],
+                    stats: {
+                        totalContacts: contactsResult.data?.length || 0,
+                        totalDeals: dealsResult.data?.length || 0,
+                        openDeals: dealsResult.data?.filter(d => d.status === 'open').length || 0,
+                        wonDeals: dealsResult.data?.filter(d => d.status === 'won').length || 0,
+                        totalInteractions: interactions?.length || 0,
+                    },
+                };
+                return {
+                    content: [{ type: 'text', text: `Account summary for "${accountResult.data.name}"` }],
+                    structuredContent: summary,
+                };
+            }
+            if (toolName === 'get_deal_pipeline_view') {
+                let query = supabase.from('deals').select('*');
+                if (args.pipeline_id)
+                    query = query.eq('pipeline_id', args.pipeline_id);
+                const dealsResult = await query;
+                if (dealsResult.error)
+                    throw dealsResult.error;
+                const dealsByStage = {};
+                dealsResult.data?.forEach(deal => {
+                    if (!dealsByStage[deal.stage])
+                        dealsByStage[deal.stage] = [];
+                    dealsByStage[deal.stage].push(deal);
+                });
+                const stageStats = Object.entries(dealsByStage).map(([stage, deals]) => ({
+                    stage,
+                    count: deals.length,
+                    totalValue: deals.reduce((sum, deal) => sum + (deal.amount || 0), 0),
+                    deals,
+                }));
+                return {
+                    content: [{ type: 'text', text: `Pipeline view with ${dealsResult.data?.length || 0} deal(s)` }],
+                    structuredContent: { stageStats, totalDeals: dealsResult.data?.length || 0 },
+                };
+            }
+            // Unknown tool
             return {
-                content: [{ type: 'text', text: `Tool ${toolName} is not yet fully implemented in the unified handler` }],
+                content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
                 structuredContent: {},
             };
         }
         catch (error) {
-            console.error(`Tool ${toolName} error:`, error);
-            console.error('Request params:', { name: request.params.name, arguments: request.params.arguments });
             return {
                 content: [{ type: 'text', text: `Error: ${error.message || String(error)}` }],
                 isError: true,
@@ -330,58 +657,50 @@ const sessions = new Map();
 const ssePath = '/mcp';
 const postPath = '/mcp/messages';
 async function handleSseRequest(res) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader("Access-Control-Allow-Origin", "*");
     const server = createCrmServer();
     const transport = new SSEServerTransport(postPath, res);
     const sessionId = transport.sessionId;
     sessions.set(sessionId, { server, transport });
-    // Fix infinite recursion - don't call server.close() in onclose
     transport.onclose = async () => {
-        console.log('SSE transport closing for session:', sessionId);
         sessions.delete(sessionId);
-        // Don't call server.close() - it causes infinite recursion
-        // The transport will handle cleanup
+        // Don't call server.close() here - it causes infinite recursion
+        // The server will be cleaned up when the transport closes
     };
     transport.onerror = (error) => {
-        console.error('SSE transport error', error);
+        console.error("SSE transport error", error);
     };
     try {
         await server.connect(transport);
     }
     catch (error) {
         sessions.delete(sessionId);
-        console.error('Failed to start SSE session', error);
+        console.error("Failed to start SSE session", error);
         if (!res.headersSent) {
-            res.writeHead(500).end('Failed to establish SSE connection');
+            res.writeHead(500).end("Failed to establish SSE connection");
         }
     }
 }
 async function handlePostMessage(req, res, url) {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Headers', 'content-type');
-    const sessionId = url.searchParams.get('sessionId');
-    console.log('=== POST Message Request ===');
-    console.log('Session ID:', sessionId);
-    console.log('URL:', url.toString());
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Headers", "content-type");
+    const sessionId = url.searchParams.get("sessionId");
     if (!sessionId) {
-        console.error('Missing sessionId query parameter');
-        res.writeHead(400).end('Missing sessionId query parameter');
+        res.writeHead(400).end("Missing sessionId query parameter");
         return;
     }
     const session = sessions.get(sessionId);
     if (!session) {
-        console.error('Unknown session:', sessionId);
-        console.log('Active sessions:', Array.from(sessions.keys()));
-        res.writeHead(404).end('Unknown session');
+        res.writeHead(404).end("Unknown session");
         return;
     }
     try {
         await session.transport.handlePostMessage(req, res);
     }
     catch (error) {
-        console.error('Failed to process message', error);
+        console.error("Failed to process message", error);
         if (!res.headersSent) {
-            res.writeHead(500).end('Failed to process message');
+            res.writeHead(500).end("Failed to process message");
         }
     }
 }
@@ -393,83 +712,61 @@ const httpServer = createServer(async (req, res) => {
         return;
     }
     const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
-    // Log all incoming requests for debugging
-    console.log(`\n=== Incoming Request ===`);
-    console.log(`Method: ${req.method}`);
-    console.log(`Path: ${url.pathname}`);
-    console.log(`Query: ${url.search}`);
-    console.log(`Headers:`, JSON.stringify(req.headers, null, 2));
     // Health check endpoint
     if (req.method === 'GET' && url.pathname === '/') {
         res.writeHead(200, { 'content-type': 'text/plain' }).end('Agent CRM MCP Server');
         return;
     }
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS' &&
+    if (req.method === "OPTIONS" &&
         (url.pathname === ssePath || url.pathname === postPath)) {
-        console.log('Handling CORS preflight');
         res.writeHead(204, {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'content-type',
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "content-type",
         });
         res.end();
         return;
     }
-    // Handle direct POST to /mcp (temporary - accept anything and log it)
-    if (req.method === 'POST' && url.pathname === ssePath) {
-        console.log('⚠️  Direct POST to /mcp detected');
-        console.log('This is not the SSE pattern, but accepting it temporarily for debugging');
-        // Read body
-        let body = '';
-        req.on('data', (chunk) => {
+    // Handle direct POST to /mcp (OpenAI Apps connector sends here)
+    if (req.method === "POST" && url.pathname === ssePath) {
+        console.log("\n=== POST /mcp REQUEST ===");
+        console.log("Headers:", JSON.stringify(req.headers, null, 2));
+        let body = "";
+        req.on("data", (chunk) => {
             body += chunk.toString();
         });
-        req.on('end', () => {
-            console.log('\n=== POST to /mcp - Full Request ===');
-            console.log('Raw body:', body);
-            console.log('Body length:', body.length);
+        req.on("end", () => {
+            console.log("Body:", body);
             let parsedBody = null;
             try {
                 parsedBody = JSON.parse(body);
-                console.log('Parsed JSON body:', JSON.stringify(parsedBody, null, 2));
+                console.log("Parsed:", JSON.stringify(parsedBody, null, 2));
             }
             catch (e) {
-                console.log('Could not parse body as JSON:', e);
+                console.log("Parse error:", e);
             }
-            // TEMPORARY: Always return 200 OK to stop seeing 400s
+            // Return 200 OK as requested
             res.writeHead(200, {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*',
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
             });
             res.end(JSON.stringify({
                 ok: true,
-                message: 'Temporary handler - accepting POST to /mcp',
                 echo: parsedBody || body,
-                received: {
-                    method: req.method,
-                    path: url.pathname,
-                    query: url.search,
-                    bodyLength: body.length,
-                }
+                message: "Debug MCP endpoint reached.",
             }));
         });
         return;
     }
-    // Handle SSE connection
-    if (req.method === 'GET' && url.pathname === ssePath) {
-        console.log('Handling SSE connection request');
+    if (req.method === "GET" && url.pathname === ssePath) {
         await handleSseRequest(res);
         return;
     }
-    // Handle POST messages
-    if (req.method === 'POST' && url.pathname === postPath) {
-        console.log('Handling POST message request');
+    if (req.method === "POST" && url.pathname === postPath) {
         await handlePostMessage(req, res, url);
         return;
     }
-    console.log('404 - Not Found:', url.pathname);
-    res.writeHead(404).end('Not Found');
+    res.writeHead(404).end("Not Found");
 });
 httpServer.on('clientError', (err, socket) => {
     console.error('HTTP client error', err);

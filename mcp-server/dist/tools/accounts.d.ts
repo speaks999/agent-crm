@@ -22,11 +22,6 @@ export declare const accountToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-    };
 } | {
     name: string;
     description: string;
@@ -43,11 +38,6 @@ export declare const accountToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-    };
 } | {
     name: string;
     description: string;
@@ -63,11 +53,6 @@ export declare const accountToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
-    };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -93,11 +78,6 @@ export declare const accountToolDefinitions: ({
             };
         };
         required: string[];
-    };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=accounts.d.ts.map

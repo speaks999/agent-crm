@@ -146,10 +146,6 @@ export const interactionToolDefinitions = [
             },
             required: ['type'],
         },
-        _meta: {
-            'openai/toolInvocation/invoking': 'Logging interaction...',
-            'openai/toolInvocation/invoked': 'Interaction logged',
-        },
     },
     {
         name: 'get_interaction',
@@ -160,10 +156,6 @@ export const interactionToolDefinitions = [
                 id: { type: 'string', description: 'Interaction UUID' },
             },
             required: ['id'],
-        },
-        _meta: {
-            'openai/toolInvocation/invoking': 'Retrieving interaction...',
-            'openai/toolInvocation/invoked': 'Interaction retrieved',
         },
     },
     {
@@ -176,10 +168,6 @@ export const interactionToolDefinitions = [
                 deal_id: { type: 'string', description: 'Filter by deal UUID' },
                 type: { type: 'string', enum: ['call', 'meeting', 'email', 'note'], description: 'Filter by type' },
             },
-        },
-        _meta: {
-            'openai/toolInvocation/invoking': 'Loading interactions...',
-            'openai/toolInvocation/invoked': 'Interactions loaded',
         },
     },
     {
@@ -199,10 +187,6 @@ export const interactionToolDefinitions = [
             },
             required: ['id'],
         },
-        _meta: {
-            'openai/toolInvocation/invoking': 'Updating interaction...',
-            'openai/toolInvocation/invoked': 'Interaction updated',
-        },
     },
     {
         name: 'delete_interaction',
@@ -213,10 +197,6 @@ export const interactionToolDefinitions = [
                 id: { type: 'string', description: 'Interaction UUID' },
             },
             required: ['id'],
-        },
-        _meta: {
-            'openai/toolInvocation/invoking': 'Deleting interaction...',
-            'openai/toolInvocation/invoked': 'Interaction deleted',
         },
     },
 ];

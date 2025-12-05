@@ -31,14 +31,8 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
-            // Fetch updated list to return in structuredContent
-            const { data: allDeals } = await supabase.from('deals').select('*');
-
             return {
-                content: [{ type: 'text', text: `Deal "${data.name}" created successfully` }],
-                structuredContent: {
-                    deals: allDeals || [],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -60,10 +54,7 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
             }
 
             return {
-                content: [{ type: 'text', text: `Retrieved deal: ${data.name}` }],
-                structuredContent: {
-                    deals: [data],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -88,10 +79,7 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
             }
 
             return {
-                content: [{ type: 'text', text: `Found ${data?.length || 0} deal(s)` }],
-                structuredContent: {
-                    deals: data || [],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -114,14 +102,8 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
-            // Fetch updated list to return in structuredContent
-            const { data: allDeals } = await supabase.from('deals').select('*');
-
             return {
-                content: [{ type: 'text', text: `Deal "${data.name}" updated successfully` }],
-                structuredContent: {
-                    deals: allDeals || [],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -143,14 +125,8 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
-            // Fetch updated list to return in structuredContent
-            const { data: allDeals } = await supabase.from('deals').select('*');
-
             return {
-                content: [{ type: 'text', text: `Deal moved to stage "${stage}"` }],
-                structuredContent: {
-                    deals: allDeals || [],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -179,14 +155,8 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
-            // Fetch updated list to return in structuredContent
-            const { data: allDeals } = await supabase.from('deals').select('*');
-
             return {
-                content: [{ type: 'text', text: `Deal closed as ${status}` }],
-                structuredContent: {
-                    deals: allDeals || [],
-                },
+                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
             };
         }
 
@@ -206,14 +176,8 @@ export function registerDealTools(server: any, supabase: SupabaseClient) {
                 };
             }
 
-            // Fetch updated list to return in structuredContent
-            const { data: allDeals } = await supabase.from('deals').select('*');
-
             return {
-                content: [{ type: 'text', text: `Deal deleted successfully` }],
-                structuredContent: {
-                    deals: allDeals || [],
-                },
+                content: [{ type: 'text', text: `Deal ${id} deleted successfully` }],
             };
         }
     });
@@ -236,11 +200,6 @@ export const dealToolDefinitions = [
             },
             required: ['name', 'stage'],
         },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Creating deal...',
-            'openai/toolInvocation/invoked': 'Deal created successfully',
-        },
     },
     {
         name: 'get_deal',
@@ -251,11 +210,6 @@ export const dealToolDefinitions = [
                 id: { type: 'string', description: 'Deal UUID' },
             },
             required: ['id'],
-        },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Retrieving deal...',
-            'openai/toolInvocation/invoked': 'Deal retrieved',
         },
     },
     {
@@ -269,11 +223,6 @@ export const dealToolDefinitions = [
                 status: { type: 'string', enum: ['open', 'won', 'lost'], description: 'Filter by status' },
                 stage: { type: 'string', description: 'Filter by stage' },
             },
-        },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Loading deals...',
-            'openai/toolInvocation/invoked': 'Deals loaded',
         },
     },
     {
@@ -293,11 +242,6 @@ export const dealToolDefinitions = [
             },
             required: ['id'],
         },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Updating deal...',
-            'openai/toolInvocation/invoked': 'Deal updated',
-        },
     },
     {
         name: 'move_deal_stage',
@@ -309,11 +253,6 @@ export const dealToolDefinitions = [
                 stage: { type: 'string', description: 'New stage name' },
             },
             required: ['id', 'stage'],
-        },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Moving deal stage...',
-            'openai/toolInvocation/invoked': 'Deal stage updated',
         },
     },
     {
@@ -327,11 +266,6 @@ export const dealToolDefinitions = [
             },
             required: ['id', 'status'],
         },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Closing deal...',
-            'openai/toolInvocation/invoked': 'Deal closed',
-        },
     },
     {
         name: 'delete_deal',
@@ -342,11 +276,6 @@ export const dealToolDefinitions = [
                 id: { type: 'string', description: 'Deal UUID' },
             },
             required: ['id'],
-        },
-        _meta: {
-            'openai/outputTemplate': 'ui://widget/deals.html',
-            'openai/toolInvocation/invoking': 'Deleting deal...',
-            'openai/toolInvocation/invoked': 'Deal deleted',
         },
     },
 ];

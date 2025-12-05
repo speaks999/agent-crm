@@ -28,9 +28,18 @@ export default function ProjectsPage() {
         try {
             const response = await fetch('/api/insightly/projects');
             const data = await response.json();
-            setProjects(data);
+            // Ensure data is always an array
+            if (Array.isArray(data)) {
+                setProjects(data);
+            } else if (data.error) {
+                console.error('Error fetching projects:', data.error);
+                setProjects([]);
+            } else {
+                setProjects([]);
+            }
         } catch (error) {
             console.error('Failed to fetch projects:', error);
+            setProjects([]);
         } finally {
             setIsLoading(false);
         }
@@ -53,11 +62,11 @@ export default function ProjectsPage() {
         }
     }
 
-    const filteredProjects = projects.filter(project => {
+    const filteredProjects = Array.isArray(projects) ? projects.filter(project => {
         if (filter === 'active') return !project.completed;
         if (filter === 'completed') return project.completed;
         return true;
-    });
+    }) : [];
 
     if (isLoading) {
         return (

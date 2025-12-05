@@ -65,7 +65,7 @@ export default function TeamPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-8 bg-slate-50">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">Team</h2>

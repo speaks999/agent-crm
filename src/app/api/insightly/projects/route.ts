@@ -5,7 +5,7 @@ export async function GET() {
         const { data, error } = await supabase
             .from('projects')
             .select('*')
-            .order('name', { ascending: true });
+            .order('project_name', { ascending: true });
 
         if (error) throw error;
 

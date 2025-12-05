@@ -21,10 +21,6 @@ export declare const pipelineToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-    };
 } | {
     name: string;
     description: string;
@@ -40,10 +36,6 @@ export declare const pipelineToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-    };
 } | {
     name: string;
     description: string;
@@ -55,10 +47,6 @@ export declare const pipelineToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
-    };
-    _meta: {
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
     };
 } | {
     name: string;
@@ -83,10 +71,6 @@ export declare const pipelineToolDefinitions: ({
             };
         };
         required: string[];
-    };
-    _meta: {
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=pipelines.d.ts.map

@@ -1,16 +1,8 @@
 #!/usr/bin/env node
-import { config } from 'dotenv';
-import { resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createClient } from '@supabase/supabase-js';
 import { ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
-// Load environment variables from .env.local (in parent directory)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-config({ path: resolve(__dirname, '..', '.env.local') });
 // Import tool registration functions
 import { registerAccountTools, accountToolDefinitions } from './tools/accounts.js';
 import { registerContactTools, contactToolDefinitions } from './tools/contacts.js';
@@ -19,10 +11,10 @@ import { registerPipelineTools, pipelineToolDefinitions } from './tools/pipeline
 import { registerInteractionTools, interactionToolDefinitions } from './tools/interactions.js';
 import { registerSearchTools, searchToolDefinitions } from './tools/search.js';
 // Environment variable validation
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseKey) {
-    console.error('Error: Missing required environment variables NEXT_PUBLIC_SUPABASE_URL/NEXT_PUBLIC_SUPABASE_ANON_KEY or SUPABASE_URL/SUPABASE_ANON_KEY');
+    console.error('Error: Missing required environment variables SUPABASE_URL or SUPABASE_ANON_KEY');
     process.exit(1);
 }
 // Initialize Supabase client

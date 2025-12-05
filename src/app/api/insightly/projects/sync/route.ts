@@ -13,17 +13,15 @@ export async function POST() {
         // Transform and insert into Supabase
         const projectsToInsert = insightlyProjects.map((proj: any) => ({
             insightly_id: proj.PROJECT_ID,
-            name: proj.PROJECT_NAME,
-            description: proj.DESCRIPTION,
+            project_name: proj.PROJECT_NAME,
+            project_details: proj.DESCRIPTION,
             status: proj.STATUS,
-            start_date: proj.START_DATE,
-            end_date: proj.END_DATE,
+            started_date: proj.START_DATE,
+            completed_date: proj.END_DATE,
+            completed: proj.STATUS === 'COMPLETED' || false,
             owner_user_id: proj.OWNER_USER_ID,
             date_created_utc: proj.DATE_CREATED_UTC,
             date_updated_utc: proj.DATE_UPDATED_UTC,
-            visible_to: proj.VISIBLE_TO,
-            visible_team_id: proj.VISIBLE_TEAM_ID,
-            visible_user_ids: proj.VISIBLE_USER_IDS,
             customfields: proj.CUSTOMFIELDS,
         }));
 

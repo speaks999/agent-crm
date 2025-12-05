@@ -15,11 +15,6 @@ export declare const searchToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-        'openai/outputTemplate'?: undefined;
-    };
 } | {
     name: string;
     description: string;
@@ -35,11 +30,6 @@ export declare const searchToolDefinitions: ({
         };
         required: string[];
     };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
-    };
 } | {
     name: string;
     description: string;
@@ -54,11 +44,6 @@ export declare const searchToolDefinitions: ({
             id?: undefined;
         };
         required?: undefined;
-    };
-    _meta: {
-        'openai/outputTemplate': string;
-        'openai/toolInvocation/invoking': string;
-        'openai/toolInvocation/invoked': string;
     };
 })[];
 //# sourceMappingURL=search.d.ts.map
