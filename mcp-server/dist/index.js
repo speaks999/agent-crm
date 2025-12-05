@@ -2,14 +2,14 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createClient } from '@supabase/supabase-js';
-import { ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema, } from '@modelcontextprotocol/sdk/types.js';
 // Import tool registration functions
-import { registerAccountTools, accountToolDefinitions } from './tools/accounts.js';
-import { registerContactTools, contactToolDefinitions } from './tools/contacts.js';
-import { registerDealTools, dealToolDefinitions } from './tools/deals.js';
-import { registerPipelineTools, pipelineToolDefinitions } from './tools/pipelines.js';
-import { registerInteractionTools, interactionToolDefinitions } from './tools/interactions.js';
-import { registerSearchTools, searchToolDefinitions } from './tools/search.js';
+import { handleAccountTool, accountToolDefinitions } from './tools/accounts.js';
+import { handleContactTool, contactToolDefinitions } from './tools/contacts.js';
+import { handleDealTool, dealToolDefinitions } from './tools/deals.js';
+import { handlePipelineTool, pipelineToolDefinitions } from './tools/pipelines.js';
+import { handleInteractionTool, interactionToolDefinitions } from './tools/interactions.js';
+import { handleSearchTool, searchToolDefinitions } from './tools/search.js';
 // Environment variable validation
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_ANON_KEY;
@@ -43,13 +43,26 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         tools: allToolDefinitions,
     };
 });
-// Register all tool handlers
-registerAccountTools(server, supabase);
-registerContactTools(server, supabase);
-registerDealTools(server, supabase);
-registerPipelineTools(server, supabase);
-registerInteractionTools(server, supabase);
-registerSearchTools(server, supabase);
+// Single dispatcher for all tools
+const toolHandlers = [
+    handleAccountTool,
+    handleContactTool,
+    handleDealTool,
+    handlePipelineTool,
+    handleInteractionTool,
+    handleSearchTool,
+];
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    for (const handler of toolHandlers) {
+        const result = await handler(request, supabase);
+        if (result)
+            return result;
+    }
+    return {
+        content: [{ type: 'text', text: `Unknown tool: ${request.params.name}` }],
+        isError: true,
+    };
+});
 // Error handling
 process.on('SIGINT', async () => {
     await server.close();

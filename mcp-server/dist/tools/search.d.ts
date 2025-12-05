@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerSearchTools(server: any, supabase: SupabaseClient): void;
+export declare function handleSearchTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+} | null>;
 export declare const searchToolDefinitions: ({
     name: string;
     description: string;

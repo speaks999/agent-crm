@@ -15,13 +15,13 @@ const envPath = resolve(process.cwd(), '..', '.env.local');
 const envPathAlt = resolve(process.cwd(), '.env.local');
 const result1 = config({ path: envPath });
 const result2 = config({ path: envPathAlt, override: false });
-// Import tool definitions for counting
-import { accountToolDefinitions } from './tools/accounts.js';
-import { contactToolDefinitions } from './tools/contacts.js';
-import { dealToolDefinitions } from './tools/deals.js';
-import { pipelineToolDefinitions } from './tools/pipelines.js';
-import { interactionToolDefinitions } from './tools/interactions.js';
-import { searchToolDefinitions } from './tools/search.js';
+// Import tool definitions and handlers
+import { accountToolDefinitions, handleAccountTool } from './tools/accounts.js';
+import { contactToolDefinitions, handleContactTool } from './tools/contacts.js';
+import { dealToolDefinitions, handleDealTool } from './tools/deals.js';
+import { pipelineToolDefinitions, handlePipelineTool } from './tools/pipelines.js';
+import { interactionToolDefinitions, handleInteractionTool } from './tools/interactions.js';
+import { searchToolDefinitions, handleSearchTool } from './tools/search.js';
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -45,6 +45,29 @@ const allToolDefinitions = [
     ...interactionToolDefinitions,
     ...searchToolDefinitions,
 ];
+// Unified tool handler list (same as stdio server)
+const toolHandlers = [
+    handleAccountTool,
+    handleContactTool,
+    handleDealTool,
+    handlePipelineTool,
+    handleInteractionTool,
+    handleSearchTool,
+];
+async function dispatchToolCall(name, args) {
+    const mockRequest = {
+        params: {
+            name,
+            arguments: args || {},
+        },
+    };
+    for (const handler of toolHandlers) {
+        const result = await handler(mockRequest, supabase);
+        if (result)
+            return result;
+    }
+    throw new Error(`Unknown tool: ${name}`);
+}
 // Read UI widget HTML files
 function readWidgetHtml(filename) {
     try {
@@ -144,512 +167,31 @@ function createCrmServer() {
     // Create a unified tool call handler
     // The existing tool handlers use 'tools/call' string pattern which doesn't work with the new Server
     // We need to use CallToolRequestSchema and route internally
+    // Unified tool call handler using shared handlers
+    const toolHandlers = [
+        handleAccountTool,
+        handleContactTool,
+        handleDealTool,
+        handlePipelineTool,
+        handleInteractionTool,
+        handleSearchTool,
+    ];
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
-        // Create a mock request object that matches the old pattern
-        // so existing handlers can work
         const mockRequest = {
             params: {
                 name: request.params.name,
                 arguments: request.params.arguments || {},
             },
         };
-        // Import all schemas needed for tool handlers
-        const { CreateAccountSchema, UpdateAccountSchema, CreateContactSchema, UpdateContactSchema, CreateDealSchema, UpdateDealSchema, CreatePipelineSchema, UpdatePipelineSchema, CreateInteractionSchema, UpdateInteractionSchema, } = await import('./types.js');
-        const toolName = request.params.name;
-        const args = request.params.arguments || {};
-        try {
-            // Account tools
-            if (toolName === 'create_account') {
-                const parsed = CreateAccountSchema.parse(args);
-                const { data, error } = await supabase
-                    .from('accounts')
-                    .insert({
-                    name: parsed.name,
-                    industry: parsed.industry || null,
-                    website: parsed.website || null,
-                })
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                const { data: allAccounts } = await supabase.from('accounts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Account "${data.name}" created successfully` }],
-                    structuredContent: { accounts: allAccounts || [] },
-                };
-            }
-            if (toolName === 'get_account') {
-                const { data, error } = await supabase
-                    .from('accounts')
-                    .select('*')
-                    .eq('id', args.id)
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Retrieved account: ${data.name}` }],
-                    structuredContent: { accounts: [data] },
-                };
-            }
-            if (toolName === 'list_accounts') {
-                let query = supabase.from('accounts').select('*');
-                if (args.industry)
-                    query = query.eq('industry', args.industry);
-                const { data, error } = await query;
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Found ${data?.length || 0} account(s)` }],
-                    structuredContent: { accounts: data || [] },
-                };
-            }
-            if (toolName === 'update_account') {
-                const parsed = UpdateAccountSchema.parse(args);
-                const { id, ...updates } = parsed;
-                const { data, error } = await supabase
-                    .from('accounts')
-                    .update({ ...updates, updated_at: new Date().toISOString() })
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                const { data: allAccounts } = await supabase.from('accounts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Account "${data.name}" updated successfully` }],
-                    structuredContent: { accounts: allAccounts || [] },
-                };
-            }
-            if (toolName === 'delete_account') {
-                const { error } = await supabase.from('accounts').delete().eq('id', args.id);
-                if (error)
-                    throw error;
-                const { data: allAccounts } = await supabase.from('accounts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Account deleted successfully` }],
-                    structuredContent: { accounts: allAccounts || [] },
-                };
-            }
-            // Contact tools
-            if (toolName === 'create_contact') {
-                const parsed = CreateContactSchema.parse(args);
-                const { data, error } = await supabase
-                    .from('contacts')
-                    .insert({
-                    first_name: parsed.first_name,
-                    last_name: parsed.last_name,
-                    account_id: parsed.account_id || null,
-                    email: parsed.email || null,
-                    phone: parsed.phone || null,
-                    role: parsed.role || null,
-                })
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                const { data: allContacts } = await supabase.from('contacts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Contact "${data.first_name} ${data.last_name}" created successfully` }],
-                    structuredContent: { contacts: allContacts || [] },
-                };
-            }
-            if (toolName === 'get_contact') {
-                const { data, error } = await supabase
-                    .from('contacts')
-                    .select('*')
-                    .eq('id', args.id)
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Retrieved contact: ${data.first_name} ${data.last_name}` }],
-                    structuredContent: { contacts: [data] },
-                };
-            }
-            if (toolName === 'list_contacts') {
-                let query = supabase.from('contacts').select('*');
-                if (args.account_id)
-                    query = query.eq('account_id', args.account_id);
-                const { data, error } = await query;
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Found ${data?.length || 0} contact(s)` }],
-                    structuredContent: { contacts: data || [] },
-                };
-            }
-            if (toolName === 'update_contact') {
-                const parsed = UpdateContactSchema.parse(args);
-                const { id, ...updates } = parsed;
-                const { data, error } = await supabase
-                    .from('contacts')
-                    .update({ ...updates, updated_at: new Date().toISOString() })
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                const { data: allContacts } = await supabase.from('contacts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Contact "${data.first_name} ${data.last_name}" updated successfully` }],
-                    structuredContent: { contacts: allContacts || [] },
-                };
-            }
-            if (toolName === 'delete_contact') {
-                const { error } = await supabase.from('contacts').delete().eq('id', args.id);
-                if (error)
-                    throw error;
-                const { data: allContacts } = await supabase.from('contacts').select('*');
-                return {
-                    content: [{ type: 'text', text: `Contact deleted successfully` }],
-                    structuredContent: { contacts: allContacts || [] },
-                };
-            }
-            // Deal tools
-            if (toolName === 'create_deal') {
-                const parsed = CreateDealSchema.parse(args);
-                const { data, error } = await supabase
-                    .from('deals')
-                    .insert({
-                    name: parsed.name,
-                    account_id: parsed.account_id || null,
-                    pipeline_id: parsed.pipeline_id || null,
-                    amount: parsed.amount || null,
-                    stage: parsed.stage,
-                    close_date: parsed.close_date || null,
-                    status: parsed.status || 'open',
-                })
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Deal "${data.name}" created successfully` }],
-                    structuredContent: { deals: [data] },
-                };
-            }
-            if (toolName === 'get_deal') {
-                const { data, error } = await supabase
-                    .from('deals')
-                    .select('*')
-                    .eq('id', args.id)
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Retrieved deal: ${data.name}` }],
-                    structuredContent: { deals: [data] },
-                };
-            }
-            if (toolName === 'list_deals') {
-                let query = supabase.from('deals').select('*');
-                if (args.account_id)
-                    query = query.eq('account_id', args.account_id);
-                if (args.pipeline_id)
-                    query = query.eq('pipeline_id', args.pipeline_id);
-                if (args.status)
-                    query = query.eq('status', args.status);
-                if (args.stage)
-                    query = query.eq('stage', args.stage);
-                const { data, error } = await query;
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Found ${data?.length || 0} deal(s)` }],
-                    structuredContent: { deals: data || [] },
-                };
-            }
-            if (toolName === 'update_deal') {
-                const parsed = UpdateDealSchema.parse(args);
-                const { id, ...updates } = parsed;
-                const { data, error } = await supabase
-                    .from('deals')
-                    .update({ ...updates, updated_at: new Date().toISOString() })
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Deal "${data.name}" updated successfully` }],
-                    structuredContent: { deals: [data] },
-                };
-            }
-            if (toolName === 'move_deal_stage') {
-                const { data, error } = await supabase
-                    .from('deals')
-                    .update({ stage: args.stage, updated_at: new Date().toISOString() })
-                    .eq('id', args.id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Deal "${data.name}" moved to stage "${data.stage}"` }],
-                    structuredContent: { deals: [data] },
-                };
-            }
-            if (toolName === 'close_deal') {
-                if (args.status !== 'won' && args.status !== 'lost') {
-                    throw new Error('Status must be "won" or "lost"');
-                }
-                const { data, error } = await supabase
-                    .from('deals')
-                    .update({ status: args.status, updated_at: new Date().toISOString() })
-                    .eq('id', args.id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Deal "${data.name}" closed as ${data.status}` }],
-                    structuredContent: { deals: [data] },
-                };
-            }
-            if (toolName === 'delete_deal') {
-                const { error } = await supabase.from('deals').delete().eq('id', args.id);
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Deal deleted successfully` }],
-                    structuredContent: {},
-                };
-            }
-            // Pipeline tools
-            if (toolName === 'create_pipeline') {
-                const parsed = CreatePipelineSchema.parse(args);
-                const { data, error } = await supabase
-                    .from('pipelines')
-                    .insert({
-                    name: parsed.name,
-                    stages: parsed.stages,
-                })
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Pipeline "${data.name}" created successfully` }],
-                    structuredContent: { pipelines: [data] },
-                };
-            }
-            if (toolName === 'get_pipeline') {
-                const { data, error } = await supabase
-                    .from('pipelines')
-                    .select('*')
-                    .eq('id', args.id)
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Retrieved pipeline: ${data.name}` }],
-                    structuredContent: { pipelines: [data] },
-                };
-            }
-            if (toolName === 'list_pipelines') {
-                const { data, error } = await supabase.from('pipelines').select('*');
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Found ${data?.length || 0} pipeline(s)` }],
-                    structuredContent: { pipelines: data || [] },
-                };
-            }
-            if (toolName === 'update_pipeline') {
-                const parsed = UpdatePipelineSchema.parse(args);
-                const { id, ...updates } = parsed;
-                const { data, error } = await supabase
-                    .from('pipelines')
-                    .update(updates)
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Pipeline "${data.name}" updated successfully` }],
-                    structuredContent: { pipelines: [data] },
-                };
-            }
-            if (toolName === 'delete_pipeline') {
-                const { error } = await supabase.from('pipelines').delete().eq('id', args.id);
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Pipeline deleted successfully` }],
-                    structuredContent: {},
-                };
-            }
-            // Interaction tools
-            if (toolName === 'create_interaction') {
-                const parsed = CreateInteractionSchema.parse(args);
-                const { data, error } = await supabase
-                    .from('interactions')
-                    .insert({
-                    type: parsed.type,
-                    contact_id: parsed.contact_id || null,
-                    deal_id: parsed.deal_id || null,
-                    summary: parsed.summary || null,
-                    transcript: parsed.transcript || null,
-                    audio_url: parsed.audio_url || null,
-                    sentiment: parsed.sentiment || null,
-                })
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Interaction created successfully` }],
-                    structuredContent: { interactions: [data] },
-                };
-            }
-            if (toolName === 'get_interaction') {
-                const { data, error } = await supabase
-                    .from('interactions')
-                    .select('*')
-                    .eq('id', args.id)
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Retrieved interaction` }],
-                    structuredContent: { interactions: [data] },
-                };
-            }
-            if (toolName === 'list_interactions') {
-                let query = supabase.from('interactions').select('*');
-                if (args.contact_id)
-                    query = query.eq('contact_id', args.contact_id);
-                if (args.deal_id)
-                    query = query.eq('deal_id', args.deal_id);
-                if (args.type)
-                    query = query.eq('type', args.type);
-                const { data, error } = await query.order('created_at', { ascending: false });
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Found ${data?.length || 0} interaction(s)` }],
-                    structuredContent: { interactions: data || [] },
-                };
-            }
-            if (toolName === 'update_interaction') {
-                const parsed = UpdateInteractionSchema.parse(args);
-                const { id, ...updates } = parsed;
-                const { data, error } = await supabase
-                    .from('interactions')
-                    .update(updates)
-                    .eq('id', id)
-                    .select()
-                    .single();
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Interaction updated successfully` }],
-                    structuredContent: { interactions: [data] },
-                };
-            }
-            if (toolName === 'delete_interaction') {
-                const { error } = await supabase.from('interactions').delete().eq('id', args.id);
-                if (error)
-                    throw error;
-                return {
-                    content: [{ type: 'text', text: `Interaction deleted successfully` }],
-                    structuredContent: {},
-                };
-            }
-            // Search tools
-            if (toolName === 'search_crm') {
-                const searchTerm = `%${args.query}%`;
-                const [accountsResult, contactsResult, dealsResult] = await Promise.all([
-                    supabase.from('accounts').select('*').or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
-                    supabase.from('contacts').select('*').or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
-                    supabase.from('deals').select('*').ilike('name', searchTerm),
-                ]);
-                const results = {
-                    accounts: accountsResult.data || [],
-                    contacts: contactsResult.data || [],
-                    deals: dealsResult.data || [],
-                    total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
-                };
-                return {
-                    content: [{ type: 'text', text: `Found ${results.total} result(s) for "${args.query}"` }],
-                    structuredContent: results,
-                };
-            }
-            if (toolName === 'get_account_summary') {
-                const [accountResult, contactsResult, dealsResult] = await Promise.all([
-                    supabase.from('accounts').select('*').eq('id', args.id).single(),
-                    supabase.from('contacts').select('*').eq('account_id', args.id),
-                    supabase.from('deals').select('*').eq('account_id', args.id),
-                ]);
-                if (accountResult.error)
-                    throw accountResult.error;
-                const contactIds = contactsResult.data?.map(c => c.id) || [];
-                const dealIds = dealsResult.data?.map(d => d.id) || [];
-                let interactions = [];
-                if (contactIds.length > 0 || dealIds.length > 0) {
-                    const filters = [];
-                    if (contactIds.length > 0)
-                        filters.push(`contact_id.in.(${contactIds.join(',')})`);
-                    if (dealIds.length > 0)
-                        filters.push(`deal_id.in.(${dealIds.join(',')})`);
-                    const result = await supabase.from('interactions').select('*').or(filters.join(',')).order('created_at', { ascending: false });
-                    interactions = result.data || [];
-                }
-                const summary = {
-                    account: accountResult.data,
-                    contacts: contactsResult.data || [],
-                    deals: dealsResult.data || [],
-                    interactions: interactions || [],
-                    stats: {
-                        totalContacts: contactsResult.data?.length || 0,
-                        totalDeals: dealsResult.data?.length || 0,
-                        openDeals: dealsResult.data?.filter(d => d.status === 'open').length || 0,
-                        wonDeals: dealsResult.data?.filter(d => d.status === 'won').length || 0,
-                        totalInteractions: interactions?.length || 0,
-                    },
-                };
-                return {
-                    content: [{ type: 'text', text: `Account summary for "${accountResult.data.name}"` }],
-                    structuredContent: summary,
-                };
-            }
-            if (toolName === 'get_deal_pipeline_view') {
-                let query = supabase.from('deals').select('*');
-                if (args.pipeline_id)
-                    query = query.eq('pipeline_id', args.pipeline_id);
-                const dealsResult = await query;
-                if (dealsResult.error)
-                    throw dealsResult.error;
-                const dealsByStage = {};
-                dealsResult.data?.forEach(deal => {
-                    if (!dealsByStage[deal.stage])
-                        dealsByStage[deal.stage] = [];
-                    dealsByStage[deal.stage].push(deal);
-                });
-                const stageStats = Object.entries(dealsByStage).map(([stage, deals]) => ({
-                    stage,
-                    count: deals.length,
-                    totalValue: deals.reduce((sum, deal) => sum + (deal.amount || 0), 0),
-                    deals,
-                }));
-                return {
-                    content: [{ type: 'text', text: `Pipeline view with ${dealsResult.data?.length || 0} deal(s)` }],
-                    structuredContent: { stageStats, totalDeals: dealsResult.data?.length || 0 },
-                };
-            }
-            // Unknown tool
-            return {
-                content: [{ type: 'text', text: `Unknown tool: ${toolName}` }],
-                structuredContent: {},
-            };
+        for (const handler of toolHandlers) {
+            const result = await handler(mockRequest, supabase);
+            if (result)
+                return result;
         }
-        catch (error) {
-            return {
-                content: [{ type: 'text', text: `Error: ${error.message || String(error)}` }],
-                isError: true,
-            };
-        }
+        return {
+            content: [{ type: 'text', text: `Unknown tool: ${request.params.name}` }],
+            isError: true,
+        };
     });
     return server;
 }
@@ -727,34 +269,51 @@ const httpServer = createServer(async (req, res) => {
         res.end();
         return;
     }
-    // Handle direct POST to /mcp (OpenAI Apps connector sends here)
+    // JSON-RPC over HTTP for MCP (tools/list, tools/call)
     if (req.method === "POST" && url.pathname === ssePath) {
-        console.log("\n=== POST /mcp REQUEST ===");
-        console.log("Headers:", JSON.stringify(req.headers, null, 2));
         let body = "";
         req.on("data", (chunk) => {
             body += chunk.toString();
         });
-        req.on("end", () => {
-            console.log("Body:", body);
-            let parsedBody = null;
+        req.on("end", async () => {
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Content-Type", "application/json");
+            let parsed;
             try {
-                parsedBody = JSON.parse(body);
-                console.log("Parsed:", JSON.stringify(parsedBody, null, 2));
+                parsed = JSON.parse(body);
             }
             catch (e) {
-                console.log("Parse error:", e);
+                res.writeHead(400).end(JSON.stringify({ error: "Invalid JSON" }));
+                return;
             }
-            // Return 200 OK as requested
-            res.writeHead(200, {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-            });
-            res.end(JSON.stringify({
-                ok: true,
-                echo: parsedBody || body,
-                message: "Debug MCP endpoint reached.",
-            }));
+            const { method, id, params } = parsed || {};
+            try {
+                if (method === 'tools/list') {
+                    res.writeHead(200).end(JSON.stringify({
+                        jsonrpc: '2.0',
+                        id,
+                        result: { tools: allToolDefinitions },
+                    }));
+                    return;
+                }
+                if (method === 'tools/call') {
+                    const result = await dispatchToolCall(params?.name, params?.arguments);
+                    res.writeHead(200).end(JSON.stringify({
+                        jsonrpc: '2.0',
+                        id,
+                        result,
+                    }));
+                    return;
+                }
+                res.writeHead(404).end(JSON.stringify({ error: `Unknown method: ${method}` }));
+            }
+            catch (err) {
+                res.writeHead(500).end(JSON.stringify({
+                    jsonrpc: '2.0',
+                    id,
+                    error: { message: err.message || String(err) },
+                }));
+            }
         });
         return;
     }

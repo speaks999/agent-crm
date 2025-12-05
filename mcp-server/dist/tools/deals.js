@@ -1,155 +1,154 @@
-import { CreateDealSchema, UpdateDealSchema, } from '../types.js';
-export function registerDealTools(server, supabase) {
-    server.setRequestHandler('tools/call', async (request) => {
-        // Create Deal
-        if (request.params.name === 'create_deal') {
-            const args = CreateDealSchema.parse(request.params.arguments);
-            const { data, error } = await supabase
-                .from('deals')
-                .insert({
-                name: args.name,
-                account_id: args.account_id || null,
-                pipeline_id: args.pipeline_id || null,
-                amount: args.amount || null,
-                stage: args.stage,
-                close_date: args.close_date || null,
-                status: args.status || 'open',
-            })
-                .select()
-                .single();
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+import { CreateDealSchema, UpdateDealSchema } from '../types.js';
+export async function handleDealTool(request, supabase) {
+    // Create Deal
+    if (request.params.name === 'create_deal') {
+        const args = CreateDealSchema.parse(request.params.arguments);
+        const { data, error } = await supabase
+            .from('deals')
+            .insert({
+            name: args.name,
+            account_id: args.account_id || null,
+            pipeline_id: args.pipeline_id || null,
+            amount: args.amount || null,
+            stage: args.stage,
+            close_date: args.close_date || null,
+            status: args.status || 'open',
+        })
+            .select()
+            .single();
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-        // Get Deal
-        if (request.params.name === 'get_deal') {
-            const id = request.params.arguments.id;
-            const { data, error } = await supabase
-                .from('deals')
-                .select('*')
-                .eq('id', id)
-                .single();
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // Get Deal
+    if (request.params.name === 'get_deal') {
+        const id = request.params.arguments.id;
+        const { data, error } = await supabase
+            .from('deals')
+            .select('*')
+            .eq('id', id)
+            .single();
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-        // List Deals
-        if (request.params.name === 'list_deals') {
-            const { account_id, pipeline_id, status, stage } = request.params.arguments || {};
-            let query = supabase.from('deals').select('*');
-            if (account_id)
-                query = query.eq('account_id', account_id);
-            if (pipeline_id)
-                query = query.eq('pipeline_id', pipeline_id);
-            if (status)
-                query = query.eq('status', status);
-            if (stage)
-                query = query.eq('stage', stage);
-            const { data, error } = await query;
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // List Deals
+    if (request.params.name === 'list_deals') {
+        const { account_id, pipeline_id, status, stage } = request.params.arguments || {};
+        let query = supabase.from('deals').select('*');
+        if (account_id)
+            query = query.eq('account_id', account_id);
+        if (pipeline_id)
+            query = query.eq('pipeline_id', pipeline_id);
+        if (status)
+            query = query.eq('status', status);
+        if (stage)
+            query = query.eq('stage', stage);
+        const { data, error } = await query;
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-        // Update Deal
-        if (request.params.name === 'update_deal') {
-            const args = UpdateDealSchema.parse(request.params.arguments);
-            const { id, ...updates } = args;
-            const { data, error } = await supabase
-                .from('deals')
-                .update({ ...updates, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .select()
-                .single();
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // Update Deal
+    if (request.params.name === 'update_deal') {
+        const args = UpdateDealSchema.parse(request.params.arguments);
+        const { id, ...updates } = args;
+        const { data, error } = await supabase
+            .from('deals')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-        // Move Deal Stage
-        if (request.params.name === 'move_deal_stage') {
-            const { id, stage } = request.params.arguments;
-            const { data, error } = await supabase
-                .from('deals')
-                .update({ stage, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .select()
-                .single();
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // Move Deal Stage
+    if (request.params.name === 'move_deal_stage') {
+        const { id, stage } = request.params.arguments;
+        const { data, error } = await supabase
+            .from('deals')
+            .update({ stage, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-        // Close Deal
-        if (request.params.name === 'close_deal') {
-            const { id, status } = request.params.arguments;
-            if (status !== 'won' && status !== 'lost') {
-                return {
-                    content: [{ type: 'text', text: 'Error: Status must be "won" or "lost"' }],
-                    isError: true,
-                };
-            }
-            const { data, error } = await supabase
-                .from('deals')
-                .update({ status, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .select()
-                .single();
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // Close Deal
+    if (request.params.name === 'close_deal') {
+        const { id, status } = request.params.arguments;
+        if (status !== 'won' && status !== 'lost') {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: 'Error: Status must be "won" or "lost"' }],
+                isError: true,
             };
         }
-        // Delete Deal
-        if (request.params.name === 'delete_deal') {
-            const id = request.params.arguments.id;
-            const { error } = await supabase
-                .from('deals')
-                .delete()
-                .eq('id', id);
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('deals')
+            .update({ status, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
+        if (error) {
             return {
-                content: [{ type: 'text', text: `Deal ${id} deleted successfully` }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-    });
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
+    // Delete Deal
+    if (request.params.name === 'delete_deal') {
+        const id = request.params.arguments.id;
+        const { error } = await supabase
+            .from('deals')
+            .delete()
+            .eq('id', id);
+        if (error) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
+        }
+        return {
+            content: [{ type: 'text', text: `Deal ${id} deleted successfully` }],
+        };
+    }
+    return null;
 }
 export const dealToolDefinitions = [
     {

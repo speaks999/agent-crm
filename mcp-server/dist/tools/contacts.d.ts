@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerContactTools(server: any, supabase: SupabaseClient): void;
+export declare function handleContactTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
+} | null>;
 export declare const contactToolDefinitions: ({
     name: string;
     description: string;

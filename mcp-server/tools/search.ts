@@ -1,157 +1,157 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 
-export function registerSearchTools(server: any, supabase: SupabaseClient) {
-    server.setRequestHandler('tools/call', async (request: any) => {
-        // Global Search
-        if (request.params.name === 'search_crm') {
-            const { query } = request.params.arguments;
-            const searchTerm = `%${query}%`;
+export async function handleSearchTool(request: any, supabase: SupabaseClient) {
+    // Global Search
+    if (request.params.name === 'search_crm') {
+        const { query } = request.params.arguments;
+        const searchTerm = `%${query}%`;
 
-            try {
-                // Search across accounts, contacts, and deals
-                const [accountsResult, contactsResult, dealsResult] = await Promise.all([
-                    supabase
-                        .from('accounts')
-                        .select('*')
-                        .or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
-                    supabase
-                        .from('contacts')
-                        .select('*')
-                        .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
-                    supabase
-                        .from('deals')
-                        .select('*')
-                        .ilike('name', searchTerm),
-                ]);
+        try {
+            // Search across accounts, contacts, and deals
+            const [accountsResult, contactsResult, dealsResult] = await Promise.all([
+                supabase
+                    .from('accounts')
+                    .select('*')
+                    .or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
+                supabase
+                    .from('contacts')
+                    .select('*')
+                    .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
+                supabase
+                    .from('deals')
+                    .select('*')
+                    .ilike('name', searchTerm),
+            ]);
 
-                const results = {
-                    accounts: accountsResult.data || [],
-                    contacts: contactsResult.data || [],
-                    deals: dealsResult.data || [],
-                    total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
-                };
+            const results = {
+                accounts: accountsResult.data || [],
+                contacts: contactsResult.data || [],
+                deals: dealsResult.data || [],
+                total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
+            };
 
+            return {
+                content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
+            };
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
+        }
+    }
+
+    // Get Account Summary
+    if (request.params.name === 'get_account_summary') {
+        const { id } = request.params.arguments;
+
+        try {
+            // Fetch account with all related data
+            const [accountResult, contactsResult, dealsResult] = await Promise.all([
+                supabase.from('accounts').select('*').eq('id', id).single(),
+                supabase.from('contacts').select('*').eq('account_id', id),
+                supabase.from('deals').select('*').eq('account_id', id),
+            ]);
+
+            if (accountResult.error) {
                 return {
-                    content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
-                };
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error: ${accountResult.error.message}` }],
                     isError: true,
                 };
             }
+
+            // Get interactions for all contacts and deals
+            const contactIds = contactsResult.data?.map(c => c.id) || [];
+            const dealIds = dealsResult.data?.map(d => d.id) || [];
+
+            let interactions: any[] = [];
+            if (contactIds.length > 0 || dealIds.length > 0) {
+                const filters = [];
+                if (contactIds.length > 0) filters.push(`contact_id.in.(${contactIds.join(',')})`);
+                if (dealIds.length > 0) filters.push(`deal_id.in.(${dealIds.join(',')})`);
+
+                const result = await supabase
+                    .from('interactions')
+                    .select('*')
+                    .or(filters.join(','))
+                    .order('created_at', { ascending: false });
+
+                interactions = result.data || [];
+            }
+
+            const summary = {
+                account: accountResult.data,
+                contacts: contactsResult.data || [],
+                deals: dealsResult.data || [],
+                interactions: interactions || [],
+                stats: {
+                    totalContacts: contactsResult.data?.length || 0,
+                    totalDeals: dealsResult.data?.length || 0,
+                    openDeals: dealsResult.data?.filter(d => d.status === 'open').length || 0,
+                    wonDeals: dealsResult.data?.filter(d => d.status === 'won').length || 0,
+                    totalInteractions: interactions?.length || 0,
+                },
+            };
+
+            return {
+                content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }],
+            };
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
         }
+    }
 
-        // Get Account Summary
-        if (request.params.name === 'get_account_summary') {
-            const { id } = request.params.arguments;
+    // Get Deal Pipeline View
+    if (request.params.name === 'get_deal_pipeline_view') {
+        const { pipeline_id } = request.params.arguments || {};
 
-            try {
-                // Fetch account with all related data
-                const [accountResult, contactsResult, dealsResult] = await Promise.all([
-                    supabase.from('accounts').select('*').eq('id', id).single(),
-                    supabase.from('contacts').select('*').eq('account_id', id),
-                    supabase.from('deals').select('*').eq('account_id', id),
-                ]);
+        try {
+            let query = supabase.from('deals').select('*');
+            if (pipeline_id) {
+                query = query.eq('pipeline_id', pipeline_id);
+            }
 
-                if (accountResult.error) {
-                    return {
-                        content: [{ type: 'text', text: `Error: ${accountResult.error.message}` }],
-                        isError: true,
-                    };
-                }
+            const dealsResult = await query;
 
-                // Get interactions for all contacts and deals
-                const contactIds = contactsResult.data?.map(c => c.id) || [];
-                const dealIds = dealsResult.data?.map(d => d.id) || [];
-
-                let interactions: any[] = [];
-                if (contactIds.length > 0 || dealIds.length > 0) {
-                    const filters = [];
-                    if (contactIds.length > 0) filters.push(`contact_id.in.(${contactIds.join(',')})`);
-                    if (dealIds.length > 0) filters.push(`deal_id.in.(${dealIds.join(',')})`);
-
-                    const result = await supabase
-                        .from('interactions')
-                        .select('*')
-                        .or(filters.join(','))
-                        .order('created_at', { ascending: false });
-
-                    interactions = result.data || [];
-                }
-
-                const summary = {
-                    account: accountResult.data,
-                    contacts: contactsResult.data || [],
-                    deals: dealsResult.data || [],
-                    interactions: interactions || [],
-                    stats: {
-                        totalContacts: contactsResult.data?.length || 0,
-                        totalDeals: dealsResult.data?.length || 0,
-                        openDeals: dealsResult.data?.filter(d => d.status === 'open').length || 0,
-                        wonDeals: dealsResult.data?.filter(d => d.status === 'won').length || 0,
-                        totalInteractions: interactions?.length || 0,
-                    },
-                };
-
+            if (dealsResult.error) {
                 return {
-                    content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }],
-                };
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
+                    content: [{ type: 'text', text: `Error: ${dealsResult.error.message}` }],
                     isError: true,
                 };
             }
-        }
 
-        // Get Deal Pipeline View
-        if (request.params.name === 'get_deal_pipeline_view') {
-            const { pipeline_id } = request.params.arguments || {};
-
-            try {
-                let query = supabase.from('deals').select('*');
-                if (pipeline_id) {
-                    query = query.eq('pipeline_id', pipeline_id);
+            // Group deals by stage
+            const dealsByStage: Record<string, any[]> = {};
+            dealsResult.data?.forEach(deal => {
+                if (!dealsByStage[deal.stage]) {
+                    dealsByStage[deal.stage] = [];
                 }
+                dealsByStage[deal.stage].push(deal);
+            });
 
-                const dealsResult = await query;
+            // Calculate totals per stage
+            const stageStats = Object.entries(dealsByStage).map(([stage, deals]) => ({
+                stage,
+                count: deals.length,
+                totalValue: deals.reduce((sum, deal) => sum + (deal.amount || 0), 0),
+                deals,
+            }));
 
-                if (dealsResult.error) {
-                    return {
-                        content: [{ type: 'text', text: `Error: ${dealsResult.error.message}` }],
-                        isError: true,
-                    };
-                }
-
-                // Group deals by stage
-                const dealsByStage: Record<string, any[]> = {};
-                dealsResult.data?.forEach(deal => {
-                    if (!dealsByStage[deal.stage]) {
-                        dealsByStage[deal.stage] = [];
-                    }
-                    dealsByStage[deal.stage].push(deal);
-                });
-
-                // Calculate totals per stage
-                const stageStats = Object.entries(dealsByStage).map(([stage, deals]) => ({
-                    stage,
-                    count: deals.length,
-                    totalValue: deals.reduce((sum, deal) => sum + (deal.amount || 0), 0),
-                    deals,
-                }));
-
-                return {
-                    content: [{ type: 'text', text: JSON.stringify({ stageStats, totalDeals: dealsResult.data?.length || 0 }, null, 2) }],
-                };
-            } catch (error: any) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+            return {
+                content: [{ type: 'text', text: JSON.stringify({ stageStats, totalDeals: dealsResult.data?.length || 0 }, null, 2) }],
+            };
+        } catch (error: any) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
         }
-    });
+    }
+
+    return null;
 }
 
 export const searchToolDefinitions = [

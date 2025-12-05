@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerDealTools(server: any, supabase: SupabaseClient): void;
+export declare function handleDealTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
+} | null>;
 export declare const dealToolDefinitions: ({
     name: string;
     description: string;

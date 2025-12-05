@@ -21,14 +21,26 @@ export default function MCPTestPage() {
     const [selectedTool, setSelectedTool] = useState<string>('all');
     const [mcpAvailable, setMcpAvailable] = useState<boolean | null>(null);
     const [testData, setTestData] = useState<Record<string, any>>({}); // Store IDs for placeholders
+    const defaultUrl = typeof window !== 'undefined'
+        ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp')
+        : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp');
+    const [mcpUrl, setMcpUrl] = useState<string>(defaultUrl);
 
     useEffect(() => {
+        // Load saved URL if available
+        if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('mcpUrl');
+            if (stored) {
+                setMcpUrl(stored);
+            }
+        }
         checkMCPAvailability();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function checkMCPAvailability() {
         try {
-            await listTools();
+            await listTools(mcpUrl);
             setMcpAvailable(true);
         } catch (error) {
             setMcpAvailable(false);
@@ -55,7 +67,10 @@ export default function MCPTestPage() {
         
         try {
             const resolvedArgs = resolveArgs(test.args);
-            const result = await callTool(test.tool, resolvedArgs);
+            const result = await callTool(test.tool, resolvedArgs, mcpUrl);
+            if (!result) {
+                throw new Error('MCP call returned no result');
+            }
             const duration = Date.now() - startTime;
 
             // Extract ID for cleanup if needed
@@ -159,6 +174,13 @@ export default function MCPTestPage() {
         }
     }
 
+    function handleUrlChange(value: string) {
+        setMcpUrl(value);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('mcpUrl', value);
+        }
+    }
+
     function getFilteredTests(): MCPTest[] {
         let filtered = MCP_TESTS;
         
@@ -200,18 +222,50 @@ export default function MCPTestPage() {
                     </p>
                 </div>
 
-                {/* MCP Status */}
-                {mcpAvailable === false && (
-                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                        <div className="flex items-center gap-2 text-red-800">
-                            <AlertCircle size={20} />
-                            <span className="font-medium">MCP Server Not Available</span>
-                        </div>
-                        <p className="text-sm text-red-600 mt-1">
-                            Cannot connect to MCP server at {process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp'}
-                        </p>
+                {/* MCP Endpoint & Status */}
+                <div className="mb-6 flex flex-col gap-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <label className="text-sm text-slate-600 font-medium">MCP Server URL</label>
+                        <input
+                            type="text"
+                            value={mcpUrl}
+                            onChange={(e) => handleUrlChange(e.target.value)}
+                            className="w-72 max-w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                            placeholder="http://localhost:3001/mcp"
+                        />
+                        <button
+                            onClick={checkMCPAvailability}
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                        >
+                            <RefreshCw size={14} />
+                            Check
+                        </button>
+                        {mcpAvailable === true && (
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm">
+                                <CheckCircle2 size={14} />
+                                Available
+                            </span>
+                        )}
+                        {mcpAvailable === false && (
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm">
+                                <AlertCircle size={14} />
+                                Unavailable
+                            </span>
+                        )}
                     </div>
-                )}
+
+                    {mcpAvailable === false && (
+                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-center gap-2 text-red-800">
+                                <AlertCircle size={20} />
+                                <span className="font-medium">MCP Server Not Available</span>
+                            </div>
+                            <p className="text-sm text-red-600 mt-1">
+                                Cannot connect to MCP server at {mcpUrl}
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 {/* Stats Bar */}
                 <div className="grid grid-cols-5 gap-4 mb-6">

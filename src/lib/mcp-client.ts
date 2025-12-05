@@ -1,6 +1,11 @@
 // MCP Client for browser-side communication with MCP server
 
-const MCP_SERVER_URL = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp';
+const DEFAULT_MCP_SERVER_URL =
+  process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp';
+
+function resolveUrl(override?: string) {
+  return override?.trim() || DEFAULT_MCP_SERVER_URL;
+}
 
 // JSON-RPC request counter
 let requestId = 1;
@@ -19,8 +24,9 @@ export interface MCPCallResult {
 /**
  * List all available MCP tools
  */
-export async function listTools(): Promise<MCPTool[]> {
-    const response = await fetch(MCP_SERVER_URL, {
+export async function listTools(baseUrl?: string): Promise<MCPTool[]> {
+    const url = resolveUrl(baseUrl);
+    const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -31,7 +37,14 @@ export async function listTools(): Promise<MCPTool[]> {
     });
 
     if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.statusText}`);
+        const text = await response.text();
+        throw new Error(`MCP request failed: ${response.status} ${response.statusText}. ${text.substring(0, 200)}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`MCP server returned non-JSON response. Make sure the MCP server is running at ${url}. Response: ${text.substring(0, 200)}`);
     }
 
     const data = await response.json();
@@ -40,14 +53,20 @@ export async function listTools(): Promise<MCPTool[]> {
         throw new Error(`MCP error: ${data.error.message}`);
     }
 
-    return data.result.tools || [];
+    const tools = data.result?.tools;
+    if (!Array.isArray(tools)) {
+        throw new Error(`Invalid MCP response: missing tools array`);
+    }
+
+    return tools;
 }
 
 /**
  * Call a specific MCP tool with arguments
  */
-export async function callTool(name: string, args: any = {}): Promise<MCPCallResult> {
-    const response = await fetch(MCP_SERVER_URL, {
+export async function callTool(name: string, args: any = {}, baseUrl?: string): Promise<MCPCallResult> {
+    const url = resolveUrl(baseUrl);
+    const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -62,13 +81,24 @@ export async function callTool(name: string, args: any = {}): Promise<MCPCallRes
     });
 
     if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.statusText}`);
+        const text = await response.text();
+        throw new Error(`MCP request failed: ${response.status} ${response.statusText}. ${text.substring(0, 200)}`);
+    }
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`MCP server returned non-JSON response. Make sure the MCP server is running at ${url}. Response: ${text.substring(0, 200)}`);
     }
 
     const data = await response.json();
 
     if (data.error) {
         throw new Error(`MCP error: ${data.error.message}`);
+    }
+
+    if (!('result' in data)) {
+        throw new Error(`Invalid MCP response: missing result`);
     }
 
     return data.result;

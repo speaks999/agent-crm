@@ -5,150 +5,161 @@ import {
     Account,
 } from '../types.js';
 
-export function registerAccountTools(server: any, supabase: SupabaseClient) {
+export async function handleAccountTool(request: any, supabase: SupabaseClient) {
     // Create Account
-    server.setRequestHandler('tools/call', async (request: any) => {
-        if (request.params.name === 'create_account') {
-            const args = CreateAccountSchema.parse(request.params.arguments);
+    if (request.params.name === 'create_account') {
+        const args = CreateAccountSchema.parse(request.params.arguments);
 
-            const { data, error } = await supabase
-                .from('accounts')
-                .insert({
-                    name: args.name,
-                    industry: args.industry || null,
-                    website: args.website || null,
-                })
-                .select()
-                .single();
+        const { data, error } = await supabase
+            .from('accounts')
+            .insert({
+                name: args.name,
+                industry: args.industry || null,
+                website: args.website || null,
+            })
+            .select()
+            .single();
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
-
+        if (error) {
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Get Account
-        if (request.params.name === 'get_account') {
-            const id = request.params.arguments.id;
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Account "${data.name}" created successfully`,
+                },
+            ],
+            structuredContent: { accounts: [data] },
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('accounts')
-                .select('*')
-                .eq('id', id)
-                .single();
+    // Get Account
+    if (request.params.name === 'get_account') {
+        const id = request.params.arguments.id;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('accounts')
+            .select('*')
+            .eq('id', id)
+            .single();
 
+        if (error) {
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // List Accounts
-        if (request.params.name === 'list_accounts') {
-            const { industry } = request.params.arguments || {};
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Retrieved account: ${data.name}`,
+                },
+            ],
+            structuredContent: { accounts: [data] },
+        };
+    }
 
-            let query = supabase.from('accounts').select('*');
+    // List Accounts
+    if (request.params.name === 'list_accounts') {
+        const { industry } = request.params.arguments || {};
 
-            if (industry) {
-                query = query.eq('industry', industry);
-            }
+        let query = supabase.from('accounts').select('*');
 
-            const { data, error } = await query;
+        if (industry) {
+            query = query.eq('industry', industry);
+        }
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await query;
 
+        if (error) {
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Update Account
-        if (request.params.name === 'update_account') {
-            const args = UpdateAccountSchema.parse(request.params.arguments);
-            const { id, ...updates } = args;
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Found ${data?.length || 0} account(s)`,
+                },
+            ],
+            structuredContent: { accounts: data || [] },
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('accounts')
-                .update({ ...updates, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .select()
-                .single();
+    // Update Account
+    if (request.params.name === 'update_account') {
+        const args = UpdateAccountSchema.parse(request.params.arguments);
+        const { id, ...updates } = args;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('accounts')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('id', id)
+            .select()
+            .single();
 
+        if (error) {
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: JSON.stringify(data, null, 2),
-                    },
-                ],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Delete Account
-        if (request.params.name === 'delete_account') {
-            const id = request.params.arguments.id;
+        // Fetch all accounts to return in structuredContent
+        const { data: allAccounts } = await supabase.from('accounts').select('*');
 
-            const { error } = await supabase
-                .from('accounts')
-                .delete()
-                .eq('id', id);
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Account "${data.name}" updated successfully`,
+                },
+            ],
+            structuredContent: { accounts: allAccounts || [] },
+        };
+    }
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+    // Delete Account
+    if (request.params.name === 'delete_account') {
+        const id = request.params.arguments.id;
 
+        const { error } = await supabase
+            .from('accounts')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
             return {
-                content: [
-                    {
-                        type: 'text',
-                        text: `Account ${id} deleted successfully`,
-                    },
-                ],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-    });
+
+        // Fetch remaining accounts to return in structuredContent
+        const { data: allAccounts } = await supabase.from('accounts').select('*');
+
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Account deleted successfully`,
+                },
+            ],
+            structuredContent: { accounts: allAccounts || [] },
+        };
+    }
+
+    return null;
 }
 
 export const accountToolDefinitions = [

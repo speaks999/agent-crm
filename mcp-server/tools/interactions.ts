@@ -1,132 +1,129 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import {
-    CreateInteractionSchema,
-    UpdateInteractionSchema,
-} from '../types.js';
+import { CreateInteractionSchema, UpdateInteractionSchema } from '../types.js';
 
-export function registerInteractionTools(server: any, supabase: SupabaseClient) {
-    server.setRequestHandler('tools/call', async (request: any) => {
-        // Create Interaction
-        if (request.params.name === 'create_interaction') {
-            const args = CreateInteractionSchema.parse(request.params.arguments);
+export async function handleInteractionTool(request: any, supabase: SupabaseClient) {
+    // Create Interaction
+    if (request.params.name === 'create_interaction') {
+        const args = CreateInteractionSchema.parse(request.params.arguments);
 
-            const { data, error } = await supabase
-                .from('interactions')
-                .insert({
-                    type: args.type,
-                    contact_id: args.contact_id || null,
-                    deal_id: args.deal_id || null,
-                    summary: args.summary || null,
-                    transcript: args.transcript || null,
-                    audio_url: args.audio_url || null,
-                    sentiment: args.sentiment || null,
-                })
-                .select()
-                .single();
+        const { data, error } = await supabase
+            .from('interactions')
+            .insert({
+                type: args.type,
+                contact_id: args.contact_id || null,
+                deal_id: args.deal_id || null,
+                summary: args.summary || null,
+                transcript: args.transcript || null,
+                audio_url: args.audio_url || null,
+                sentiment: args.sentiment || null,
+            })
+            .select()
+            .single();
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
-
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Get Interaction
-        if (request.params.name === 'get_interaction') {
-            const id = request.params.arguments.id;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('interactions')
-                .select('*')
-                .eq('id', id)
-                .single();
+    // Get Interaction
+    if (request.params.name === 'get_interaction') {
+        const id = request.params.arguments.id;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('interactions')
+            .select('*')
+            .eq('id', id)
+            .single();
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // List Interactions
-        if (request.params.name === 'list_interactions') {
-            const { contact_id, deal_id, type } = request.params.arguments || {};
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            let query = supabase.from('interactions').select('*');
+    // List Interactions
+    if (request.params.name === 'list_interactions') {
+        const { contact_id, deal_id, type } = request.params.arguments || {};
 
-            if (contact_id) query = query.eq('contact_id', contact_id);
-            if (deal_id) query = query.eq('deal_id', deal_id);
-            if (type) query = query.eq('type', type);
+        let query = supabase.from('interactions').select('*');
 
-            const { data, error } = await query.order('created_at', { ascending: false });
+        if (contact_id) query = query.eq('contact_id', contact_id);
+        if (deal_id) query = query.eq('deal_id', deal_id);
+        if (type) query = query.eq('type', type);
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await query.order('created_at', { ascending: false });
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Update Interaction
-        if (request.params.name === 'update_interaction') {
-            const args = UpdateInteractionSchema.parse(request.params.arguments);
-            const { id, ...updates } = args;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('interactions')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
+    // Update Interaction
+    if (request.params.name === 'update_interaction') {
+        const args = UpdateInteractionSchema.parse(request.params.arguments);
+        const { id, ...updates } = args;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('interactions')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Delete Interaction
-        if (request.params.name === 'delete_interaction') {
-            const id = request.params.arguments.id;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { error } = await supabase
-                .from('interactions')
-                .delete()
-                .eq('id', id);
+    // Delete Interaction
+    if (request.params.name === 'delete_interaction') {
+        const id = request.params.arguments.id;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { error } = await supabase
+            .from('interactions')
+            .delete()
+            .eq('id', id);
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: `Interaction ${id} deleted successfully` }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-    });
+
+        return {
+            content: [{ type: 'text', text: `Interaction ${id} deleted successfully` }],
+        };
+    }
+
+    return null;
 }
 
 export const interactionToolDefinitions = [

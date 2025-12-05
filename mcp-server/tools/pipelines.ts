@@ -1,121 +1,118 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import {
-    CreatePipelineSchema,
-    UpdatePipelineSchema,
-} from '../types.js';
+import { CreatePipelineSchema, UpdatePipelineSchema } from '../types.js';
 
-export function registerPipelineTools(server: any, supabase: SupabaseClient) {
-    server.setRequestHandler('tools/call', async (request: any) => {
-        // Create Pipeline
-        if (request.params.name === 'create_pipeline') {
-            const args = CreatePipelineSchema.parse(request.params.arguments);
+export async function handlePipelineTool(request: any, supabase: SupabaseClient) {
+    // Create Pipeline
+    if (request.params.name === 'create_pipeline') {
+        const args = CreatePipelineSchema.parse(request.params.arguments);
 
-            const { data, error } = await supabase
-                .from('pipelines')
-                .insert({
-                    name: args.name,
-                    stages: args.stages,
-                })
-                .select()
-                .single();
+        const { data, error } = await supabase
+            .from('pipelines')
+            .insert({
+                name: args.name,
+                stages: args.stages,
+            })
+            .select()
+            .single();
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
-
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Get Pipeline
-        if (request.params.name === 'get_pipeline') {
-            const id = request.params.arguments.id;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('pipelines')
-                .select('*')
-                .eq('id', id)
-                .single();
+    // Get Pipeline
+    if (request.params.name === 'get_pipeline') {
+        const id = request.params.arguments.id;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('pipelines')
+            .select('*')
+            .eq('id', id)
+            .single();
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // List Pipelines
-        if (request.params.name === 'list_pipelines') {
-            const { data, error } = await supabase
-                .from('pipelines')
-                .select('*');
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+    // List Pipelines
+    if (request.params.name === 'list_pipelines') {
+        const { data, error } = await supabase
+            .from('pipelines')
+            .select('*');
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Update Pipeline
-        if (request.params.name === 'update_pipeline') {
-            const args = UpdatePipelineSchema.parse(request.params.arguments);
-            const { id, ...updates } = args;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { data, error } = await supabase
-                .from('pipelines')
-                .update(updates)
-                .eq('id', id)
-                .select()
-                .single();
+    // Update Pipeline
+    if (request.params.name === 'update_pipeline') {
+        const args = UpdatePipelineSchema.parse(request.params.arguments);
+        const { id, ...updates } = args;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { data, error } = await supabase
+            .from('pipelines')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
 
-        // Delete Pipeline
-        if (request.params.name === 'delete_pipeline') {
-            const id = request.params.arguments.id;
+        return {
+            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+        };
+    }
 
-            const { error } = await supabase
-                .from('pipelines')
-                .delete()
-                .eq('id', id);
+    // Delete Pipeline
+    if (request.params.name === 'delete_pipeline') {
+        const id = request.params.arguments.id;
 
-            if (error) {
-                return {
-                    content: [{ type: 'text', text: `Error: ${error.message}` }],
-                    isError: true,
-                };
-            }
+        const { error } = await supabase
+            .from('pipelines')
+            .delete()
+            .eq('id', id);
 
+        if (error) {
             return {
-                content: [{ type: 'text', text: `Pipeline ${id} deleted successfully` }],
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
             };
         }
-    });
+
+        return {
+            content: [{ type: 'text', text: `Pipeline ${id} deleted successfully` }],
+        };
+    }
+
+    return null;
 }
 
 export const pipelineToolDefinitions = [

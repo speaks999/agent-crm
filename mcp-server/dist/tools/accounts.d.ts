@@ -1,5 +1,21 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerAccountTools(server: any, supabase: SupabaseClient): void;
+export declare function handleAccountTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+    structuredContent?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        accounts: any[];
+    };
+    isError?: undefined;
+} | null>;
 export declare const accountToolDefinitions: ({
     name: string;
     description: string;

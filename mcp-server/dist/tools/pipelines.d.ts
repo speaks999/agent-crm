@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerPipelineTools(server: any, supabase: SupabaseClient): void;
+export declare function handlePipelineTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
+} | null>;
 export declare const pipelineToolDefinitions: ({
     name: string;
     description: string;

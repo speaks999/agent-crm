@@ -1,5 +1,17 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-export declare function registerInteractionTools(server: any, supabase: SupabaseClient): void;
+export declare function handleInteractionTool(request: any, supabase: SupabaseClient): Promise<{
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError?: undefined;
+} | null>;
 export declare const interactionToolDefinitions: ({
     name: string;
     description: string;
