@@ -5,11 +5,15 @@ export declare function handleInteractionTool(request: any, supabase: SupabaseCl
         text: string;
     }[];
     isError: boolean;
+    structuredContent?: undefined;
 } | {
     content: {
         type: string;
         text: string;
     }[];
+    structuredContent: {
+        interactions: any[];
+    };
     isError?: undefined;
 } | null>;
 export declare const interactionToolDefinitions: ({

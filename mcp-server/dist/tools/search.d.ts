@@ -4,6 +4,13 @@ export declare function handleSearchTool(request: any, supabase: SupabaseClient)
         type: string;
         text: string;
     }[];
+    structuredContent: {
+        accounts: any[];
+        contacts: any[];
+        deals: any[];
+        interactions?: undefined;
+        stageStats?: undefined;
+    };
     isError?: undefined;
 } | {
     content: {
@@ -11,6 +18,38 @@ export declare function handleSearchTool(request: any, supabase: SupabaseClient)
         text: string;
     }[];
     isError: boolean;
+    structuredContent?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        accounts: any[];
+        contacts: any[];
+        deals: any[];
+        interactions: any[];
+        stageStats?: undefined;
+    };
+    isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        deals: any[];
+        stageStats: {
+            stage: string;
+            count: number;
+            totalValue: any;
+            deals: any[];
+        }[];
+        accounts?: undefined;
+        contacts?: undefined;
+        interactions?: undefined;
+    };
+    isError?: undefined;
 } | null>;
 export declare const searchToolDefinitions: ({
     name: string;
@@ -20,6 +59,13 @@ export declare const searchToolDefinitions: ({
         properties: {
             query: {
                 type: string;
+                description: string;
+            };
+            tags_filter: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
             id?: undefined;
@@ -38,6 +84,7 @@ export declare const searchToolDefinitions: ({
                 description: string;
             };
             query?: undefined;
+            tags_filter?: undefined;
             pipeline_id?: undefined;
         };
         required: string[];
@@ -53,6 +100,7 @@ export declare const searchToolDefinitions: ({
                 description: string;
             };
             query?: undefined;
+            tags_filter?: undefined;
             id?: undefined;
         };
         required?: undefined;

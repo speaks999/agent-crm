@@ -50,12 +50,14 @@ export declare const CreateAccountSchema: z.ZodObject<{
     name: z.ZodString;
     industry: z.ZodOptional<z.ZodString>;
     website: z.ZodOptional<z.ZodString>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const UpdateAccountSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodOptional<z.ZodString>;
     industry: z.ZodOptional<z.ZodString>;
     website: z.ZodOptional<z.ZodString>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreateContactSchema: z.ZodObject<{
     first_name: z.ZodString;
@@ -64,6 +66,7 @@ export declare const CreateContactSchema: z.ZodObject<{
     email: z.ZodOptional<z.ZodString>;
     phone: z.ZodOptional<z.ZodString>;
     role: z.ZodOptional<z.ZodString>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const UpdateContactSchema: z.ZodObject<{
     id: z.ZodString;
@@ -73,6 +76,7 @@ export declare const UpdateContactSchema: z.ZodObject<{
     email: z.ZodOptional<z.ZodString>;
     phone: z.ZodOptional<z.ZodString>;
     role: z.ZodOptional<z.ZodString>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreateDealSchema: z.ZodObject<{
     name: z.ZodString;
@@ -86,6 +90,7 @@ export declare const CreateDealSchema: z.ZodObject<{
         won: "won";
         lost: "lost";
     }>>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const UpdateDealSchema: z.ZodObject<{
     id: z.ZodString;
@@ -100,6 +105,7 @@ export declare const UpdateDealSchema: z.ZodObject<{
         won: "won";
         lost: "lost";
     }>>;
+    tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreatePipelineSchema: z.ZodObject<{
     name: z.ZodString;

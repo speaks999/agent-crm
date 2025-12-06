@@ -28,7 +28,13 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `${data.type.charAt(0).toUpperCase() + data.type.slice(1)} interaction created successfully`,
+                },
+            ],
+            structuredContent: { interactions: [data] },
         };
     }
 
@@ -50,7 +56,13 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Retrieved ${data.type} interaction`,
+                },
+            ],
+            structuredContent: { interactions: [data] },
         };
     }
 
@@ -74,7 +86,13 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Found ${data?.length || 0} interaction(s)`,
+                },
+            ],
+            structuredContent: { interactions: data || [] },
         };
     }
 
@@ -98,7 +116,13 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Interaction updated successfully`,
+                },
+            ],
+            structuredContent: { interactions: [data] },
         };
     }
 
@@ -106,6 +130,14 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
     if (request.params.name === 'delete_interaction') {
         const id = request.params.arguments.id;
 
+        // Delete embeddings for this interaction
+        await supabase
+            .from('embeddings')
+            .delete()
+            .eq('source_table', 'interactions')
+            .eq('source_id', id);
+
+        // Delete interaction
         const { error } = await supabase
             .from('interactions')
             .delete()
@@ -118,8 +150,17 @@ export async function handleInteractionTool(request: any, supabase: SupabaseClie
             };
         }
 
+        // Fetch remaining interactions to return in structuredContent
+        const { data: allInteractions } = await supabase.from('interactions').select('*');
+
         return {
-            content: [{ type: 'text', text: `Interaction ${id} deleted successfully` }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Interaction deleted successfully`,
+                },
+            ],
+            structuredContent: { interactions: allInteractions || [] },
         };
     }
 

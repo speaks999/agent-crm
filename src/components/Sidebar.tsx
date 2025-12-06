@@ -9,12 +9,12 @@ export default function Sidebar() {
     const pathname = usePathname();
 
     return (
-        <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-full">
+        <aside className="w-64 bg-card border-r border-border flex flex-col h-full">
             <div className="p-6 flex items-center gap-2">
-                <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-                    <span className="text-white font-bold text-xl">W</span>
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <span className="text-primary-foreground font-bold text-xl">W</span>
                 </div>
-                <span className="text-xl font-bold text-slate-800">Whitespace</span>
+                <span className="text-xl font-bold text-foreground">Whitespace</span>
             </div>
 
             <nav className="flex-1 px-4 space-y-2 mt-4">
@@ -80,17 +80,19 @@ export default function Sidebar() {
                 />
             </nav>
 
-            <div className="p-4 border-t border-slate-200 space-y-2">
+            <div className="p-4 border-t border-border space-y-2">
                 <NavItem
                     href="/admin/test"
                     icon={<TestTube size={20} />}
                     label="MCP Tests"
                     active={pathname?.startsWith('/admin/test')}
                 />
-                <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-slate-600 hover:bg-slate-100">
-                    <Settings size={20} />
-                    <span className="font-medium">Settings</span>
-                </button>
+                <NavItem
+                    href="/settings"
+                    icon={<Settings size={20} />}
+                    label="Settings"
+                    active={pathname === '/settings'}
+                />
             </div>
         </aside>
     );
@@ -100,7 +102,7 @@ function NavItem({ icon, label, active = false, href }: { icon: React.ReactNode,
     return (
         <Link
             href={href}
-            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-indigo-50 text-indigo-600' : 'text-slate-600 hover:bg-slate-100'}`}
+            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${active ? 'bg-primary-muted text-primary' : 'text-muted-foreground hover:bg-muted'}`}
         >
             {icon}
             <span className="font-medium">{label}</span>

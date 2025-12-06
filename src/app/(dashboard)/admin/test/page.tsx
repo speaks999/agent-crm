@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw } from 'lucide-react';
 import { MCP_TESTS, TESTS_BY_CATEGORY, ALL_CATEGORIES, type MCPTest } from '@/lib/mcp-tests';
 import { callTool, listTools } from '@/lib/mcp-client';
@@ -20,7 +20,7 @@ export default function MCPTestPage() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [selectedTool, setSelectedTool] = useState<string>('all');
     const [mcpAvailable, setMcpAvailable] = useState<boolean | null>(null);
-    const [testData, setTestData] = useState<Record<string, any>>({}); // Store IDs for placeholders
+    const testDataRef = useRef<Record<string, any>>({}); // Store IDs for placeholders (ref for synchronous access)
     const defaultUrl = typeof window !== 'undefined'
         ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp')
         : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp');
@@ -48,16 +48,131 @@ export default function MCPTestPage() {
         }
     }
 
-    // Replace placeholders in args with actual IDs from testData
-    function resolveArgs(args: Record<string, any>): Record<string, any> {
+    // Replace placeholders in args with actual IDs from testDataRef
+    async function resolveArgs(args: Record<string, any>): Promise<Record<string, any>> {
         const resolved: Record<string, any> = {};
+        const timestamp = Date.now(); // Generate timestamp once per test run
         for (const [key, value] of Object.entries(args)) {
-            if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
-                const placeholder = value.slice(1, -1); // Remove { }
-                resolved[key] = testData[placeholder] || value;
+            if (typeof value === 'string') {
+                // Handle {timestamp} placeholder
+                if (value.includes('{timestamp}')) {
+                    resolved[key] = value.replace(/{timestamp}/g, timestamp.toString());
+                    continue;
+                }
+                // Handle other placeholders like {account_id}
+                if (value.startsWith('{') && value.endsWith('}')) {
+                    const placeholder = value.slice(1, -1); // Remove { }
+                    let resolvedValue = testDataRef.current[placeholder];
+                
+                // Debug logging
+                if (placeholder === 'account_id') {
+                    console.log('Resolving account_id, current testDataRef:', testDataRef.current);
+                }
+                
+                // If account_id is needed but not available, check if setup stored it
+                if (!resolvedValue && placeholder === 'account_id') {
+                    // Check if account_id was set by setup function
+                    if (testDataRef.current.account_id) {
+                        resolvedValue = testDataRef.current.account_id;
+                        console.log('Using account_id from setup/testDataRef:', resolvedValue);
+                    } else {
+                        try {
+                            const accountResult = await callTool('create_account', { name: 'Test Account' }, mcpUrl);
+                            if (accountResult?.structuredContent?.accounts?.[0]?.id) {
+                                resolvedValue = accountResult.structuredContent.accounts[0].id;
+                                testDataRef.current.account_id = resolvedValue;
+                            }
+                        } catch (error) {
+                            // If we can't create an account, skip the optional field
+                            console.warn(`Could not create test account for ${placeholder}, skipping optional field`);
+                            continue; // Skip this field
+                        }
+                    }
+                }
+
+                // If contact_id is needed but not available, create a test contact
+                if (!resolvedValue && placeholder === 'contact_id') {
+                    try {
+                        // First ensure we have an account
+                        if (!testDataRef.current.account_id) {
+                            const accountResult = await callTool('create_account', { name: 'Test Account' }, mcpUrl);
+                            if (accountResult?.structuredContent?.accounts?.[0]?.id) {
+                                testDataRef.current.account_id = accountResult.structuredContent.accounts[0].id;
+                            }
+                        }
+                        const contactResult = await callTool('create_contact', { 
+                            first_name: 'Test', 
+                            last_name: 'Contact',
+                            account_id: testDataRef.current.account_id 
+                        }, mcpUrl);
+                        if (contactResult?.structuredContent?.contacts?.[0]?.id) {
+                            resolvedValue = contactResult.structuredContent.contacts[0].id;
+                            testDataRef.current.contact_id = resolvedValue;
+                        }
+                    } catch (error) {
+                        console.warn(`Could not create test contact for ${placeholder}, skipping optional field`);
+                        continue; // Skip this field
+                    }
+                }
+
+                // If deal_id is needed but not available, create a test deal
+                if (!resolvedValue && placeholder === 'deal_id') {
+                    try {
+                        // First ensure we have an account
+                        if (!testDataRef.current.account_id) {
+                            const accountResult = await callTool('create_account', { name: 'Test Account' }, mcpUrl);
+                            if (accountResult?.structuredContent?.accounts?.[0]?.id) {
+                                testDataRef.current.account_id = accountResult.structuredContent.accounts[0].id;
+                            }
+                        }
+                        const dealResult = await callTool('create_deal', { 
+                            name: 'Test Deal',
+                            stage: 'Discovery',
+                            account_id: testDataRef.current.account_id 
+                        }, mcpUrl);
+                        if (dealResult?.structuredContent?.deals?.[0]?.id) {
+                            resolvedValue = dealResult.structuredContent.deals[0].id;
+                            testDataRef.current.deal_id = resolvedValue;
+                        }
+                    } catch (error) {
+                        console.warn(`Could not create test deal for ${placeholder}, skipping optional field`);
+                        continue; // Skip this field
+                    }
+                }
+
+                // If pipeline_id is needed but not available, create a test pipeline
+                if (!resolvedValue && placeholder === 'pipeline_id') {
+                    try {
+                        const pipelineResult = await callTool('create_pipeline', { 
+                            name: 'Test Pipeline',
+                            stages: ['Lead', 'Discovery', 'Proposal', 'Closed']
+                        }, mcpUrl);
+                        if (pipelineResult?.structuredContent?.pipelines?.[0]?.id) {
+                            resolvedValue = pipelineResult.structuredContent.pipelines[0].id;
+                            testDataRef.current.pipeline_id = resolvedValue;
+                        }
+                    } catch (error) {
+                        console.warn(`Could not create test pipeline for ${placeholder}, skipping optional field`);
+                        continue; // Skip this field
+                    }
+                }
+                
+                if (!resolvedValue) {
+                    // For optional fields, skip them rather than throwing
+                    if (placeholder === 'account_id' || placeholder === 'contact_id' || placeholder === 'deal_id' || placeholder === 'pipeline_id') {
+                        continue; // Skip optional fields
+                    }
+                    throw new Error(`Placeholder ${value} not resolved. Required ID not available from previous tests.`);
+                }
+                resolved[key] = resolvedValue;
             } else {
+                // String value that doesn't match placeholder pattern - use as-is
                 resolved[key] = value;
             }
+        } else {
+            // Non-string value - use as-is
+            resolved[key] = value;
+        }
         }
         return resolved;
     }
@@ -66,7 +181,107 @@ export default function MCPTestPage() {
         const startTime = Date.now();
         
         try {
-            const resolvedArgs = resolveArgs(test.args);
+            // Run setup function if provided (e.g., for deduplication tests)
+            if (test.setup) {
+                try {
+                    const setupResult = await test.setup(mcpUrl);
+                    if (setupResult) {
+                        // Check if setup returns a special format like "account_id:<id>"
+                        if (typeof setupResult === 'string' && setupResult.startsWith('account_id:')) {
+                            const accountId = setupResult.replace('account_id:', '');
+                            testDataRef.current.account_id = accountId;
+                            // Log for debugging
+                            console.log('Setup stored account_id:', accountId);
+                        } else {
+                            // Store setup ID for potential cleanup
+                            const key = test.tool.replace('create_', '').replace(/_/g, '') + '_id';
+                            testDataRef.current[key] = setupResult;
+                        }
+                    }
+                    // Add a delay to ensure database commit and visibility
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (setupError: any) {
+                    console.warn('Setup function failed:', setupError);
+                    // Continue with test anyway
+                }
+            }
+
+            // Handle analyst API tests (charts) differently from MCP tools
+            if (test.tool === 'analyst_api') {
+                const resolvedArgs = await resolveArgs(test.args);
+                // Resolve timestamp in query string as well
+                const timestamp = Date.now();
+                const resolvedQuery = test.query.replace(/{timestamp}/g, timestamp.toString());
+                const response = await fetch('/api/agent/analyst', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: resolvedArgs.query || resolvedQuery }),
+                });
+
+                if (!response.ok) {
+                    const text = await response.text();
+                    throw new Error(`Analyst API failed: ${response.status} ${response.statusText}. ${text.substring(0, 200)}`);
+                }
+
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    throw new Error(`Server returned non-JSON response: ${text.substring(0, 200)}`);
+                }
+
+                const result = await response.json();
+
+                if (result.error) {
+                    throw new Error(result.error);
+                }
+
+                const duration = Date.now() - startTime;
+
+                // Format result to match MCP tool result structure
+                const formattedResult = {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `Chart generated: ${result.config?.title || 'Analytics Result'}`,
+                        },
+                    ],
+                    structuredContent: result.data ? { chartData: result.data, config: result.config } : undefined,
+                    config: result.config,
+                    data: result.data,
+                };
+
+                // Check expected results
+                let passed = true;
+                if (test.expectedResult) {
+                    const expected = test.expectedResult;
+                    
+                    if (expected.hasContent && !formattedResult.content?.[0]?.text) {
+                        passed = false;
+                    }
+                    
+                    if (expected.hasStructuredContent && !formattedResult.structuredContent) {
+                        passed = false;
+                    }
+                    
+                    if (expected.containsText) {
+                        const text = formattedResult.content?.[0]?.text || '';
+                        if (!expected.containsText.some(s => text.toLowerCase().includes(s.toLowerCase()))) {
+                            passed = false;
+                        }
+                    }
+                }
+
+                return {
+                    test,
+                    status: passed ? 'passed' : 'failed',
+                    result: formattedResult,
+                    duration,
+                    timestamp: new Date(),
+                };
+            }
+
+            // Regular MCP tool tests
+            const resolvedArgs = await resolveArgs(test.args);
             const result = await callTool(test.tool, resolvedArgs, mcpUrl);
             if (!result) {
                 throw new Error('MCP call returned no result');
@@ -78,7 +293,47 @@ export default function MCPTestPage() {
                 const id = test.cleanup.getIdFromResult(result);
                 if (id) {
                     const key = test.cleanup.tool.replace(/(create_|get_|list_|update_|delete_)/, '').replace(/_/g, '') + '_id';
-                    setTestData(prev => ({ ...prev, [key]: id }));
+                    testDataRef.current[key] = id;
+                }
+            }
+
+            // Extract account_id from account operations for subsequent tests
+            if (result.structuredContent?.accounts && result.structuredContent.accounts.length > 0) {
+                const accountId = result.structuredContent.accounts[0].id;
+                if (accountId) {
+                    testDataRef.current.account_id = accountId;
+                }
+            }
+
+            // Extract contact_id from contact operations for subsequent tests
+            if (result.structuredContent?.contacts && result.structuredContent.contacts.length > 0) {
+                const contactId = result.structuredContent.contacts[0].id;
+                if (contactId) {
+                    testDataRef.current.contact_id = contactId;
+                }
+            }
+
+            // Extract deal_id from deal operations for subsequent tests
+            if (result.structuredContent?.deals && result.structuredContent.deals.length > 0) {
+                const dealId = result.structuredContent.deals[0].id;
+                if (dealId) {
+                    testDataRef.current.deal_id = dealId;
+                }
+            }
+
+            // Extract pipeline_id from pipeline operations for subsequent tests
+            if (result.structuredContent?.pipelines && result.structuredContent.pipelines.length > 0) {
+                const pipelineId = result.structuredContent.pipelines[0].id;
+                if (pipelineId) {
+                    testDataRef.current.pipeline_id = pipelineId;
+                }
+            }
+
+            // Extract interaction_id from interaction operations for subsequent tests
+            if (result.structuredContent?.interactions && result.structuredContent.interactions.length > 0) {
+                const interactionId = result.structuredContent.interactions[0].id;
+                if (interactionId) {
+                    testDataRef.current.interaction_id = interactionId;
                 }
             }
 
@@ -128,6 +383,8 @@ export default function MCPTestPage() {
 
     async function runTests(tests: MCPTest[]) {
         setIsRunning(true);
+        // Reset test data at the start of a test run
+        testDataRef.current = {};
         const newResults: Record<string, TestResult> = { ...results };
 
         // Initialize all tests as pending
@@ -295,9 +552,18 @@ export default function MCPTestPage() {
                 <div className="bg-white p-4 rounded-lg border border-slate-200 mb-6">
                     <div className="flex flex-wrap items-center gap-4">
                         <button
+                            onClick={() => runTests(filteredTests)}
+                            disabled={isRunning || mcpAvailable === false || filteredTests.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-black rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                        >
+                            <Play size={18} />
+                            Run Filtered Tests ({filteredTests.length})
+                        </button>
+                        
+                        <button
                             onClick={runAllTests}
                             disabled={isRunning || mcpAvailable === false}
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-black rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                         >
                             <Play size={18} />
                             Run All Tests ({MCP_TESTS.length})

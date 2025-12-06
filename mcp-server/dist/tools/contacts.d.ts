@@ -5,12 +5,29 @@ export declare function handleContactTool(request: any, supabase: SupabaseClient
         text: string;
     }[];
     isError: boolean;
+    structuredContent?: undefined;
 } | {
     content: {
         type: string;
         text: string;
     }[];
+    structuredContent: {
+        contacts: any[];
+        duplicateMatches?: undefined;
+        suggestedAction?: undefined;
+    };
     isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+    structuredContent: {
+        duplicateMatches: import("../utils/deduplication.js").DuplicateMatch[];
+        suggestedAction: "create" | "merge" | "update" | "skip";
+        contacts?: undefined;
+    };
 } | null>;
 export declare const contactToolDefinitions: ({
     name: string;

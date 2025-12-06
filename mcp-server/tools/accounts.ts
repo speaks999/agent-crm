@@ -10,17 +10,51 @@ export async function handleAccountTool(request: any, supabase: SupabaseClient) 
     if (request.params.name === 'create_account') {
         const args = CreateAccountSchema.parse(request.params.arguments);
 
+        const insertData: any = {
+            name: args.name,
+            industry: args.industry || null,
+            website: args.website || null,
+        };
+        // Only include tags if explicitly provided (tags column may not exist if migration not applied)
+        const hasTags = 'tags' in args && args.tags !== undefined;
+        if (hasTags) {
+            insertData.tags = args.tags || [];
+        }
+        
         const { data, error } = await supabase
             .from('accounts')
-            .insert({
-                name: args.name,
-                industry: args.industry || null,
-                website: args.website || null,
-            })
+            .insert(insertData)
             .select()
             .single();
 
         if (error) {
+            // Check if error is about tags column not existing
+            if (error.message?.includes('tags') && (error.message?.includes('does not exist') || error.message?.includes('column'))) {
+                // Retry without tags
+                delete insertData.tags;
+                const { data: retryData, error: retryError } = await supabase
+                    .from('accounts')
+                    .insert(insertData)
+                    .select()
+                    .single();
+                
+                if (retryError) {
+                    return {
+                        content: [{ type: 'text', text: `Error: ${retryError.message}` }],
+                        isError: true,
+                    };
+                }
+                
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `Account "${retryData.name}" created successfully (tags feature not available - tags column does not exist)`,
+                        },
+                    ],
+                    structuredContent: { accounts: [retryData] },
+                };
+            }
             return {
                 content: [{ type: 'text', text: `Error: ${error.message}` }],
                 isError: true,
@@ -101,22 +135,57 @@ export async function handleAccountTool(request: any, supabase: SupabaseClient) 
         const args = UpdateAccountSchema.parse(request.params.arguments);
         const { id, ...updates } = args;
 
+        const updateData: any = { ...updates, updated_at: new Date().toISOString() };
+        // Only include tags if explicitly provided (tags column may not exist if migration not applied)
+        const hasTags = 'tags' in updates && updates.tags !== undefined;
+        if (hasTags) {
+            updateData.tags = updates.tags;
+        } else {
+            // Remove tags from updateData if not provided to avoid schema errors
+            delete updateData.tags;
+        }
+
         const { data, error } = await supabase
             .from('accounts')
-            .update({ ...updates, updated_at: new Date().toISOString() })
+            .update(updateData)
             .eq('id', id)
             .select()
             .single();
 
         if (error) {
+            // Check if error is about tags column not existing
+            if (error.message?.includes('tags') && (error.message?.includes('does not exist') || error.message?.includes('column'))) {
+                // Retry without tags
+                delete updateData.tags;
+                const { data: retryData, error: retryError } = await supabase
+                    .from('accounts')
+                    .update(updateData)
+                    .eq('id', id)
+                    .select()
+                    .single();
+                
+                if (retryError) {
+                    return {
+                        content: [{ type: 'text', text: `Error: ${retryError.message}` }],
+                        isError: true,
+                    };
+                }
+                
+                return {
+                    content: [
+                        {
+                            type: 'text',
+                            text: `Account updated successfully (tags feature not available - tags column does not exist)`,
+                        },
+                    ],
+                    structuredContent: { accounts: [retryData] },
+                };
+            }
             return {
                 content: [{ type: 'text', text: `Error: ${error.message}` }],
                 isError: true,
             };
         }
-
-        // Fetch all accounts to return in structuredContent
-        const { data: allAccounts } = await supabase.from('accounts').select('*');
 
         return {
             content: [
@@ -125,7 +194,7 @@ export async function handleAccountTool(request: any, supabase: SupabaseClient) 
                     text: `Account "${data.name}" updated successfully`,
                 },
             ],
-            structuredContent: { accounts: allAccounts || [] },
+            structuredContent: { accounts: [data] },
         };
     }
 
@@ -133,6 +202,119 @@ export async function handleAccountTool(request: any, supabase: SupabaseClient) 
     if (request.params.name === 'delete_account') {
         const id = request.params.arguments.id;
 
+        // First, get all contacts and deals for this account
+        const { data: contacts } = await supabase
+            .from('contacts')
+            .select('id')
+            .eq('account_id', id);
+
+        const { data: deals } = await supabase
+            .from('deals')
+            .select('id')
+            .eq('account_id', id);
+
+        const contactIds = contacts?.map(c => c.id) || [];
+        const dealIds = deals?.map(d => d.id) || [];
+
+        // Get all interactions associated with these contacts and deals
+        const allInteractionIds: string[] = [];
+        
+        if (contactIds.length > 0) {
+            const { data: contactInteractions } = await supabase
+                .from('interactions')
+                .select('id')
+                .in('contact_id', contactIds);
+            if (contactInteractions) {
+                allInteractionIds.push(...contactInteractions.map(i => i.id));
+            }
+        }
+
+        if (dealIds.length > 0) {
+            const { data: dealInteractions } = await supabase
+                .from('interactions')
+                .select('id')
+                .in('deal_id', dealIds);
+            if (dealInteractions) {
+                allInteractionIds.push(...dealInteractions.map(i => i.id));
+            }
+        }
+
+        // Remove duplicates
+        const uniqueInteractionIds = [...new Set(allInteractionIds)];
+
+        // Delete embeddings for interactions
+        if (uniqueInteractionIds.length > 0) {
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'interactions')
+                .in('source_id', uniqueInteractionIds);
+        }
+
+        // Delete interactions
+        if (contactIds.length > 0) {
+            await supabase
+                .from('interactions')
+                .delete()
+                .in('contact_id', contactIds);
+        }
+
+        if (dealIds.length > 0) {
+            await supabase
+                .from('interactions')
+                .delete()
+                .in('deal_id', dealIds);
+        }
+
+        // Delete embeddings for contacts
+        if (contactIds.length > 0) {
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'contacts')
+                .in('source_id', contactIds);
+        }
+
+        // Delete embeddings for deals
+        if (dealIds.length > 0) {
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'deals')
+                .in('source_id', dealIds);
+        }
+
+        // Delete contacts associated with this account
+        if (contactIds.length > 0) {
+            const { error: contactsError } = await supabase
+                .from('contacts')
+                .delete()
+                .eq('account_id', id);
+
+            if (contactsError) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting contacts: ${contactsError.message}` }],
+                    isError: true,
+                };
+            }
+        }
+
+        // Delete deals associated with this account
+        if (dealIds.length > 0) {
+            const { error: dealsError } = await supabase
+                .from('deals')
+                .delete()
+                .eq('account_id', id);
+
+            if (dealsError) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting deals: ${dealsError.message}` }],
+                    isError: true,
+                };
+            }
+        }
+
+        // Finally, delete the account
         const { error } = await supabase
             .from('accounts')
             .delete()

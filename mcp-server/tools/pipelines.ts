@@ -23,7 +23,13 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Pipeline "${data.name}" created successfully`,
+                },
+            ],
+            structuredContent: { pipelines: [data] },
         };
     }
 
@@ -45,7 +51,13 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Retrieved pipeline: ${data.name}`,
+                },
+            ],
+            structuredContent: { pipelines: [data] },
         };
     }
 
@@ -63,7 +75,13 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Found ${data?.length || 0} pipeline(s)`,
+                },
+            ],
+            structuredContent: { pipelines: data || [] },
         };
     }
 
@@ -87,7 +105,13 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
         }
 
         return {
-            content: [{ type: 'text', text: JSON.stringify(data, null, 2) }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Pipeline "${data.name}" updated successfully`,
+                },
+            ],
+            structuredContent: { pipelines: [data] },
         };
     }
 
@@ -95,6 +119,69 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
     if (request.params.name === 'delete_pipeline') {
         const id = request.params.arguments.id;
 
+        // Get deals for this pipeline
+        const { data: deals } = await supabase
+            .from('deals')
+            .select('id')
+            .eq('pipeline_id', id);
+
+        const dealIds = deals?.map(d => d.id) || [];
+
+        // Get interactions for these deals
+        const allInteractionIds: string[] = [];
+        if (dealIds.length > 0) {
+            const { data: interactions } = await supabase
+                .from('interactions')
+                .select('id')
+                .in('deal_id', dealIds);
+            if (interactions) {
+                allInteractionIds.push(...interactions.map(i => i.id));
+            }
+        }
+
+        // Delete embeddings for interactions
+        const uniqueInteractionIds = [...new Set(allInteractionIds)];
+        if (uniqueInteractionIds.length > 0) {
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'interactions')
+                .in('source_id', uniqueInteractionIds);
+        }
+
+        // Delete interactions for deals
+        if (dealIds.length > 0) {
+            await supabase
+                .from('interactions')
+                .delete()
+                .in('deal_id', dealIds);
+        }
+
+        // Delete embeddings for deals
+        if (dealIds.length > 0) {
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'deals')
+                .in('source_id', dealIds);
+        }
+
+        // Delete deals
+        if (dealIds.length > 0) {
+            const { error: dealsError } = await supabase
+                .from('deals')
+                .delete()
+                .eq('pipeline_id', id);
+
+            if (dealsError) {
+                return {
+                    content: [{ type: 'text', text: `Error deleting deals: ${dealsError.message}` }],
+                    isError: true,
+                };
+            }
+        }
+
+        // Delete pipeline
         const { error } = await supabase
             .from('pipelines')
             .delete()
@@ -107,8 +194,17 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
             };
         }
 
+        // Fetch remaining pipelines to return in structuredContent
+        const { data: allPipelines } = await supabase.from('pipelines').select('*');
+
         return {
-            content: [{ type: 'text', text: `Pipeline ${id} deleted successfully` }],
+            content: [
+                {
+                    type: 'text',
+                    text: `Pipeline deleted successfully`,
+                },
+            ],
+            structuredContent: { pipelines: allPipelines || [] },
         };
     }
 

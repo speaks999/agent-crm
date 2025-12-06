@@ -5,11 +5,15 @@ export declare function handlePipelineTool(request: any, supabase: SupabaseClien
         text: string;
     }[];
     isError: boolean;
+    structuredContent?: undefined;
 } | {
     content: {
         type: string;
         text: string;
     }[];
+    structuredContent: {
+        pipelines: any[];
+    };
     isError?: undefined;
 } | null>;
 export declare const pipelineToolDefinitions: ({

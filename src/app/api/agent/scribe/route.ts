@@ -35,43 +35,103 @@ export async function POST(req: Request) {
             prompt: `Analyze this sales interaction and extract the key CRM data: \n\n"${text}"`,
         });
 
-        // 2. Upsert Contact
+        // 2. Upsert Contact (with deduplication)
         let contactId = null;
         if (data.contact) {
-            const { data: contact, error } = await supabase
-                .from('contacts')
-                .upsert({
-                    account_id: accountId, // Optional, if known
-                    first_name: data.contact.firstName,
-                    last_name: data.contact.lastName,
-                    email: data.contact.email,
-                    role: data.contact.role,
-                }, { onConflict: 'email' }) // Simplified dedup for now
-                .select()
-                .single();
+            // Check for duplicates first
+            const { checkDuplicateContact } = await import('@/lib/deduplication');
+            const duplicateCheck = await checkDuplicateContact(supabase, {
+                first_name: data.contact.firstName,
+                last_name: data.contact.lastName,
+                email: data.contact.email || null,
+                phone: null, // Not extracted in scribe
+                account_id: accountId || null,
+            });
 
-            if (contact) contactId = contact.id;
+            // If strong duplicate found, use existing contact
+            if (duplicateCheck.isDuplicate && duplicateCheck.duplicateMatches.length > 0) {
+                const existingContact = duplicateCheck.duplicateMatches[0].data;
+                contactId = existingContact.id;
+                
+                // Update existing contact with any new information
+                const updateData: any = {};
+                if (data.contact.email && !existingContact.email) updateData.email = data.contact.email;
+                if (data.contact.role && !existingContact.role) updateData.role = data.contact.role;
+                if (accountId && !existingContact.account_id) updateData.account_id = accountId;
+                
+                if (Object.keys(updateData).length > 0) {
+                    await supabase
+                        .from('contacts')
+                        .update(updateData)
+                        .eq('id', contactId);
+                }
+            } else {
+                // No duplicate, create new contact
+                const { data: contact, error } = await supabase
+                    .from('contacts')
+                    .insert({
+                        account_id: accountId || null,
+                        first_name: data.contact.firstName,
+                        last_name: data.contact.lastName,
+                        email: data.contact.email || null,
+                        role: data.contact.role || null,
+                    })
+                    .select()
+                    .single();
+
+                if (contact) contactId = contact.id;
+            }
         }
 
-        // 3. Upsert Deal/Opportunity
+        // 3. Upsert Deal/Opportunity (with deduplication)
         let dealId = null;
         if (data.opportunity) {
-            const { data: deal, error: dealError } = await supabase
-                .from('deals')
-                .insert({
-                    account_id: accountId || null,
-                    name: data.opportunity.name,
-                    amount: data.opportunity.amount || null,
-                    stage: data.opportunity.stage || 'Lead',
-                    status: 'open',
-                })
-                .select()
-                .single();
+            // Check for duplicates first
+            const { checkDuplicateDeal } = await import('@/lib/deduplication');
+            const duplicateCheck = await checkDuplicateDeal(supabase, {
+                name: data.opportunity.name,
+                account_id: accountId || null,
+                stage: data.opportunity.stage || 'Lead',
+            });
 
-            if (dealError) {
-                console.error('Error upserting deal:', dealError);
-            } else if (deal) {
-                dealId = deal.id;
+            // If strong duplicate found, use existing deal
+            if (duplicateCheck.isDuplicate && duplicateCheck.duplicateMatches.length > 0) {
+                const existingDeal = duplicateCheck.duplicateMatches[0].data;
+                dealId = existingDeal.id;
+                
+                // Update existing deal with any new information
+                const updateData: any = {};
+                if (data.opportunity.amount && !existingDeal.amount) updateData.amount = data.opportunity.amount;
+                if (data.opportunity.stage && existingDeal.stage !== data.opportunity.stage) {
+                    updateData.stage = data.opportunity.stage;
+                }
+                if (accountId && !existingDeal.account_id) updateData.account_id = accountId;
+                
+                if (Object.keys(updateData).length > 0) {
+                    await supabase
+                        .from('deals')
+                        .update(updateData)
+                        .eq('id', dealId);
+                }
+            } else {
+                // No duplicate, create new deal
+                const { data: deal, error: dealError } = await supabase
+                    .from('deals')
+                    .insert({
+                        account_id: accountId || null,
+                        name: data.opportunity.name,
+                        amount: data.opportunity.amount || null,
+                        stage: data.opportunity.stage || 'Lead',
+                        status: 'open',
+                    })
+                    .select()
+                    .single();
+
+                if (dealError) {
+                    console.error('Error upserting deal:', dealError);
+                } else if (deal) {
+                    dealId = deal.id;
+                }
             }
         }
 

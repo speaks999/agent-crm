@@ -10,9 +10,9 @@ export default function Dashboard() {
                 <StatCard title="Pipeline Value" value="$1.2M" change="+8%" />
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                <h2 className="text-lg font-semibold text-slate-800 mb-4">Recent Activity</h2>
-                <p className="text-slate-500">Activity feed coming soon...</p>
+            <div className="bg-card p-6 rounded-xl border border-border shadow-sm">
+                <h2 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h2>
+                <p className="text-muted-foreground">Activity feed coming soon...</p>
             </div>
         </div>
     );

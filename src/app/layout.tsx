@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,9 +18,6 @@ export const metadata: Metadata = {
   description: "Agent-driven CRM for modern sales teams",
 };
 
-import Sidebar from "@/components/Sidebar";
-import Header from "@/components/Header";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,15 +29,10 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
       >
-        <div className="flex h-screen bg-slate-50 text-slate-900 font-sans">
-          <Sidebar />
-          <main className="flex-1 flex flex-col overflow-hidden bg-slate-50">
-            <Header />
-            {children}
-          </main>
-        </div>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );
 }
-

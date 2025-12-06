@@ -1,23 +1,33 @@
 export async function handleSearchTool(request, supabase) {
     // Global Search
     if (request.params.name === 'search_crm') {
-        const { query } = request.params.arguments;
+        const { query, tags_filter } = request.params.arguments || {};
         const searchTerm = `%${query}%`;
         try {
+            // Build base queries
+            let accountsQuery = supabase
+                .from('accounts')
+                .select('*')
+                .or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`);
+            let contactsQuery = supabase
+                .from('contacts')
+                .select('*')
+                .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`);
+            let dealsQuery = supabase
+                .from('deals')
+                .select('*')
+                .ilike('name', searchTerm);
+            // Apply tag filter if provided
+            if (tags_filter && Array.isArray(tags_filter) && tags_filter.length > 0) {
+                accountsQuery = accountsQuery.overlaps('tags', tags_filter);
+                contactsQuery = contactsQuery.overlaps('tags', tags_filter);
+                dealsQuery = dealsQuery.overlaps('tags', tags_filter);
+            }
             // Search across accounts, contacts, and deals
             const [accountsResult, contactsResult, dealsResult] = await Promise.all([
-                supabase
-                    .from('accounts')
-                    .select('*')
-                    .or(`name.ilike.${searchTerm},industry.ilike.${searchTerm}`),
-                supabase
-                    .from('contacts')
-                    .select('*')
-                    .or(`first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},email.ilike.${searchTerm}`),
-                supabase
-                    .from('deals')
-                    .select('*')
-                    .ilike('name', searchTerm),
+                accountsQuery,
+                contactsQuery,
+                dealsQuery,
             ]);
             const results = {
                 accounts: accountsResult.data || [],
@@ -26,7 +36,17 @@ export async function handleSearchTool(request, supabase) {
                 total: (accountsResult.data?.length || 0) + (contactsResult.data?.length || 0) + (dealsResult.data?.length || 0),
             };
             return {
-                content: [{ type: 'text', text: JSON.stringify(results, null, 2) }],
+                content: [
+                    {
+                        type: 'text',
+                        text: `Found ${results.total} result(s) for "${query}"`,
+                    },
+                ],
+                structuredContent: {
+                    accounts: results.accounts,
+                    contacts: results.contacts,
+                    deals: results.deals,
+                },
             };
         }
         catch (error) {
@@ -83,7 +103,18 @@ export async function handleSearchTool(request, supabase) {
                 },
             };
             return {
-                content: [{ type: 'text', text: JSON.stringify(summary, null, 2) }],
+                content: [
+                    {
+                        type: 'text',
+                        text: `Account summary: ${summary.stats.totalContacts} contacts, ${summary.stats.totalDeals} deals, ${summary.stats.totalInteractions} interactions`,
+                    },
+                ],
+                structuredContent: {
+                    accounts: accountResult.data ? [accountResult.data] : [],
+                    contacts: summary.contacts,
+                    deals: summary.deals,
+                    interactions: summary.interactions,
+                },
             };
         }
         catch (error) {
@@ -124,7 +155,16 @@ export async function handleSearchTool(request, supabase) {
                 deals,
             }));
             return {
-                content: [{ type: 'text', text: JSON.stringify({ stageStats, totalDeals: dealsResult.data?.length || 0 }, null, 2) }],
+                content: [
+                    {
+                        type: 'text',
+                        text: `Pipeline view: ${dealsResult.data?.length || 0} deal(s) across ${stageStats.length} stage(s)`,
+                    },
+                ],
+                structuredContent: {
+                    deals: dealsResult.data || [],
+                    stageStats,
+                },
             };
         }
         catch (error) {
@@ -144,6 +184,11 @@ export const searchToolDefinitions = [
             type: 'object',
             properties: {
                 query: { type: 'string', description: 'Search query to match against names, emails, etc.' },
+                tags_filter: {
+                    type: 'array',
+                    items: { type: 'string' },
+                    description: 'Optional array of tag names to filter results by'
+                },
             },
             required: ['query'],
         },

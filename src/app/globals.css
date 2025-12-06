@@ -4,26 +4,180 @@
 /* Required for Tailwind to find class references in Apps SDK UI components */
 @source "../node_modules/@openai/apps-sdk-ui";
 
+/* ============================================
+   LIGHT MODE PALETTE
+   ============================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base Colors */
+  --background: 0 0% 100%; /* #FFFFFF */
+  --foreground: 120 9% 2%; /* #050606 */
+  
+  /* Card Colors */
+  --card: 0 0% 100%; /* #FFFFFF */
+  --card-foreground: 120 9% 2%; /* #050606 */
+  
+  /* Primary Colors (Brand Lime) */
+  --primary: 73 39% 53%; /* #A2B758 */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
+  --primary-glow: 73 39% 63%; /* #B5C778 */
+  --primary-muted: 73 39% 95%; /* #F6F8EE */
+  
+  /* Secondary Colors (Brand Forest) */
+  --secondary: 146 63% 11%; /* #0A2C19 */
+  --secondary-foreground: 0 0% 100%; /* #FFFFFF */
+  
+  /* Muted Colors */
+  --muted: 73 20% 95%; /* #F4F5EF */
+  --muted-foreground: 120 9% 46%; /* #6B7A6D */
+  
+  /* Accent */
+  --accent: 146 63% 11%; /* #0A2C19 */
+  
+  /* Status Colors */
+  --destructive: 0 84% 60%; /* #EF4444 */
+  --success: 142 76% 36%; /* #16A34A */
+  --warning: 43 96% 56%; /* #FACC15 */
+  --info: 217 91% 60%; /* #3B82F6 */
+  
+  /* Border & Ring */
+  --border: 73 20% 91%; /* #E8EAE0 */
+  --ring: 73 39% 53%; /* #A2B758 */
+  
+  /* Tabs */
+  --tab-background: 0 0% 100%; /* White */
+  --tab-inactive: 73 20% 95%; /* Light grey with lime tint */
+  --tab-active: 73 39% 53%; /* Brand lime */
+  --tab-hover: 73 20% 91%; /* Light hover */
+  
+  /* Chat */
+  --chat-background: 0 0% 100%; /* White */
+  --chat-user-message: 73 39% 53%; /* Brand lime */
+  --chat-ai-message: 73 20% 95%; /* Light grey */
 }
 
+/* ============================================
+   DARK MODE PALETTE
+   ============================================ */
+.dark {
+  /* Base Colors */
+  --background: 0 0% 7%; /* #121212 */
+  --foreground: 0 0% 100%; /* #FFFFFF */
+  
+  /* Card Colors */
+  --card: 0 0% 7%; /* #121212 */
+  --card-foreground: 0 0% 100%; /* #FFFFFF */
+  
+  /* Primary Colors (Vibrant Purple) */
+  --primary: 263 87% 58%; /* #7C3AED */
+  --primary-foreground: 0 0% 100%; /* #FFFFFF */
+  --primary-glow: 263 80% 70%; /* #A78BFA */
+  --primary-muted: 263 90% 25%; /* #3B0764 */
+  
+  /* Secondary Colors (Teal/Cyan) */
+  --secondary: 174 98% 43%; /* #03DAC6 */
+  --secondary-foreground: 0 0% 0%; /* #000000 */
+  
+  /* Muted Colors */
+  --muted: 0 0% 15%; /* #262626 */
+  --muted-foreground: 0 0% 70%; /* #B3B3B3 */
+  
+  /* Accent */
+  --accent: 174 98% 43%; /* #03DAC6 */
+  
+  /* Status Colors */
+  --destructive: 348 60% 61%; /* #CF6679 */
+  --success: 140 84% 47%; /* #22C55E */
+  --warning: 45 100% 51%; /* #FACC15 */
+  --info: 263 87% 58%; /* #7C3AED */
+  
+  /* Border & Ring */
+  --border: 0 0% 20%; /* #333333 */
+  --ring: 263 87% 58%; /* #7C3AED */
+  
+  /* Tabs */
+  --tab-background: 0 0% 7%; /* Dark background */
+  --tab-inactive: 0 0% 25%; /* Dark grey */
+  --tab-active: 263 87% 58%; /* Vibrant purple */
+  --tab-hover: 0 0% 15%; /* Dark hover */
+  
+  /* Chat */
+  --chat-background: 0 0% 7%; /* Dark background */
+  --chat-user-message: 263 87% 58%; /* Vibrant purple */
+  --chat-ai-message: 0 0% 15%; /* Dark grey */
+}
+
+/* ============================================
+   THEME CONFIGURATION
+   ============================================ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-glow: hsl(var(--primary-glow));
+  --color-primary-muted: hsl(var(--primary-muted));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-destructive: hsl(var(--destructive));
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-info: hsl(var(--info));
+  --color-border: hsl(var(--border));
+  --color-ring: hsl(var(--ring));
+  --color-tab-background: hsl(var(--tab-background));
+  --color-tab-inactive: hsl(var(--tab-inactive));
+  --color-tab-active: hsl(var(--tab-active));
+  --color-tab-hover: hsl(var(--tab-hover));
+  --color-chat-background: hsl(var(--chat-background));
+  --color-chat-user-message: hsl(var(--chat-user-message));
+  --color-chat-ai-message: hsl(var(--chat-ai-message));
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-/* Force light mode - remove dark mode override */
+/* ============================================
+   BASE STYLES
+   ============================================ */
 body {
-  background: #f8fafc;
-  color: #1e293b;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Ensure no dark mode styles interfere */
+/* ============================================
+   GRADIENT UTILITIES
+   ============================================ */
+.gradient-primary {
+  background: linear-gradient(135deg, #A2B758, #B5C778);
+}
+
+.dark .gradient-primary {
+  background: linear-gradient(135deg, #7C3AED, #A78BFA);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, #B5C778, #0A2C19);
+}
+
+.dark .gradient-hero {
+  background: linear-gradient(135deg, #121212, #262626);
+}
+
+.gradient-subtle {
+  background: linear-gradient(135deg, #121212, #262626);
+}
+
+/* ============================================
+   SMOOTH TRANSITIONS
+   ============================================ */
 * {
-  color-scheme: light;
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
 }

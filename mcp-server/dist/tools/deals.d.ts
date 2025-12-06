@@ -5,12 +5,29 @@ export declare function handleDealTool(request: any, supabase: SupabaseClient): 
         text: string;
     }[];
     isError: boolean;
+    structuredContent?: undefined;
 } | {
     content: {
         type: string;
         text: string;
     }[];
+    structuredContent: {
+        deals: any[];
+        duplicateMatches?: undefined;
+        suggestedAction?: undefined;
+    };
     isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    isError: boolean;
+    structuredContent: {
+        duplicateMatches: import("../utils/deduplication.js").DuplicateMatch[];
+        suggestedAction: "create" | "merge" | "update" | "skip";
+        deals?: undefined;
+    };
 } | null>;
 export declare const dealToolDefinitions: ({
     name: string;

@@ -58,6 +58,7 @@ export const CreateAccountSchema = z.object({
     name: z.string().min(1).describe('Company name'),
     industry: z.string().optional().describe('Industry sector'),
     website: z.string().url().optional().describe('Company website URL'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const UpdateAccountSchema = z.object({
@@ -65,6 +66,7 @@ export const UpdateAccountSchema = z.object({
     name: z.string().min(1).optional().describe('Company name'),
     industry: z.string().optional().describe('Industry sector'),
     website: z.string().url().optional().describe('Company website URL'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const CreateContactSchema = z.object({
@@ -74,6 +76,7 @@ export const CreateContactSchema = z.object({
     email: z.string().email().optional().describe('Email address'),
     phone: z.string().optional().describe('Phone number'),
     role: z.string().optional().describe('Job title or role'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const UpdateContactSchema = z.object({
@@ -84,6 +87,7 @@ export const UpdateContactSchema = z.object({
     email: z.string().email().optional().describe('Email address'),
     phone: z.string().optional().describe('Phone number'),
     role: z.string().optional().describe('Job title or role'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const CreateDealSchema = z.object({
@@ -94,6 +98,7 @@ export const CreateDealSchema = z.object({
     stage: z.string().min(1).describe('Current stage'),
     close_date: z.string().optional().describe('Expected close date (YYYY-MM-DD)'),
     status: z.enum(['open', 'won', 'lost']).default('open').describe('Deal status'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const UpdateDealSchema = z.object({
@@ -105,6 +110,7 @@ export const UpdateDealSchema = z.object({
     stage: z.string().optional().describe('Current stage'),
     close_date: z.string().optional().describe('Expected close date (YYYY-MM-DD)'),
     status: z.enum(['open', 'won', 'lost']).optional().describe('Deal status'),
+    tags: z.array(z.string()).optional().describe('Array of tag names'),
 });
 
 export const CreatePipelineSchema = z.object({

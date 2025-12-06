@@ -19,6 +19,7 @@ export interface MCPTest {
         containsText?: string[];
         errorExpected?: boolean;
     };
+    setup?: (mcpUrl: string) => Promise<string | null>; // Setup function to run before test
     cleanup?: {
         tool: string;
         getIdFromResult: (result: any) => string | null;
@@ -747,6 +748,362 @@ export const MCP_TESTS: MCPTest[] = [
         args: { pipeline_id: '{pipeline_id}' },
         expectedResult: { hasContent: true, hasStructuredContent: true }
     },
+    {
+        id: generateTestId('search'),
+        category: 'Search',
+        tool: 'search_crm',
+        name: 'Search CRM - With tag filter',
+        description: 'Search entities filtered by tags',
+        query: 'Find all contacts with tag VIP',
+        args: { query: '', tags_filter: ['VIP'] },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('search'),
+        category: 'Search',
+        tool: 'search_crm',
+        name: 'Search CRM - Query and tags',
+        description: 'Search with both query and tag filter',
+        query: 'Find Acme companies tagged Enterprise',
+        args: { query: 'Acme', tags_filter: ['Enterprise'] },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+
+    // ========================================
+    // TAG TESTS (Integration with entities)
+    // ========================================
+    
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'create_account',
+        name: 'Create account - With tags',
+        description: 'Create account and verify tags are stored',
+        query: 'Create account "Tagged Corp" with tags VIP and Enterprise',
+        args: { 
+            name: 'Tagged Corp',
+            tags: ['VIP', 'Enterprise']
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true },
+        cleanup: { tool: 'delete_account', getIdFromResult: (r) => r.structuredContent?.accounts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'create_contact',
+        name: 'Create contact - With tags',
+        description: 'Create contact with tags',
+        query: 'Add contact John Tagged with tags Important and Follow-up',
+        args: { 
+            first_name: 'John',
+            last_name: 'Tagged',
+            tags: ['Important', 'Follow-up']
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'create_deal',
+        name: 'Create deal - With tags',
+        description: 'Create deal with tags',
+        query: 'Create deal "Tagged Deal" with tags Priority and Hot',
+        args: { 
+            name: 'Tagged Deal',
+            stage: 'Discovery',
+            tags: ['Priority', 'Hot']
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true },
+        cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'update_account',
+        name: 'Update account - Add tags',
+        description: 'Add tags to existing account',
+        query: 'Add tags VIP and Enterprise to account {account_id}',
+        args: { 
+            id: '{account_id}',
+            tags: ['VIP', 'Enterprise']
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'update_contact',
+        name: 'Update contact - Modify tags',
+        description: 'Update contact tags',
+        query: 'Update contact {contact_id} tags to Important and Follow-up',
+        args: { 
+            id: '{contact_id}',
+            tags: ['Important', 'Follow-up']
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('tag'),
+        category: 'Tags',
+        tool: 'list_contacts',
+        name: 'List contacts - Filter by tag',
+        description: 'List contacts that have specific tags',
+        query: 'Show me all contacts with tag VIP',
+        args: { tags: ['VIP'] },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+
+    // ========================================
+    // CHART TESTS (Analyst API)
+    // ========================================
+    
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Bar chart (Deals by stage)',
+        description: 'Generate bar chart for deals grouped by stage',
+        query: 'Show me deals by stage',
+        args: { query: 'Show me deals by stage' },
+        expectedResult: { hasContent: true, hasStructuredContent: false, containsText: ['chart'] }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Revenue by stage',
+        description: 'Generate bar chart showing revenue grouped by stage',
+        query: 'Show me revenue by stage',
+        args: { query: 'Show me revenue by stage' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Line chart (Revenue over time)',
+        description: 'Generate line chart for revenue trends',
+        query: 'Chart revenue over time',
+        args: { query: 'Chart revenue over time' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Pie chart (Deal status)',
+        description: 'Generate pie chart for deal status distribution',
+        query: 'Show deal status distribution',
+        args: { query: 'Show deal status distribution' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Count contacts by account',
+        description: 'Generate bar chart counting contacts per account',
+        query: 'How many contacts per account?',
+        args: { query: 'How many contacts per account?' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Total revenue',
+        description: 'Generate number/table showing total revenue',
+        query: 'What is the total revenue?',
+        args: { query: 'What is the total revenue?' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Top deals',
+        description: 'Generate table showing top deals',
+        query: 'Show me the top 10 deals',
+        args: { query: 'Show me the top 10 deals' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Average deal value',
+        description: 'Calculate and display average deal value',
+        query: 'What is the average deal value?',
+        args: { query: 'What is the average deal value?' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Deals this month',
+        description: 'Generate chart for deals created this month',
+        query: 'Show me deals created this month',
+        args: { query: 'Show me deals created this month' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+    {
+        id: generateTestId('chart'),
+        category: 'Charts',
+        tool: 'analyst_api',
+        name: 'Chart - Contacts by industry',
+        description: 'Generate chart showing contacts grouped by account industry',
+        query: 'Show me contacts by industry',
+        args: { query: 'Show me contacts by industry' },
+        expectedResult: { hasContent: true, hasStructuredContent: false }
+    },
+
+    // ========================================
+    // DEDUPLICATION TESTS
+    // ========================================
+    
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_contact',
+        name: 'Duplicate Contact - Email Match',
+        description: 'Attempt to create contact with duplicate email (should be blocked)',
+        query: 'Create contact John Doe with email john@example.com',
+        args: { 
+            first_name: 'John', 
+            last_name: 'Doe', 
+            email: 'john@example.com' 
+        },
+        expectedResult: { hasContent: true, containsText: ['duplicate', 'Duplicate'] },
+        // Note: This test expects the first contact to be created, then the duplicate to be blocked
+        setup: async (mcpUrl: string) => {
+            // Create initial contact first
+            const { callTool } = await import('@/lib/mcp-client');
+            const result = await callTool('create_contact', {
+                first_name: 'John',
+                last_name: 'Doe',
+                email: 'john@example.com'
+            }, mcpUrl);
+            return result?.structuredContent?.contacts?.[0]?.id || null;
+        },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_contact',
+        name: 'Duplicate Contact - Phone Match',
+        description: 'Attempt to create contact with duplicate phone (should be blocked)',
+        query: 'Create contact Jane Smith with phone (555) 123-4567',
+        args: { 
+            first_name: 'Jane', 
+            last_name: 'Smith', 
+            phone: '(555) 123-4567' 
+        },
+        expectedResult: { hasContent: true, containsText: ['duplicate', 'Duplicate'] },
+        setup: async (mcpUrl: string) => {
+            const { callTool } = await import('@/lib/mcp-client');
+            const result = await callTool('create_contact', {
+                first_name: 'Jane',
+                last_name: 'Smith',
+                phone: '(555) 123-4567'
+            }, mcpUrl);
+            return result?.structuredContent?.contacts?.[0]?.id || null;
+        },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_contact',
+        name: 'Duplicate Contact - Name + Account',
+        description: 'Attempt to create contact with same name and account (should warn)',
+        query: 'Create contact Bob Johnson for account {account_id}',
+        args: { 
+            first_name: 'Bob', 
+            last_name: 'Johnson', 
+            account_id: '{account_id}' 
+        },
+        expectedResult: { hasContent: true },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_deal',
+        name: 'Duplicate Deal - Name + Account',
+        description: 'Attempt to create deal with duplicate name and account (should be blocked)',
+        query: 'Create deal "Enterprise License" for account {account_id}',
+        args: { 
+            name: 'Enterprise License',
+            account_id: '{account_id}',
+            stage: 'Discovery'
+        },
+        expectedResult: { hasContent: true, containsText: ['duplicate', 'Duplicate'] },
+        setup: async (mcpUrl: string) => {
+            const { callTool } = await import('@/lib/mcp-client');
+            // First ensure we have an account
+            const accountResult = await callTool('create_account', { name: 'Test Account for Dedup - ' + Date.now() }, mcpUrl);
+            const accountId = accountResult?.structuredContent?.accounts?.[0]?.id;
+            if (!accountId) return null;
+            
+            // Create initial deal with the same name and account (this is the duplicate)
+            const dealResult = await callTool('create_deal', {
+                name: 'Enterprise License',
+                account_id: accountId,
+                stage: 'Discovery'
+            }, mcpUrl);
+            
+            // Return accountId as a special marker so test runner knows to store it as account_id
+            // Format: "account_id:<actual_id>" so test runner can parse it
+            return `account_id:${accountId}`;
+        },
+        cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_deal',
+        name: 'Duplicate Deal - Name Only',
+        description: 'Attempt to create deal with duplicate name (should warn)',
+        query: 'Create deal "Test Deal"',
+        args: { 
+            name: 'Test Deal',
+            stage: 'Lead'
+        },
+        expectedResult: { hasContent: true },
+        cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_contact',
+        name: 'No Duplicate - Unique Contact',
+        description: 'Create contact with unique email (should succeed)',
+        query: 'Create contact Unique Person with email unique-{timestamp}@example.com',
+        args: { 
+            first_name: 'Unique', 
+            last_name: 'Person', 
+            email: 'unique-{timestamp}@example.com' 
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('dedup'),
+        category: 'Deduplication',
+        tool: 'create_deal',
+        name: 'No Duplicate - Unique Deal',
+        description: 'Create deal with unique name (should succeed)',
+        query: 'Create deal "Unique Deal Name {timestamp}"',
+        args: { 
+            name: 'Unique Deal Name {timestamp}',
+            stage: 'Discovery'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
+    },
 ];
 
 // Group tests by category
@@ -757,6 +1114,9 @@ export const TESTS_BY_CATEGORY: Record<string, MCPTest[]> = {
     'Pipelines': MCP_TESTS.filter(t => t.category === 'Pipelines'),
     'Interactions': MCP_TESTS.filter(t => t.category === 'Interactions'),
     'Search': MCP_TESTS.filter(t => t.category === 'Search'),
+    'Tags': MCP_TESTS.filter(t => t.category === 'Tags'),
+    'Charts': MCP_TESTS.filter(t => t.category === 'Charts'),
+    'Deduplication': MCP_TESTS.filter(t => t.category === 'Deduplication'),
 };
 
 // Get all unique tool names
