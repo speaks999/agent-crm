@@ -18,6 +18,12 @@ export interface MCPTool {
 
 export interface MCPCallResult {
     content: Array<{ type: string; text: string }>;
+    /**
+     * Some MCP tools also return a structured payload for programmatic use.
+     * (Used by the admin MCP test runner UI.)
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    structuredContent?: any;
     isError?: boolean;
 }
 

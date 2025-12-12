@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
+  }, [supabase]);
 
   const signUp = async (email: string, password: string) => {
     // Email confirmations are enabled - users must confirm their email
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Check if email confirmation is required
     // If user is created but session is null, email confirmation is required
-    const needsConfirmation = !error && data.user && !data.session;
+    const needsConfirmation = Boolean(!error && data.user && !data.session);
 
     return { error, needsConfirmation };
   };
