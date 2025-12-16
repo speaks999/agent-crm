@@ -90,7 +90,7 @@ export function TagInput({
   return (
     <div className={`relative ${className}`} ref={containerRef}>
       {label && (
-        <label className="block text-sm font-medium text-slate-700 mb-1.5">
+        <label className="block text-sm font-medium text-foreground mb-1.5">
           {label}
         </label>
       )}
@@ -122,16 +122,16 @@ export function TagInput({
             setTimeout(() => inputRef.current?.focus(), 0);
           }
         }}
-        className="w-full text-left px-3 py-2 border border-slate-300 rounded-md bg-white hover:border-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+        className="w-full text-left px-3 py-2 border border-border rounded-md bg-card hover:border-foreground/50 focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring text-sm"
       >
-        <span className="text-slate-500">{placeholder}</span>
+        <span className="text-muted-foreground">{placeholder}</span>
       </button>
 
       {/* Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto">
+        <div className="absolute z-50 w-full mt-1 bg-card border border-border rounded-md shadow-lg max-h-60 overflow-auto">
           {/* Search Input */}
-          <div className="p-2 border-b border-slate-200">
+          <div className="p-2 border-b border-border">
             <input
               ref={inputRef}
               type="text"
@@ -141,7 +141,7 @@ export function TagInput({
                 setShowColorPicker(false);
               }}
               placeholder="Search or create tag..."
-              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
           </div>
@@ -150,7 +150,7 @@ export function TagInput({
           {!showColorPicker && (
             <div className="py-1">
               {loading && (
-                <div className="px-3 py-2 text-sm text-slate-500">Loading...</div>
+                <div className="px-3 py-2 text-sm text-muted-foreground">Loading...</div>
               )}
 
               {!loading && suggestions.length > 0 && (
@@ -162,7 +162,7 @@ export function TagInput({
                         key={tag.id}
                         type="button"
                         onClick={() => handleSelectTag(tag.tag_name)}
-                        className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between text-sm"
+                        className="w-full text-left px-3 py-2 hover:bg-muted flex items-center justify-between text-sm text-foreground"
                       >
                         <div className="flex items-center gap-2">
                           <div
@@ -170,11 +170,11 @@ export function TagInput({
                             style={{ backgroundColor: tag.color }}
                           />
                           <span>{tag.tag_name}</span>
-                          <span className="text-xs text-slate-400">
+                          <span className="text-xs text-muted-foreground">
                             ({tag.usage_count})
                           </span>
                         </div>
-                        {isSelected && <Check className="h-4 w-4 text-indigo-600" />}
+                        {isSelected && <Check className="h-4 w-4 text-primary" />}
                       </button>
                     );
                   })}
@@ -189,7 +189,7 @@ export function TagInput({
                     setNewTagName(searchQuery.trim());
                     setShowColorPicker(true);
                   }}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center gap-2 text-sm text-indigo-600"
+                  className="w-full text-left px-3 py-2 hover:bg-muted flex items-center gap-2 text-sm text-primary"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Create &quot;{searchQuery.trim()}&quot;</span>
@@ -197,7 +197,7 @@ export function TagInput({
               )}
 
               {!loading && suggestions.length === 0 && !isCreatingNew && (
-                <div className="px-3 py-2 text-sm text-slate-500">
+                <div className="px-3 py-2 text-sm text-muted-foreground">
                   No tags found. Type to create a new one.
                 </div>
               )}
@@ -206,8 +206,8 @@ export function TagInput({
 
           {/* Color Picker */}
           {showColorPicker && (
-            <div className="p-3 border-t border-slate-200">
-              <div className="mb-2 text-sm font-medium text-slate-700">
+            <div className="p-3 border-t border-border">
+              <div className="mb-2 text-sm font-medium text-foreground">
                 Choose a color for &quot;{newTagName}&quot;
               </div>
               <div className="grid grid-cols-4 gap-2 mb-3">
@@ -218,8 +218,8 @@ export function TagInput({
                     onClick={() => setSelectedColor(color)}
                     className={`w-10 h-10 rounded-md border-2 transition-all ${
                       selectedColor === color
-                        ? 'border-slate-800 scale-110'
-                        : 'border-slate-300 hover:border-slate-400'
+                        ? 'border-foreground scale-110'
+                        : 'border-border hover:border-foreground/50'
                     }`}
                     style={{ backgroundColor: color }}
                     aria-label={`Select color ${color}`}
@@ -230,7 +230,7 @@ export function TagInput({
                 <button
                   type="button"
                   onClick={handleCreateTag}
-                  className="flex-1 px-3 py-1.5 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700"
+                  className="flex-1 px-3 py-1.5 bg-primary text-primary-foreground text-sm rounded-md hover:bg-primary-glow"
                 >
                   Create Tag
                 </button>
@@ -240,7 +240,7 @@ export function TagInput({
                     setShowColorPicker(false);
                     setNewTagName('');
                   }}
-                  className="px-3 py-1.5 border border-slate-300 text-slate-700 text-sm rounded-md hover:bg-slate-50"
+                  className="px-3 py-1.5 border border-border text-foreground text-sm rounded-md hover:bg-muted"
                 >
                   Cancel
                 </button>

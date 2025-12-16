@@ -9,7 +9,7 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle, ArrowRight, LogIn } from 'lucide-
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { signIn, user } = useAuth();
+  const { signIn, user, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -19,10 +19,10 @@ export default function LoginPage() {
 
   // Check if user is already logged in
   useEffect(() => {
-    if (user) {
+    if (user && !authLoading) {
       router.push('/dashboard');
     }
-  }, [user, router]);
+  }, [user, authLoading, router]);
 
   // Check for message from query params (e.g., after signup)
   useEffect(() => {

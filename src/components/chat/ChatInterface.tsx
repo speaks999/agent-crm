@@ -21,7 +21,7 @@ export function ChatInterface() {
         {
             id: '1',
             role: 'assistant',
-            content: 'Hello! I\'m your CRM assistant. I can help you manage accounts, contacts, opportunities, and more. Try asking me to list accounts or create a new contact.',
+            content: 'Hi! Tell me about your customer interactions and I\'ll update the CRM for you. You can also ask me for analytics like \'Show me revenue by stage\'.',
             timestamp: new Date(),
         },
     ]);
@@ -120,9 +120,9 @@ export function ChatInterface() {
     };
 
     return (
-        <div className="flex h-full flex-col">
+        <div className="flex h-full flex-col bg-background">
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {messages.map(message => (
                     <div key={message.id}>
                         <MessageBubble message={message} />
@@ -136,7 +136,7 @@ export function ChatInterface() {
                     </div>
                 ))}
                 {isLoading && (
-                    <div className="flex items-center gap-2 text-secondary text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground text-sm">
                         <div className="animate-pulse">Thinking...</div>
                     </div>
                 )}
@@ -144,24 +144,40 @@ export function ChatInterface() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-subtle p-4">
-                <div className="flex gap-2">
-                    <textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={handleKeyPress}
-                        placeholder="Ask me anything about your CRM..."
-                        className="flex-1 rounded-lg border border-default bg-surface px-4 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        rows={1}
-                        disabled={isLoading}
-                    />
-                    <button
-                        onClick={handleSend}
-                        disabled={!input.trim() || isLoading}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors"
-                    >
-                        Send
-                    </button>
+            <div className="border-t border-border px-8 py-4 bg-background">
+                <div className="flex items-end gap-3">
+                    <div className="flex-1 relative">
+                        <textarea
+                            value={input}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            placeholder="Tell me about a customer interaction or ask for analytics..."
+                            className="w-full rounded-lg border border-border bg-card px-4 py-3 pr-12 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+                            rows={1}
+                            disabled={isLoading}
+                        />
+                        <button
+                            onClick={handleSend}
+                            disabled={!input.trim() || isLoading}
+                            className="absolute right-2 bottom-2 p-2 text-primary hover:text-primary-glow disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            title="Send"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            >
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

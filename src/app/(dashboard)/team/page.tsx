@@ -26,7 +26,7 @@ export default function TeamPage() {
         try {
             const response = await fetch('/api/team');
             const data = await response.json();
-            setMembers(data);
+            setMembers(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch team members:', error);
         } finally {
@@ -37,11 +37,11 @@ export default function TeamPage() {
     const getRoleColor = (role: string) => {
         switch (role) {
             case 'admin':
-                return 'bg-purple-100 text-purple-800';
+                return 'bg-primary-muted text-primary';
             case 'manager':
-                return 'bg-blue-100 text-blue-800';
+                return 'bg-primary-muted text-primary';
             default:
-                return 'bg-slate-100 text-slate-800';
+                return 'bg-muted text-muted-foreground';
         }
     };
 
@@ -59,21 +59,23 @@ export default function TeamPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <Loader2 className="animate-spin text-indigo-600" size={40} />
+                <Loader2 className="animate-spin text-primary" size={40} />
             </div>
         );
     }
 
+    const safeMembers = Array.isArray(members) ? members : [];
+
     return (
-        <div className="flex-1 overflow-auto p-8 bg-slate-50">
+        <div className="flex-1 overflow-auto p-8 bg-background">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Team</h2>
-                    <p className="text-slate-500 mt-1">{members.length} team members</p>
+                    <h2 className="text-2xl font-bold text-foreground">Team</h2>
+                    <p className="text-muted-foreground mt-1">{safeMembers.length} team members</p>
                 </div>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                 >
                     <Plus size={20} />
                     Add Member
@@ -81,20 +83,20 @@ export default function TeamPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {members.map((member) => (
+                {safeMembers.map((member) => (
                     <div
                         key={member.id}
-                        className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow"
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow"
                     >
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-semibold text-lg">
+                            <div className="w-12 h-12 rounded-full bg-primary-muted flex items-center justify-center text-primary font-semibold text-lg">
                                 {member.first_name[0]}{member.last_name[0]}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-slate-800 truncate">
+                                <h3 className="font-semibold text-foreground truncate">
                                     {member.first_name} {member.last_name}
                                 </h3>
-                                <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                                     <Mail size={14} />
                                     <span className="truncate">{member.email}</span>
                                 </div>
@@ -110,13 +112,13 @@ export default function TeamPage() {
                 ))}
             </div>
 
-            {members.length === 0 && (
+            {safeMembers.length === 0 && (
                 <div className="text-center py-12">
-                    <User className="mx-auto text-slate-300" size={64} />
-                    <p className="text-slate-500 mt-4">No team members yet</p>
+                    <User className="mx-auto text-muted-foreground" size={64} />
+                    <p className="text-muted-foreground mt-4">No team members yet</p>
                     <button
                         onClick={() => setShowAddModal(true)}
-                        className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                     >
                         Add Your First Member
                     </button>
@@ -125,8 +127,8 @@ export default function TeamPage() {
 
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md">
-                        <h3 className="text-xl font-bold text-slate-800 mb-4">Add Team Member</h3>
+                    <div className="bg-card rounded-xl p-6 w-full max-w-md border border-border">
+                        <h3 className="text-xl font-bold text-foreground mb-4">Add Team Member</h3>
                         <form onSubmit={async (e) => {
                             e.preventDefault();
                             const formData = new FormData(e.currentTarget);
@@ -155,21 +157,21 @@ export default function TeamPage() {
                             <div className="space-y-4">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">First Name</label>
-                                        <input name="first_name" required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        <label className="block text-sm font-medium text-foreground mb-1">First Name</label>
+                                        <input name="first_name" required className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Last Name</label>
-                                        <input name="last_name" required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                        <label className="block text-sm font-medium text-foreground mb-1">Last Name</label>
+                                        <input name="last_name" required className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
                                     </div>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
-                                    <input name="email" type="email" required className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                                    <label className="block text-sm font-medium text-foreground mb-1">Email</label>
+                                    <input name="email" type="email" required className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                                    <select name="role" className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <label className="block text-sm font-medium text-foreground mb-1">Role</label>
+                                    <select name="role" className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring">
                                         <option value="member">Member</option>
                                         <option value="manager">Manager</option>
                                         <option value="admin">Admin</option>
@@ -180,13 +182,13 @@ export default function TeamPage() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAddModal(false)}
-                                    className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                    className="px-4 py-2 text-muted-foreground hover:bg-muted rounded-lg transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                                 >
                                     Add Member
                                 </button>

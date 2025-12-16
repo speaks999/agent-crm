@@ -20,7 +20,11 @@ if (!supabaseUrl || !supabaseKey) {
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
 // Client-side Supabase client for browser usage (uses anon key for auth)
+let browserClient: ReturnType<typeof createClient> | null = null
+
 export function createBrowserClient() {
+  if (browserClient) return browserClient
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
@@ -30,11 +34,14 @@ export function createBrowserClient() {
     )
   }
 
-  return createClient(url, key, {
+  browserClient = createClient(url, key, {
     auth: {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      storageKey: 'agent-crm-auth',
     },
   })
+
+  return browserClient
 }

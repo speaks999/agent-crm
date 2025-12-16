@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube, Shield } from 'lucide-react';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -85,7 +85,13 @@ export default function Sidebar() {
                     href="/admin/test"
                     icon={<TestTube size={20} />}
                     label="MCP Tests"
-                    active={pathname?.startsWith('/admin/test')}
+                    active={pathname?.startsWith('/admin/test') && !pathname?.startsWith('/admin/auth-test')}
+                />
+                <NavItem
+                    href="/admin/auth-test"
+                    icon={<Shield size={20} />}
+                    label="Auth Tests"
+                    active={pathname?.startsWith('/admin/auth-test')}
                 />
                 <NavItem
                     href="/settings"

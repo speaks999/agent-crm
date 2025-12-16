@@ -1,24 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { createBrowserClient } from '@/lib/supabaseClient';
 import { Moon, Sun, Key, CreditCard, User, Bell, Shield, Mail, Phone, Globe, Clock, Save, Download, Trash2, ExternalLink, CheckCircle2, AlertCircle, Zap, Database, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
 
 export default function SettingsPage() {
+    const { user } = useAuth();
+    const supabase = useMemo(() => createBrowserClient(), []);
     // Theme state with localStorage persistence
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [themeSaved, setThemeSaved] = useState(false);
 
     // Account state
     const [accountData, setAccountData] = useState({
-        name: 'John Doe',
-        email: 'user@example.com',
-        phone: '+1 (555) 123-4567',
-        timezone: 'America/New_York',
-        language: 'English',
+        name: '',
+        email: '',
+        phone: '',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+        language: (typeof navigator !== 'undefined' ? navigator.language : 'English') || 'English',
         accountType: 'Professional',
-        memberSince: '2024-01-15',
+        memberSince: '',
     });
     const [isEditingAccount, setIsEditingAccount] = useState(false);
+    const [isSavingAccount, setIsSavingAccount] = useState(false);
+    const [accountMessage, setAccountMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+    const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
+    const [hasHydratedAccount, setHasHydratedAccount] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Security state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -86,6 +96,43 @@ export default function SettingsPage() {
         }
     }, []);
 
+    // Hydrate account details from the authenticated user (Supabase).
+    // Avoid overwriting in-progress edits by skipping hydration while editing.
+    useEffect(() => {
+        if (!user) return;
+        if (isEditingAccount) return;
+
+        const metadata = user.user_metadata || {};
+        const fullName =
+            metadata.full_name ||
+            metadata.name ||
+            [metadata.first_name, metadata.last_name].filter(Boolean).join(' ') ||
+            (user.email ? user.email.split('@')[0] : '');
+
+        const memberSince = user.created_at ? new Date(user.created_at).toISOString().split('T')[0] : '';
+
+        setAccountData(prev => ({
+            ...prev,
+            name: fullName || prev.name,
+            email: user.email || prev.email,
+            phone: metadata.phone || prev.phone,
+            timezone: metadata.timezone || prev.timezone,
+            language: metadata.language || prev.language,
+            accountType: metadata.account_type || prev.accountType,
+            memberSince: memberSince || prev.memberSince,
+        }));
+
+        if (!avatarPreview && metadata.avatar_url) {
+            setAvatarPreview(metadata.avatar_url);
+        }
+
+        if (!savedAvatar && metadata.avatar_url) {
+            setSavedAvatar(metadata.avatar_url);
+        }
+
+        setHasHydratedAccount(true);
+    }, [user, avatarPreview, savedAvatar, isEditingAccount]);
+
     const handleThemeToggle = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
@@ -101,10 +148,77 @@ export default function SettingsPage() {
         setTimeout(() => setThemeSaved(false), 2000);
     };
 
-    const handleAccountSave = () => {
-        // In a real app, you'd call an API to update account
+    const handleAccountSave = async () => {
+        if (!user) {
+            setAccountMessage({ type: 'error', text: 'You must be signed in to update your profile.' });
+            return;
+        }
+
+        setIsSavingAccount(true);
+        setAccountMessage(null);
+
+        try {
+            // Ensure we have a valid session before attempting the update; if not, try to refresh.
+            console.log('[profile-save] url', process.env.NEXT_PUBLIC_SUPABASE_URL);
+            const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
+            console.log('[profile-save] session check', { session: Boolean(sessionCheck.session), sessionError });
+            if (sessionError) {
+                setAccountMessage({ type: 'error', text: sessionError.message || 'Unable to verify session.' });
+                return;
+            }
+
+            if (!sessionCheck.session) {
+                const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+                console.log('[profile-save] refresh session', { session: Boolean(refreshed.session), refreshError });
+                if (refreshError || !refreshed.session) {
+                    setAccountMessage({ type: 'error', text: refreshError?.message || 'No active session. Please sign in again.' });
+                    return;
+                }
+            }
+
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new Error('Profile update timed out. Please try again.')), 15000)
+            );
+
+            const raceResult = await Promise.race([
+                supabase.auth.updateUser({
+                    data: {
+                        full_name: accountData.name,
+                        phone: accountData.phone,
+                        timezone: accountData.timezone,
+                        language: accountData.language,
+                        account_type: accountData.accountType,
+                        avatar_url: avatarPreview || undefined,
+                    },
+                }),
+                timeoutPromise,
+            ]);
+
+            const error = (raceResult as any)?.error;
+            console.log('[profile-save] update result', { error, accountData });
+
+            if (error) {
+                setAccountMessage({ type: 'error', text: error.message || 'Failed to update account.' });
+            } else {
+                setAccountMessage({ type: 'success', text: 'Account updated.' });
         setIsEditingAccount(false);
-        // Show success message
+                setSavedAvatar(avatarPreview || null);
+                try {
+                    if (avatarPreview) {
+                        localStorage.setItem('profileAvatar', avatarPreview);
+                    } else {
+                        localStorage.removeItem('profileAvatar');
+                    }
+                } catch (err) {
+                    console.error('Failed to persist avatar locally', err);
+                }
+            }
+        } catch (err: any) {
+            console.log('[profile-save] caught error', err);
+            setAccountMessage({ type: 'error', text: err?.message || 'Unexpected error while updating account.' });
+        } finally {
+            setIsSavingAccount(false);
+        }
     };
 
     const handlePasswordChange = async (e: React.FormEvent) => {
@@ -178,6 +292,10 @@ export default function SettingsPage() {
         // Show toast notification
     };
 
+    const memberSinceLabel = accountData.memberSince
+        ? new Date(accountData.memberSince).toLocaleDateString()
+        : 'Not available';
+
     return (
         <div className="flex flex-col h-full p-8 overflow-y-auto bg-background">
             <div className="mb-6">
@@ -209,11 +327,11 @@ export default function SettingsPage() {
                                 )}
                                 <button
                                     onClick={handleThemeToggle}
-                                    className={`relative w-14 h-7 rounded-full transition-colors ${theme === 'dark' ? 'bg-primary' : 'bg-muted'
+                                    className={`relative w-14 h-7 rounded-full transition-colors border border-border shadow-inner ${theme === 'dark' ? 'bg-primary' : 'bg-muted/60'
                                         }`}
                                 >
                                     <div
-                                        className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full transition-transform ${theme === 'dark' ? 'translate-x-7' : 'translate-x-0'
+                                        className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full shadow-sm transition-transform ${theme === 'dark' ? 'translate-x-7' : 'translate-x-0'
                                             }`}
                                     />
                                 </button>
@@ -227,11 +345,11 @@ export default function SettingsPage() {
                             </div>
                             <button
                                 onClick={() => handlePreferenceChange('compactMode')}
-                                className={`relative w-14 h-7 rounded-full transition-colors ${preferences.compactMode ? 'bg-primary' : 'bg-muted'
+                                className={`relative w-14 h-7 rounded-full transition-colors border border-border shadow-inner ${preferences.compactMode ? 'bg-primary' : 'bg-muted/60'
                                     }`}
                             >
                                 <div
-                                    className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full transition-transform ${preferences.compactMode ? 'translate-x-7' : 'translate-x-0'
+                                    className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full shadow-sm transition-transform ${preferences.compactMode ? 'translate-x-7' : 'translate-x-0'
                                         }`}
                                 />
                             </button>
@@ -244,11 +362,11 @@ export default function SettingsPage() {
                             </div>
                             <button
                                 onClick={() => handlePreferenceChange('showTooltips')}
-                                className={`relative w-14 h-7 rounded-full transition-colors ${preferences.showTooltips ? 'bg-primary' : 'bg-muted'
+                                className={`relative w-14 h-7 rounded-full transition-colors border border-border shadow-inner ${preferences.showTooltips ? 'bg-primary' : 'bg-muted/60'
                                     }`}
                             >
                                 <div
-                                    className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full transition-transform ${preferences.showTooltips ? 'translate-x-7' : 'translate-x-0'
+                                    className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full shadow-sm transition-transform ${preferences.showTooltips ? 'translate-x-7' : 'translate-x-0'
                                         }`}
                                 />
                             </button>
@@ -265,7 +383,11 @@ export default function SettingsPage() {
                         </div>
                         {!isEditingAccount ? (
                             <button
-                                onClick={() => setIsEditingAccount(true)}
+                                onClick={() => {
+                                    setIsEditingAccount(true);
+                                    // Once editing starts, avoid auto-hydrate from auth user so user input is not overwritten.
+                                    setHasHydratedAccount(true);
+                                }}
                                 className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                             >
                                 Edit Profile
@@ -273,35 +395,79 @@ export default function SettingsPage() {
                         ) : (
                             <div className="flex gap-2">
                                 <button
-                                    onClick={() => setIsEditingAccount(false)}
+                                    onClick={() => {
+                                        setIsEditingAccount(false);
+                                        setAvatarPreview(savedAvatar);
+                                    }}
                                     className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleAccountSave}
-                                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors flex items-center gap-2"
+                                    disabled={isSavingAccount}
+                                    className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors flex items-center gap-2 disabled:opacity-70"
                                 >
                                     <Save size={16} />
-                                    Save
+                                    {isSavingAccount ? 'Saving...' : 'Save'}
                                 </button>
                             </div>
                         )}
                     </div>
 
+                    {accountMessage && (
+                        <div
+                            className={`mb-4 p-3 rounded-lg flex items-center gap-2 ${accountMessage.type === 'success'
+                                ? 'bg-success/10 text-success'
+                                : 'bg-destructive/10 text-destructive'
+                                }`}
+                        >
+                            {accountMessage.type === 'success' ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                            <span className="text-sm">{accountMessage.text}</span>
+                        </div>
+                    )}
+
                     <div className="space-y-4">
                         {/* Profile Picture */}
                         <div className="flex items-center gap-4 pb-4 border-b border-border">
-                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center">
-                                <span className="text-2xl font-bold text-primary-foreground">
-                                    {accountData.name.split(' ').map(n => n[0]).join('')}
-                                </span>
+                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-border">
+                                {avatarPreview ? (
+                                    <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-2xl font-bold text-primary-foreground">
+                                        {accountData.name.split(' ').map(n => n[0]).join('')}
+                                    </span>
+                                )}
                             </div>
                             <div>
-                                <button className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors">
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                                >
                                     Change Photo
                                 </button>
                                 <p className="text-xs text-muted-foreground mt-1">JPG, PNG or GIF. Max size 2MB</p>
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg,image/gif"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        if (file.size > 2 * 1024 * 1024) {
+                                            alert('File must be under 2MB');
+                                            return;
+                                        }
+                                        const reader = new FileReader();
+                                        reader.onload = () => {
+                                            const result = reader.result as string;
+                                            setAvatarPreview(result);
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }}
+                                />
                             </div>
                         </div>
 
@@ -406,7 +572,7 @@ export default function SettingsPage() {
                                 <label className="block text-sm font-medium text-foreground mb-2">Account Type</label>
                                 <div className="p-4 bg-muted rounded-lg">
                                     <p className="font-medium text-foreground">{accountData.accountType}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">Member since {new Date(accountData.memberSince).toLocaleDateString()}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Member since {memberSinceLabel}</p>
                                 </div>
                             </div>
                         </div>

@@ -54,11 +54,11 @@ export default function VoiceInput() {
                 onClick={handleVoiceInput}
                 disabled={isProcessing}
                 className={`w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${isRecording
-                    ? 'bg-red-600 hover:bg-red-700 animate-pulse'
+                    ? 'bg-destructive hover:bg-destructive/90 animate-pulse'
                     : isProcessing
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-indigo-600 hover:bg-indigo-700'
-                    } text-white`}
+                        ? 'bg-muted cursor-not-allowed'
+                        : 'bg-primary hover:bg-primary-glow'
+                    } text-primary-foreground`}
             >
                 {isProcessing ? (
                     <Loader2 size={32} className="animate-spin" />

@@ -71,7 +71,7 @@ export default function ProjectsPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <Loader2 className="animate-spin text-indigo-600" size={40} />
+                <Loader2 className="animate-spin text-primary" size={40} />
             </div>
         );
     }
@@ -80,13 +80,13 @@ export default function ProjectsPage() {
         <div className="flex-1 overflow-auto p-8">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Projects</h2>
-                    <p className="text-slate-500 mt-1">{filteredProjects.length} projects</p>
+                    <h2 className="text-2xl font-bold text-foreground">Projects</h2>
+                    <p className="text-muted-foreground mt-1">{filteredProjects.length} projects</p>
                 </div>
                 <button
                     onClick={syncProjects}
                     disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50"
                 >
                     <RefreshCw size={20} className={isSyncing ? 'animate-spin' : ''} />
                     {isSyncing ? 'Syncing...' : 'Sync from Insightly'}
@@ -96,19 +96,19 @@ export default function ProjectsPage() {
             <div className="flex gap-2 mb-6">
                 <button
                     onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary-muted text-primary' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                 >
                     All
                 </button>
                 <button
                     onClick={() => setFilter('active')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'active' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'active' ? 'bg-primary-muted text-primary' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                 >
                     Active
                 </button>
                 <button
                     onClick={() => setFilter('completed')}
-                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'completed' ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
+                    className={`px-4 py-2 rounded-lg transition-colors ${filter === 'completed' ? 'bg-primary-muted text-primary' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}
                 >
                     Completed
                 </button>
@@ -119,23 +119,23 @@ export default function ProjectsPage() {
                     <Link
                         key={project.id}
                         href={`/projects/${project.id}`}
-                        className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-indigo-200"
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary"
                     >
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600">
+                            <div className="w-12 h-12 rounded-lg bg-primary-muted flex items-center justify-center text-primary">
                                 <FolderKanban size={24} />
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-slate-800 truncate">
+                                <h3 className="font-semibold text-foreground truncate">
                                     {project.project_name}
                                 </h3>
                                 <div className="mt-2">
-                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${project.completed ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}`}>
+                                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${project.completed ? 'bg-success/20 text-success' : 'bg-info/20 text-info'}`}>
                                         {project.completed ? 'Completed' : 'Active'}
                                     </span>
                                 </div>
                                 {project.started_date && (
-                                    <div className="flex items-center gap-1 text-sm text-slate-500 mt-2">
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                                         <Calendar size={14} />
                                         <span>Started {new Date(project.started_date).toLocaleDateString()}</span>
                                     </div>
@@ -148,12 +148,12 @@ export default function ProjectsPage() {
 
             {filteredProjects.length === 0 && (
                 <div className="text-center py-12">
-                    <FolderKanban className="mx-auto text-slate-300" size={64} />
-                    <p className="text-slate-500 mt-4">No projects found</p>
+                    <FolderKanban className="mx-auto text-muted-foreground" size={64} />
+                    <p className="text-muted-foreground mt-4">No projects found</p>
                     {filter !== 'all' && (
                         <button
                             onClick={() => setFilter('all')}
-                            className="mt-4 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
+                            className="mt-4 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
                         >
                             View All Projects
                         </button>

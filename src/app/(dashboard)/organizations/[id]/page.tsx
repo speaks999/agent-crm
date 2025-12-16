@@ -53,7 +53,7 @@ export default function OrganizationDetailPage() {
     if (isLoading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <Loader2 className="animate-spin text-indigo-600" size={40} />
+                <Loader2 className="animate-spin text-primary" size={40} />
             </div>
         );
     }
@@ -61,8 +61,8 @@ export default function OrganizationDetailPage() {
     if (!organization) {
         return (
             <div className="flex flex-col items-center justify-center h-full">
-                <p className="text-slate-500 text-lg">Organization not found</p>
-                <Link href="/organizations" className="mt-4 text-indigo-600 hover:underline">
+                <p className="text-muted-foreground text-lg">Organization not found</p>
+                <Link href="/organizations" className="mt-4 text-primary hover:underline">
                     Back to Organizations
                 </Link>
             </div>
@@ -71,15 +71,15 @@ export default function OrganizationDetailPage() {
 
     return (
         <div className="flex-1 overflow-auto p-8">
-            <Link href="/organizations" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-800 mb-6 transition-colors">
+            <Link href="/organizations" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors">
                 <ArrowLeft size={20} />
                 Back to Organizations
             </Link>
 
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-slate-200">
+            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-border">
                     <div className="flex items-start gap-6">
-                        <div className="w-24 h-24 rounded-xl bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 overflow-hidden">
+                        <div className="w-24 h-24 rounded-xl bg-primary-muted flex items-center justify-center text-primary shrink-0 overflow-hidden">
                             {organization.image_url ? (
                                 <img src={organization.image_url} alt={organization.name} className="w-full h-full object-cover" />
                             ) : (
@@ -87,20 +87,20 @@ export default function OrganizationDetailPage() {
                             )}
                         </div>
                         <div className="flex-1">
-                            <h1 className="text-3xl font-bold text-slate-800">{organization.name}</h1>
+                            <h1 className="text-3xl font-bold text-foreground">{organization.name}</h1>
                             {organization.background && (
-                                <p className="text-slate-600 mt-2 max-w-3xl">{organization.background}</p>
+                                <p className="text-muted-foreground mt-2 max-w-3xl">{organization.background}</p>
                             )}
 
                             <div className="flex flex-wrap gap-6 mt-6">
                                 {organization.website && (
-                                    <a href={organization.website.startsWith('http') ? organization.website : `https://${organization.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-indigo-600 hover:underline">
+                                    <a href={organization.website.startsWith('http') ? organization.website : `https://${organization.website}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-primary hover:underline">
                                         <Globe size={18} />
                                         {organization.website}
                                     </a>
                                 )}
                                 {organization.phone && (
-                                    <div className="flex items-center gap-2 text-slate-600">
+                                    <div className="flex items-center gap-2 text-foreground">
                                         <Phone size={18} />
                                         {organization.phone}
                                     </div>
@@ -112,11 +112,11 @@ export default function OrganizationDetailPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
                     <div>
-                        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                            <MapPin size={20} className="text-slate-400" />
+                        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <MapPin size={20} className="text-muted-foreground" />
                             Billing Address
                         </h3>
-                        <div className="bg-slate-50 p-4 rounded-lg text-slate-600">
+                        <div className="bg-muted p-4 rounded-lg text-foreground">
                             {organization.address_billing_street && <p>{organization.address_billing_street}</p>}
                             <p>
                                 {[
@@ -128,17 +128,17 @@ export default function OrganizationDetailPage() {
                             {organization.address_billing_country && <p>{organization.address_billing_country}</p>}
 
                             {!organization.address_billing_street && !organization.address_billing_city && (
-                                <p className="text-slate-400 italic">No billing address</p>
+                                <p className="text-muted-foreground italic">No billing address</p>
                             )}
                         </div>
                     </div>
 
                     <div>
-                        <h3 className="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
-                            <MapPin size={20} className="text-slate-400" />
+                        <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
+                            <MapPin size={20} className="text-muted-foreground" />
                             Shipping Address
                         </h3>
-                        <div className="bg-slate-50 p-4 rounded-lg text-slate-600">
+                        <div className="bg-muted p-4 rounded-lg text-foreground">
                             {organization.address_ship_street && <p>{organization.address_ship_street}</p>}
                             <p>
                                 {[
@@ -150,7 +150,7 @@ export default function OrganizationDetailPage() {
                             {organization.address_ship_country && <p>{organization.address_ship_country}</p>}
 
                             {!organization.address_ship_street && !organization.address_ship_city && (
-                                <p className="text-slate-400 italic">No shipping address</p>
+                                <p className="text-muted-foreground italic">No shipping address</p>
                             )}
                         </div>
                     </div>

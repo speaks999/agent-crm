@@ -1,8 +1,8 @@
 'use client';
 
-import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ChatTabs } from "@/components/chat/ChatTabs";
 
 export default function DashboardLayout({
   children,
@@ -12,9 +12,9 @@ export default function DashboardLayout({
   return (
     <ProtectedRoute>
       <div className="flex h-screen bg-background text-foreground font-sans">
-        <Sidebar />
-        <main className="flex-1 flex flex-col overflow-hidden bg-background">
+        <main className="flex-1 flex flex-col bg-background overflow-auto">
           <Header />
+          <ChatTabs />
           {children}
         </main>
       </div>

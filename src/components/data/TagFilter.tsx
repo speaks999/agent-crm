@@ -58,12 +58,12 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-1.5 border border-slate-300 rounded-md bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+        className="flex items-center gap-2 px-3 py-1.5 border border-border rounded-md bg-card hover:bg-muted text-sm font-medium text-foreground"
       >
         <Filter className="h-4 w-4" />
         <span>Filter by Tags</span>
         {selectedTags.length > 0 && (
-          <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-xs rounded-full">
+          <span className="px-1.5 py-0.5 bg-primary text-primary-foreground text-xs rounded-full">
             {selectedTags.length}
           </span>
         )}
@@ -71,16 +71,16 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
 
       {/* Popover */}
       {isOpen && (
-        <div className="absolute z-50 mt-2 w-80 bg-white border border-slate-200 rounded-md shadow-lg">
+        <div className="absolute z-50 mt-2 w-80 bg-card border border-border rounded-md shadow-lg">
           {/* Header */}
-          <div className="p-3 border-b border-slate-200">
+          <div className="p-3 border-b border-border">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-slate-900">Filter by Tags</h3>
+              <h3 className="text-sm font-semibold text-foreground">Filter by Tags</h3>
               {selectedTags.length > 0 && (
                 <button
                   type="button"
                   onClick={handleClearAll}
-                  className="text-xs text-indigo-600 hover:text-indigo-700"
+                  className="text-xs text-primary hover:text-primary-glow"
                 >
                   Clear all
                 </button>
@@ -91,7 +91,7 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tags..."
-              className="w-full px-2 py-1.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-2 py-1.5 text-sm border border-border rounded bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
               autoFocus
             />
           </div>
@@ -99,11 +99,11 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
           {/* Tag List */}
           <div className="max-h-60 overflow-y-auto p-2">
             {loading && (
-              <div className="px-3 py-2 text-sm text-slate-500">Loading tags...</div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">Loading tags...</div>
             )}
 
             {!loading && searchFilteredTags.length === 0 && (
-              <div className="px-3 py-2 text-sm text-slate-500">
+              <div className="px-3 py-2 text-sm text-muted-foreground">
                 No tags found
               </div>
             )}
@@ -117,7 +117,7 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
                       key={tag.id}
                       type="button"
                       onClick={() => handleToggleTag(tag.tag_name)}
-                      className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded flex items-center gap-2 text-sm"
+                      className="w-full text-left px-3 py-2 hover:bg-muted rounded flex items-center gap-2 text-sm text-foreground"
                     >
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
@@ -125,7 +125,7 @@ export function TagFilter({ selectedTags, onTagsChange, entityType }: TagFilterP
                       />
                       <span className="flex-1">{tag.tag_name}</span>
                       {isSelected && (
-                        <span className="text-indigo-600">✓</span>
+                        <span className="text-primary">✓</span>
                       )}
                     </button>
                   );

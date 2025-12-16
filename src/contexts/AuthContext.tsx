@@ -63,21 +63,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    if (!error) {
-      router.push('/dashboard');
+    if (error) {
+      return { error };
     }
 
-    return { error };
+    // Redirect immediately on success
+    // The onAuthStateChange listener will update state automatically
+    window.location.href = '/dashboard';
+    return { error: null };
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    router.push('/login');
+    // Sign out in the background (don't wait for it)
+    supabase.auth.signOut().catch(console.error);
+    // Redirect immediately - no delay
+    window.location.replace('/login');
   };
 
   const resetPassword = async (email: string) => {

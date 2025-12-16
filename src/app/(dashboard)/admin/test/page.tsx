@@ -470,11 +470,11 @@ export default function MCPTestPage() {
     const allTools = Array.from(new Set(MCP_TESTS.map(t => t.tool)));
 
     return (
-        <div className="flex-1 overflow-auto p-8 bg-slate-50">
+        <div className="flex-1 overflow-auto p-8 bg-background">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-slate-800 mb-2">MCP Server Test Suite</h1>
-                    <p className="text-slate-600">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">MCP Server Test Suite</h1>
+                    <p className="text-muted-foreground">
                         Comprehensive testing for all 30 MCP tools with typical salesperson queries
                     </p>
                 </div>
@@ -482,29 +482,29 @@ export default function MCPTestPage() {
                 {/* MCP Endpoint & Status */}
                 <div className="mb-6 flex flex-col gap-3">
                     <div className="flex flex-wrap items-center gap-3">
-                        <label className="text-sm text-slate-600 font-medium">MCP Server URL</label>
+                        <label className="text-sm text-foreground font-medium">MCP Server URL</label>
                         <input
                             type="text"
                             value={mcpUrl}
                             onChange={(e) => handleUrlChange(e.target.value)}
-                            className="w-72 max-w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                            className="w-72 max-w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground"
                             placeholder="http://localhost:3001/mcp"
                         />
                         <button
                             onClick={checkMCPAvailability}
-                            className="inline-flex items-center gap-2 px-3 py-2 border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50"
+                            className="inline-flex items-center gap-2 px-3 py-2 border border-border rounded-lg text-sm text-foreground hover:bg-muted"
                         >
                             <RefreshCw size={14} />
                             Check
                         </button>
                         {mcpAvailable === true && (
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-sm">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/20 text-success text-sm">
                                 <CheckCircle2 size={14} />
                                 Available
                             </span>
                         )}
                         {mcpAvailable === false && (
-                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-50 text-red-700 text-sm">
+                            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/20 text-destructive text-sm">
                                 <AlertCircle size={14} />
                                 Unavailable
                             </span>
@@ -512,12 +512,12 @@ export default function MCPTestPage() {
                     </div>
 
                     {mcpAvailable === false && (
-                        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                            <div className="flex items-center gap-2 text-red-800">
+                        <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg">
+                            <div className="flex items-center gap-2 text-destructive">
                                 <AlertCircle size={20} />
                                 <span className="font-medium">MCP Server Not Available</span>
                             </div>
-                            <p className="text-sm text-red-600 mt-1">
+                            <p className="text-sm text-destructive mt-1">
                                 Cannot connect to MCP server at {mcpUrl}
                             </p>
                         </div>
@@ -526,35 +526,35 @@ export default function MCPTestPage() {
 
                 {/* Stats Bar */}
                 <div className="grid grid-cols-5 gap-4 mb-6">
-                    <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <div className="text-sm text-slate-600">Total Tests</div>
-                        <div className="text-2xl font-bold text-slate-800">{stats.total}</div>
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground">Total Tests</div>
+                        <div className="text-2xl font-bold text-foreground">{stats.total}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <div className="text-sm text-slate-600">Passed</div>
-                        <div className="text-2xl font-bold text-green-600">{stats.passed}</div>
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground">Passed</div>
+                        <div className="text-2xl font-bold text-success">{stats.passed}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <div className="text-sm text-slate-600">Failed</div>
-                        <div className="text-2xl font-bold text-red-600">{stats.failed}</div>
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground">Failed</div>
+                        <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <div className="text-sm text-slate-600">Running</div>
-                        <div className="text-2xl font-bold text-blue-600">{stats.running}</div>
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground">Running</div>
+                        <div className="text-2xl font-bold text-info">{stats.running}</div>
                     </div>
-                    <div className="bg-white p-4 rounded-lg border border-slate-200">
-                        <div className="text-sm text-slate-600">Pending</div>
-                        <div className="text-2xl font-bold text-slate-400">{stats.pending}</div>
+                    <div className="bg-card p-4 rounded-lg border border-border">
+                        <div className="text-sm text-muted-foreground">Pending</div>
+                        <div className="text-2xl font-bold text-muted-foreground">{stats.pending}</div>
                     </div>
                 </div>
 
                 {/* Controls */}
-                <div className="bg-white p-4 rounded-lg border border-slate-200 mb-6">
+                <div className="bg-card p-4 rounded-lg border border-border mb-6">
                     <div className="flex flex-wrap items-center gap-4">
                         <button
                             onClick={() => runTests(filteredTests)}
                             disabled={isRunning || mcpAvailable === false || filteredTests.length === 0}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-black rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-card border-2 border-foreground text-foreground rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                         >
                             <Play size={18} />
                             Run Filtered Tests ({filteredTests.length})
@@ -563,18 +563,18 @@ export default function MCPTestPage() {
                         <button
                             onClick={runAllTests}
                             disabled={isRunning || mcpAvailable === false}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border-2 border-black text-black rounded-lg hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            className="flex items-center gap-2 px-4 py-2 bg-card border-2 border-foreground text-foreground rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
                         >
                             <Play size={18} />
                             Run All Tests ({MCP_TESTS.length})
                         </button>
 
                         <div className="flex items-center gap-2">
-                            <Filter size={18} className="text-slate-600" />
+                            <Filter size={18} className="text-muted-foreground" />
                             <select
                                 value={selectedCategory}
                                 onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="all">All Categories</option>
                                 {ALL_CATEGORIES.map(cat => (
@@ -585,7 +585,7 @@ export default function MCPTestPage() {
                             <select
                                 value={selectedTool}
                                 onChange={(e) => setSelectedTool(e.target.value)}
-                                className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                className="px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                             >
                                 <option value="all">All Tools</option>
                                 {allTools.map(tool => (
@@ -596,7 +596,7 @@ export default function MCPTestPage() {
 
                         <button
                             onClick={checkMCPAvailability}
-                            className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                            className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground rounded-lg hover:bg-muted/80 transition-colors"
                         >
                             <RefreshCw size={18} />
                             Check MCP Status
@@ -610,7 +610,7 @@ export default function MCPTestPage() {
                                 key={category}
                                 onClick={() => runCategory(category)}
                                 disabled={isRunning}
-                                className="px-3 py-1 text-sm bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 disabled:opacity-50 transition-colors"
+                                className="px-3 py-1 text-sm bg-muted text-foreground rounded-lg hover:bg-muted/80 disabled:opacity-50 transition-colors"
                             >
                                 Run {category} ({TESTS_BY_CATEGORY[category]?.length || 0})
                             </button>
@@ -627,72 +627,72 @@ export default function MCPTestPage() {
                         return (
                             <div
                                 key={test.id}
-                                className="bg-white border border-slate-200 rounded-lg overflow-hidden"
+                                className="bg-card border border-border rounded-lg overflow-hidden"
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
                                                 {status === 'passed' && (
-                                                    <CheckCircle2 size={20} className="text-green-600" />
+                                                    <CheckCircle2 size={20} className="text-success" />
                                                 )}
                                                 {status === 'failed' && (
-                                                    <XCircle size={20} className="text-red-600" />
+                                                    <XCircle size={20} className="text-destructive" />
                                                 )}
                                                 {status === 'running' && (
-                                                    <Loader2 size={20} className="text-blue-600 animate-spin" />
+                                                    <Loader2 size={20} className="text-info animate-spin" />
                                                 )}
                                                 {status === 'pending' && (
-                                                    <div className="w-5 h-5 border-2 border-slate-300 rounded-full" />
+                                                    <div className="w-5 h-5 border-2 border-border rounded-full" />
                                                 )}
 
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <span className="font-semibold text-slate-800">
+                                                        <span className="font-semibold text-foreground">
                                                             {test.name}
                                                         </span>
-                                                        <span className="text-xs px-2 py-1 bg-indigo-100 text-indigo-700 rounded">
+                                                        <span className="text-xs px-2 py-1 bg-primary-muted text-primary rounded">
                                                             {test.category}
                                                         </span>
-                                                        <span className="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded">
+                                                        <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded">
                                                             {test.tool}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-slate-600 mt-1">
+                                                    <p className="text-sm text-muted-foreground mt-1">
                                                         {test.description}
                                                     </p>
                                                 </div>
                                             </div>
 
-                                            <div className="mt-2 p-3 bg-slate-50 rounded-lg">
-                                                <div className="text-xs font-medium text-slate-500 mb-1">Query:</div>
-                                                <div className="text-sm text-slate-700 italic">"{test.query}"</div>
+                                            <div className="mt-2 p-3 bg-muted rounded-lg">
+                                                <div className="text-xs font-medium text-muted-foreground mb-1">Query:</div>
+                                                <div className="text-sm text-foreground italic">"{test.query}"</div>
                                             </div>
 
                                             {result && (
                                                 <div className="mt-3 space-y-2">
                                                     {result.error && (
-                                                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                                                            <div className="text-sm font-medium text-red-800 mb-1">
+                                                        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                                                            <div className="text-sm font-medium text-destructive mb-1">
                                                                 Error:
                                                             </div>
-                                                            <div className="text-sm text-red-600">{result.error}</div>
+                                                            <div className="text-sm text-destructive">{result.error}</div>
                                                         </div>
                                                     )}
 
                                                     {result.result && (
-                                                        <div className="p-3 bg-slate-50 rounded-lg">
-                                                            <div className="text-xs font-medium text-slate-500 mb-1">
+                                                        <div className="p-3 bg-muted rounded-lg">
+                                                            <div className="text-xs font-medium text-muted-foreground mb-1">
                                                                 Result:
                                                             </div>
-                                                            <pre className="text-xs text-slate-700 overflow-x-auto">
+                                                            <pre className="text-xs text-foreground overflow-x-auto">
                                                                 {JSON.stringify(result.result, null, 2)}
                                                             </pre>
                                                         </div>
                                                     )}
 
                                                     {result.duration && (
-                                                        <div className="text-xs text-slate-500">
+                                                        <div className="text-xs text-muted-foreground">
                                                             Duration: {result.duration}ms
                                                         </div>
                                                     )}
@@ -703,7 +703,7 @@ export default function MCPTestPage() {
                                         <button
                                             onClick={() => runSingleTestById(test.id)}
                                             disabled={isRunning || mcpAvailable === false}
-                                            className="ml-4 px-3 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                            className="ml-4 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow disabled:opacity-50 transition-colors"
                                         >
                                             Run
                                         </button>
@@ -715,8 +715,8 @@ export default function MCPTestPage() {
                 </div>
 
                 {filteredTests.length === 0 && (
-                    <div className="text-center py-12 bg-white rounded-lg border border-slate-200">
-                        <p className="text-slate-500">No tests match the current filters.</p>
+                    <div className="text-center py-12 bg-card rounded-lg border border-border">
+                        <p className="text-muted-foreground">No tests match the current filters.</p>
                     </div>
                 )}
             </div>

@@ -122,7 +122,7 @@ export default function ChatInterface() {
     };
 
     return (
-        <div className="flex flex-col h-full bg-chat-background rounded-xl border border-border shadow-sm">
+        <div className="flex flex-col h-full bg-chat-background rounded-b-xl border border-border shadow-sm overflow-hidden">
             {/* Chat Header */}
             <div className="p-4 border-b border-border">
                 <h2 className="text-lg font-semibold text-foreground">Whitespace Assistant</h2>
@@ -244,23 +244,23 @@ function Card({ item }: { item: any }) {
     );
 
     return (
-        <div className="bg-white p-4 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-card p-4 rounded-lg border border-border shadow-sm hover:shadow-md transition-shadow">
             <div className="mb-3">
-                <h3 className="font-semibold text-slate-800 truncate" title={title}>{title}</h3>
-                {subtitle && <p className="text-sm text-slate-500 truncate">{subtitle}</p>}
+                <h3 className="font-semibold text-foreground truncate" title={title}>{title}</h3>
+                {subtitle && <p className="text-sm text-muted-foreground truncate">{subtitle}</p>}
             </div>
 
             <div className="space-y-1">
                 {/* Explicitly show Email if present (it was filtered out of body) */}
                 {item.email && (
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <Mail size={12} />
                         <span className="truncate">{item.email}</span>
                     </div>
                 )}
                 {/* Explicitly show Amount if present */}
                 {item.amount !== undefined && (
-                    <div className="flex items-center gap-2 text-xs text-slate-600">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <DollarSign size={12} />
                         <span className="font-medium">${item.amount.toLocaleString()}</span>
                     </div>
@@ -268,12 +268,12 @@ function Card({ item }: { item: any }) {
 
                 {bodyFields.slice(0, 3).map(([key, value]) => (
                     <div key={key} className="flex justify-between text-xs">
-                        <span className="text-slate-400 capitalize">{key.replace(/_/g, ' ')}:</span>
-                        <span className="text-slate-600 font-medium truncate max-w-[60%]">{String(value)}</span>
+                        <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}:</span>
+                        <span className="text-foreground font-medium truncate max-w-[60%]">{String(value)}</span>
                     </div>
                 ))}
                 {bodyFields.length > 3 && (
-                    <p className="text-xs text-slate-400 italic mt-1">+{bodyFields.length - 3} more fields</p>
+                    <p className="text-xs text-muted-foreground italic mt-1">+{bodyFields.length - 3} more fields</p>
                 )}
             </div>
         </div>

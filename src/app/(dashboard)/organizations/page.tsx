@@ -70,13 +70,13 @@ export default function OrganizationsPage() {
         <div className="flex-1 overflow-auto p-8">
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Organizations</h2>
-                    <p className="text-slate-500 mt-1">{filteredOrganizations.length} organizations</p>
+                    <h2 className="text-2xl font-bold text-foreground">Organizations</h2>
+                    <p className="text-muted-foreground mt-1">{filteredOrganizations.length} organizations</p>
                 </div>
                 <button
                     onClick={syncOrganizations}
                     disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50"
                 >
                     <RefreshCw size={20} className={isSyncing ? 'animate-spin' : ''} />
                     {isSyncing ? 'Syncing...' : 'Sync from Insightly'}
@@ -89,7 +89,7 @@ export default function OrganizationsPage() {
                     placeholder="Search organizations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full max-w-md px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
             </div>
 
@@ -98,10 +98,10 @@ export default function OrganizationsPage() {
                     <Link
                         key={org.id}
                         href={`/organizations/${org.id}`}
-                        className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-indigo-200 group"
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary group"
                     >
                         <div className="flex items-start gap-4">
-                            <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 overflow-hidden">
+                            <div className="w-12 h-12 rounded-lg bg-primary-muted flex items-center justify-center text-primary shrink-0 overflow-hidden">
                                 {org.image_url ? (
                                     <img src={org.image_url} alt={org.name} className="w-full h-full object-cover" />
                                 ) : (
@@ -109,12 +109,12 @@ export default function OrganizationsPage() {
                                 )}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
+                                <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                                     {org.name}
                                 </h3>
 
                                 {(org.address_billing_city || org.address_billing_state) && (
-                                    <div className="flex items-center gap-1 text-sm text-slate-500 mt-2">
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-2">
                                         <MapPin size={14} />
                                         <span className="truncate">
                                             {[org.address_billing_city, org.address_billing_state].filter(Boolean).join(', ')}
@@ -123,7 +123,7 @@ export default function OrganizationsPage() {
                                 )}
 
                                 {org.website && (
-                                    <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                                         <Globe size={14} />
                                         <span className="truncate">{org.website}</span>
                                     </div>
@@ -136,8 +136,8 @@ export default function OrganizationsPage() {
 
             {filteredOrganizations.length === 0 && (
                 <div className="text-center py-12">
-                    <Building2 className="mx-auto text-slate-300" size={64} />
-                    <p className="text-slate-500 mt-4">No organizations found</p>
+                    <Building2 className="mx-auto text-muted-foreground" size={64} />
+                    <p className="text-muted-foreground mt-4">No organizations found</p>
                 </div>
             )}
         </div>
