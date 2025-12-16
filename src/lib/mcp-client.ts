@@ -19,6 +19,7 @@ export interface MCPTool {
 export interface MCPCallResult {
     content: Array<{ type: string; text: string }>;
     isError?: boolean;
+    structuredContent?: any;
 }
 
 /**
@@ -101,7 +102,18 @@ export async function callTool(name: string, args: any = {}, baseUrl?: string): 
         throw new Error(`Invalid MCP response: missing result`);
     }
 
-    return data.result;
+    const result: MCPCallResult = data.result;
+    
+    // Parse content text as JSON and add to structuredContent
+    if (result.content?.[0]?.text) {
+        try {
+            result.structuredContent = JSON.parse(result.content[0].text);
+        } catch {
+            // Content is not JSON, leave structuredContent undefined
+        }
+    }
+
+    return result;
 }
 
 /**

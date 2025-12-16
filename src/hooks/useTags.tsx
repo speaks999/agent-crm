@@ -14,7 +14,7 @@ export interface Tag {
   updated_at: string;
 }
 
-const DEFAULT_COLORS = [
+export const DEFAULT_COLORS = [
   '#A2B758', // primary lime
   '#0A2C19', // secondary forest
   '#22c55e', // success green

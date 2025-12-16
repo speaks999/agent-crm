@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -24,7 +24,7 @@ type Project = { id: string; project_name?: string; completed?: boolean };
 type Section<T> = {
   title: string;
   href: string;
-  icon: JSX.Element;
+  icon: React.ReactNode;
   data: T[];
   isLoading: boolean;
 };
