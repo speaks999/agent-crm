@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import { MCP_TESTS, TESTS_BY_CATEGORY, ALL_CATEGORIES, type MCPTest } from '@/lib/mcp-tests';
 import { callTool, listTools } from '@/lib/mcp-client';
 
@@ -19,8 +19,11 @@ export default function MCPTestPage() {
     const [isRunning, setIsRunning] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [selectedTool, setSelectedTool] = useState<string>('all');
+    const [showFailedOnly, setShowFailedOnly] = useState(false);
+    const [currentFailedIndex, setCurrentFailedIndex] = useState(0);
     const [mcpAvailable, setMcpAvailable] = useState<boolean | null>(null);
     const testDataRef = useRef<Record<string, any>>({}); // Store IDs for placeholders (ref for synchronous access)
+    const testCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const defaultUrl = typeof window !== 'undefined'
         ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp')
         : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp');
@@ -448,9 +451,59 @@ export default function MCPTestPage() {
         if (selectedTool !== 'all') {
             filtered = filtered.filter(t => t.tool === selectedTool);
         }
+
+        if (showFailedOnly) {
+            filtered = filtered.filter(t => results[t.id]?.status === 'failed');
+        }
         
         return filtered;
     }
+
+    // Get list of failed test IDs
+    const getFailedTests = useCallback((): string[] => {
+        return Object.entries(results)
+            .filter(([, r]) => r.status === 'failed')
+            .map(([id]) => id);
+    }, [results]);
+
+    // Jump to a specific failed test
+    const jumpToFailedTest = useCallback((index: number) => {
+        const failedTests = getFailedTests();
+        if (failedTests.length === 0) return;
+        
+        const targetIndex = Math.max(0, Math.min(index, failedTests.length - 1));
+        const testId = failedTests[targetIndex];
+        const element = testCardRefs.current[testId];
+        
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Add a brief highlight effect
+            element.classList.add('ring-2', 'ring-destructive');
+            setTimeout(() => {
+                element.classList.remove('ring-2', 'ring-destructive');
+            }, 2000);
+        }
+        
+        setCurrentFailedIndex(targetIndex);
+    }, [getFailedTests]);
+
+    // Jump to next failed test
+    const jumpToNextFailed = useCallback(() => {
+        const failedTests = getFailedTests();
+        if (failedTests.length === 0) return;
+        
+        const nextIndex = (currentFailedIndex + 1) % failedTests.length;
+        jumpToFailedTest(nextIndex);
+    }, [currentFailedIndex, getFailedTests, jumpToFailedTest]);
+
+    // Jump to previous failed test
+    const jumpToPrevFailed = useCallback(() => {
+        const failedTests = getFailedTests();
+        if (failedTests.length === 0) return;
+        
+        const prevIndex = currentFailedIndex === 0 ? failedTests.length - 1 : currentFailedIndex - 1;
+        jumpToFailedTest(prevIndex);
+    }, [currentFailedIndex, getFailedTests, jumpToFailedTest]);
 
     function getStats() {
         const filtered = getFilteredTests();
@@ -534,7 +587,15 @@ export default function MCPTestPage() {
                         <div className="text-sm text-muted-foreground">Passed</div>
                         <div className="text-2xl font-bold text-success">{stats.passed}</div>
                     </div>
-                    <div className="bg-card p-4 rounded-lg border border-border">
+                    <div 
+                        className={`bg-card p-4 rounded-lg border transition-colors cursor-pointer ${
+                            stats.failed > 0 
+                                ? 'border-destructive hover:bg-destructive/10' 
+                                : 'border-border'
+                        }`}
+                        onClick={() => stats.failed > 0 && jumpToFailedTest(0)}
+                        title={stats.failed > 0 ? 'Click to jump to first failed test' : ''}
+                    >
                         <div className="text-sm text-muted-foreground">Failed</div>
                         <div className="text-2xl font-bold text-destructive">{stats.failed}</div>
                     </div>
@@ -547,6 +608,74 @@ export default function MCPTestPage() {
                         <div className="text-2xl font-bold text-muted-foreground">{stats.pending}</div>
                     </div>
                 </div>
+
+                {/* Failed Tests Quick Navigation */}
+                {stats.failed > 0 && (
+                    <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-6">
+                        <div className="flex items-center justify-between flex-wrap gap-4">
+                            <div className="flex items-center gap-3">
+                                <XCircle className="text-destructive" size={24} />
+                                <div>
+                                    <div className="font-semibold text-destructive">
+                                        {stats.failed} Failed Test{stats.failed !== 1 ? 's' : ''}
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Viewing {currentFailedIndex + 1} of {getFailedTests().length}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={jumpToPrevFailed}
+                                    className="flex items-center gap-1 px-3 py-2 bg-card border border-destructive/50 text-destructive rounded-lg hover:bg-destructive/20 transition-colors"
+                                    title="Previous failed test"
+                                >
+                                    <ChevronUp size={18} />
+                                    Prev
+                                </button>
+                                <button
+                                    onClick={jumpToNextFailed}
+                                    className="flex items-center gap-1 px-3 py-2 bg-card border border-destructive/50 text-destructive rounded-lg hover:bg-destructive/20 transition-colors"
+                                    title="Next failed test"
+                                >
+                                    Next
+                                    <ChevronDown size={18} />
+                                </button>
+                                <button
+                                    onClick={() => setShowFailedOnly(!showFailedOnly)}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                                        showFailedOnly 
+                                            ? 'bg-destructive text-destructive-foreground' 
+                                            : 'bg-card border border-destructive/50 text-destructive hover:bg-destructive/20'
+                                    }`}
+                                >
+                                    <Filter size={16} />
+                                    {showFailedOnly ? 'Show All' : 'Show Failed Only'}
+                                </button>
+                            </div>
+                        </div>
+                        {/* Failed test list for quick access */}
+                        <div className="mt-4 flex flex-wrap gap-2">
+                            {getFailedTests().map((testId, index) => {
+                                const testResult = results[testId];
+                                return (
+                                    <button
+                                        key={testId}
+                                        onClick={() => jumpToFailedTest(index)}
+                                        className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                            index === currentFailedIndex
+                                                ? 'bg-destructive text-destructive-foreground'
+                                                : 'bg-card border border-destructive/30 text-destructive hover:bg-destructive/20'
+                                        }`}
+                                        title={testResult?.test.description}
+                                    >
+                                        {testResult?.test.name || testId}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* Controls */}
                 <div className="bg-card p-4 rounded-lg border border-border mb-6">
@@ -627,7 +756,12 @@ export default function MCPTestPage() {
                         return (
                             <div
                                 key={test.id}
-                                className="bg-card border border-border rounded-lg overflow-hidden"
+                                ref={(el) => { testCardRefs.current[test.id] = el; }}
+                                className={`bg-card border rounded-lg overflow-hidden transition-all duration-300 ${
+                                    status === 'failed' 
+                                        ? 'border-destructive/50' 
+                                        : 'border-border'
+                                }`}
                             >
                                 <div className="p-4">
                                     <div className="flex items-start justify-between">
