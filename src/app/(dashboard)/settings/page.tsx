@@ -28,6 +28,8 @@ export default function SettingsPage() {
     const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
     const [savedAvatar, setSavedAvatar] = useState<string | null>(null);
     const [hasHydratedAccount, setHasHydratedAccount] = useState(false);
+    const [avatarPendingSave, setAvatarPendingSave] = useState(false);
+    const [isSavingAvatar, setIsSavingAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
     // Security state
@@ -133,6 +135,61 @@ export default function SettingsPage() {
         setHasHydratedAccount(true);
     }, [user, avatarPreview, savedAvatar, isEditingAccount]);
 
+    // Save avatar only (for quick avatar changes outside of full profile edit)
+    const handleAvatarSave = async () => {
+        if (!user) {
+            setAccountMessage({ type: 'error', text: 'You must be signed in to update your profile picture.' });
+            return;
+        }
+
+        setIsSavingAvatar(true);
+        setAccountMessage(null);
+
+        try {
+            const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !sessionCheck.session) {
+                const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+                if (refreshError || !refreshed.session) {
+                    setAccountMessage({ type: 'error', text: 'Session expired. Please sign in again.' });
+                    return;
+                }
+            }
+
+            const { error } = await supabase.auth.updateUser({
+                data: {
+                    avatar_url: avatarPreview || undefined,
+                },
+            });
+
+            if (error) {
+                setAccountMessage({ type: 'error', text: error.message || 'Failed to update profile picture.' });
+            } else {
+                setAccountMessage({ type: 'success', text: 'Profile picture updated!' });
+                setSavedAvatar(avatarPreview || null);
+                setAvatarPendingSave(false);
+                try {
+                    if (avatarPreview) {
+                        localStorage.setItem('profileAvatar', avatarPreview);
+                    } else {
+                        localStorage.removeItem('profileAvatar');
+                    }
+                } catch (err) {
+                    console.error('Failed to persist avatar locally', err);
+                }
+            }
+        } catch (err: any) {
+            setAccountMessage({ type: 'error', text: err?.message || 'Unexpected error while updating profile picture.' });
+        } finally {
+            setIsSavingAvatar(false);
+        }
+    };
+
+    // Cancel avatar change
+    const handleAvatarCancel = () => {
+        setAvatarPreview(savedAvatar);
+        setAvatarPendingSave(false);
+    };
+
     const handleThemeToggle = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
         setTheme(newTheme);
@@ -201,8 +258,9 @@ export default function SettingsPage() {
                 setAccountMessage({ type: 'error', text: error.message || 'Failed to update account.' });
             } else {
                 setAccountMessage({ type: 'success', text: 'Account updated.' });
-        setIsEditingAccount(false);
+                setIsEditingAccount(false);
                 setSavedAvatar(avatarPreview || null);
+                setAvatarPendingSave(false);
                 try {
                     if (avatarPreview) {
                         localStorage.setItem('profileAvatar', avatarPreview);
@@ -398,6 +456,7 @@ export default function SettingsPage() {
                                     onClick={() => {
                                         setIsEditingAccount(false);
                                         setAvatarPreview(savedAvatar);
+                                        setAvatarPendingSave(false);
                                     }}
                                     className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
                                 >
@@ -430,7 +489,9 @@ export default function SettingsPage() {
                     <div className="space-y-4">
                         {/* Profile Picture */}
                         <div className="flex items-center gap-4 pb-4 border-b border-border">
-                            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-border">
+                            <div className={`relative w-20 h-20 rounded-full bg-primary flex items-center justify-center overflow-hidden border-2 transition-colors ${
+                                avatarPendingSave ? 'border-warning ring-2 ring-warning/30' : 'border-border'
+                            }`}>
                                 {avatarPreview ? (
                                     <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
                                 ) : (
@@ -438,16 +499,53 @@ export default function SettingsPage() {
                                         {accountData.name.split(' ').map(n => n[0]).join('')}
                                     </span>
                                 )}
+                                {avatarPendingSave && (
+                                    <div className="absolute -top-1 -right-1 w-5 h-5 bg-warning rounded-full flex items-center justify-center">
+                                        <span className="text-xs text-warning-foreground font-bold">!</span>
+                                    </div>
+                                )}
                             </div>
-                            <div>
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
-                                >
-                                    Change Photo
-                                </button>
-                                <p className="text-xs text-muted-foreground mt-1">JPG, PNG or GIF. Max size 2MB</p>
+                            <div className="flex-1">
+                                {avatarPendingSave ? (
+                                    <>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <span className="text-sm font-medium text-warning flex items-center gap-1">
+                                                <AlertCircle size={14} />
+                                                Unsaved changes
+                                            </span>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleAvatarSave}
+                                                disabled={isSavingAvatar}
+                                                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors flex items-center gap-2 disabled:opacity-70"
+                                            >
+                                                <Save size={14} />
+                                                {isSavingAvatar ? 'Saving...' : 'Save Photo'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={handleAvatarCancel}
+                                                disabled={isSavingAvatar}
+                                                className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                                        >
+                                            Change Photo
+                                        </button>
+                                        <p className="text-xs text-muted-foreground mt-1">JPG, PNG or GIF. Max size 2MB</p>
+                                    </>
+                                )}
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -464,6 +562,7 @@ export default function SettingsPage() {
                                         reader.onload = () => {
                                             const result = reader.result as string;
                                             setAvatarPreview(result);
+                                            setAvatarPendingSave(true);
                                         };
                                         reader.readAsDataURL(file);
                                     }}
