@@ -1,9 +1,92 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createBrowserClient } from '@/lib/supabaseClient';
-import { Moon, Sun, Key, CreditCard, User, Bell, Shield, Mail, Phone, Globe, Clock, Save, Download, Trash2, ExternalLink, CheckCircle2, AlertCircle, Zap, Database, Link as LinkIcon, Eye, EyeOff } from 'lucide-react';
+import { Moon, Sun, Key, CreditCard, User, Bell, Shield, Mail, Phone, Globe, Clock, Save, Download, Trash2, ExternalLink, CheckCircle2, AlertCircle, Zap, Database, Link as LinkIcon, Eye, EyeOff, X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import type { Area, Point } from 'react-easy-crop';
+
+// Helper function to create cropped image
+async function getCroppedImg(imageSrc: string, pixelCrop: Area, rotation = 0): Promise<string> {
+    const image = await createImage(imageSrc);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+        throw new Error('No 2d context');
+    }
+
+    const rotRad = getRadianAngle(rotation);
+
+    // Calculate bounding box of rotated image
+    const { width: bBoxWidth, height: bBoxHeight } = rotateSize(
+        image.width,
+        image.height,
+        rotation
+    );
+
+    // Set canvas size to match the bounding box
+    canvas.width = bBoxWidth;
+    canvas.height = bBoxHeight;
+
+    // Translate canvas context to center before rotating
+    ctx.translate(bBoxWidth / 2, bBoxHeight / 2);
+    ctx.rotate(rotRad);
+    ctx.translate(-image.width / 2, -image.height / 2);
+
+    // Draw rotated image
+    ctx.drawImage(image, 0, 0);
+
+    // Extract the cropped portion
+    const croppedCanvas = document.createElement('canvas');
+    const croppedCtx = croppedCanvas.getContext('2d');
+
+    if (!croppedCtx) {
+        throw new Error('No 2d context');
+    }
+
+    // Set the size of the cropped canvas
+    croppedCanvas.width = pixelCrop.width;
+    croppedCanvas.height = pixelCrop.height;
+
+    // Draw the cropped image
+    croppedCtx.drawImage(
+        canvas,
+        pixelCrop.x,
+        pixelCrop.y,
+        pixelCrop.width,
+        pixelCrop.height,
+        0,
+        0,
+        pixelCrop.width,
+        pixelCrop.height
+    );
+
+    // Return as base64 string
+    return croppedCanvas.toDataURL('image/jpeg', 0.9);
+}
+
+function createImage(url: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.addEventListener('load', () => resolve(image));
+        image.addEventListener('error', (error) => reject(error));
+        image.src = url;
+    });
+}
+
+function getRadianAngle(degreeValue: number) {
+    return (degreeValue * Math.PI) / 180;
+}
+
+function rotateSize(width: number, height: number, rotation: number) {
+    const rotRad = getRadianAngle(rotation);
+    return {
+        width: Math.abs(Math.cos(rotRad) * width) + Math.abs(Math.sin(rotRad) * height),
+        height: Math.abs(Math.sin(rotRad) * width) + Math.abs(Math.cos(rotRad) * height),
+    };
+}
 
 export default function SettingsPage() {
     const { user } = useAuth();
@@ -31,6 +114,44 @@ export default function SettingsPage() {
     const [avatarPendingSave, setAvatarPendingSave] = useState(false);
     const [isSavingAvatar, setIsSavingAvatar] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    // Image cropper state
+    const [showCropper, setShowCropper] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+    const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+    const [zoom, setZoom] = useState(1);
+    const [rotation, setRotation] = useState(0);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
+
+    const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: Area) => {
+        setCroppedAreaPixels(croppedAreaPixels);
+    }, []);
+
+    const handleCropConfirm = async () => {
+        if (imageToCrop && croppedAreaPixels) {
+            try {
+                const croppedImage = await getCroppedImg(imageToCrop, croppedAreaPixels, rotation);
+                setAvatarPreview(croppedImage);
+                setAvatarPendingSave(true);
+                setShowCropper(false);
+                setImageToCrop(null);
+                // Reset cropper state
+                setCrop({ x: 0, y: 0 });
+                setZoom(1);
+                setRotation(0);
+            } catch (e) {
+                console.error('Error cropping image:', e);
+            }
+        }
+    };
+
+    const handleCropCancel = () => {
+        setShowCropper(false);
+        setImageToCrop(null);
+        setCrop({ x: 0, y: 0 });
+        setZoom(1);
+        setRotation(0);
+    };
 
     // Security state
     const [currentPassword, setCurrentPassword] = useState('');
@@ -561,14 +682,120 @@ export default function SettingsPage() {
                                         const reader = new FileReader();
                                         reader.onload = () => {
                                             const result = reader.result as string;
-                                            setAvatarPreview(result);
-                                            setAvatarPendingSave(true);
+                                            setImageToCrop(result);
+                                            setShowCropper(true);
                                         };
                                         reader.readAsDataURL(file);
+                                        // Reset file input so same file can be selected again
+                                        e.target.value = '';
                                     }}
                                 />
                             </div>
                         </div>
+
+                        {/* Image Cropper Modal */}
+                        {showCropper && imageToCrop && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+                                <div className="bg-card rounded-xl border border-border shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+                                    {/* Modal Header */}
+                                    <div className="flex items-center justify-between p-4 border-b border-border">
+                                        <h3 className="text-lg font-semibold text-foreground">Crop Profile Picture</h3>
+                                        <button
+                                            onClick={handleCropCancel}
+                                            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                        >
+                                            <X size={20} />
+                                        </button>
+                                    </div>
+
+                                    {/* Cropper Area */}
+                                    <div className="relative h-80 bg-black">
+                                        <Cropper
+                                            image={imageToCrop}
+                                            crop={crop}
+                                            zoom={zoom}
+                                            rotation={rotation}
+                                            aspect={1}
+                                            cropShape="round"
+                                            showGrid={false}
+                                            onCropChange={setCrop}
+                                            onZoomChange={setZoom}
+                                            onRotationChange={setRotation}
+                                            onCropComplete={onCropComplete}
+                                        />
+                                    </div>
+
+                                    {/* Controls */}
+                                    <div className="p-4 space-y-4 bg-muted/50">
+                                        {/* Zoom Control */}
+                                        <div className="flex items-center gap-3">
+                                            <ZoomOut size={18} className="text-muted-foreground" />
+                                            <input
+                                                type="range"
+                                                min={1}
+                                                max={3}
+                                                step={0.1}
+                                                value={zoom}
+                                                onChange={(e) => setZoom(Number(e.target.value))}
+                                                className="flex-1 h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                                            />
+                                            <ZoomIn size={18} className="text-muted-foreground" />
+                                            <span className="text-sm text-muted-foreground w-12 text-right">{Math.round(zoom * 100)}%</span>
+                                        </div>
+
+                                        {/* Rotation Control */}
+                                        <div className="flex items-center gap-3">
+                                            <RotateCw size={18} className="text-muted-foreground" />
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={360}
+                                                step={1}
+                                                value={rotation}
+                                                onChange={(e) => setRotation(Number(e.target.value))}
+                                                className="flex-1 h-2 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
+                                            />
+                                            <span className="text-sm text-muted-foreground w-12 text-right">{rotation}°</span>
+                                        </div>
+
+                                        {/* Quick rotation buttons */}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-sm text-muted-foreground mr-2">Quick rotate:</span>
+                                            {[0, 90, 180, 270].map((deg) => (
+                                                <button
+                                                    key={deg}
+                                                    onClick={() => setRotation(deg)}
+                                                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                                        rotation === deg
+                                                            ? 'bg-primary text-primary-foreground'
+                                                            : 'bg-card border border-border text-foreground hover:bg-muted'
+                                                    }`}
+                                                >
+                                                    {deg}°
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Modal Footer */}
+                                    <div className="flex justify-end gap-3 p-4 border-t border-border">
+                                        <button
+                                            onClick={handleCropCancel}
+                                            className="px-4 py-2 text-sm border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleCropConfirm}
+                                            className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors flex items-center gap-2"
+                                        >
+                                            <CheckCircle2 size={16} />
+                                            Apply Crop
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
