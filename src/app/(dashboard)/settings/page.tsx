@@ -177,7 +177,6 @@ export default function SettingsPage() {
     // Preferences state
     const [preferences, setPreferences] = useState({
         autoSave: true,
-        compactMode: false,
         showTooltips: true,
         defaultView: 'dashboard',
     });
@@ -515,23 +514,6 @@ export default function SettingsPage() {
                                     />
                                 </button>
                             </div>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-                            <div>
-                                <p className="font-medium text-foreground">Compact Mode</p>
-                                <p className="text-sm text-muted-foreground">Reduce spacing for a denser layout</p>
-                            </div>
-                            <button
-                                onClick={() => handlePreferenceChange('compactMode')}
-                                className={`relative w-14 h-7 rounded-full transition-colors border border-border shadow-inner ${preferences.compactMode ? 'bg-primary' : 'bg-muted/60'
-                                    }`}
-                            >
-                                <div
-                                    className={`absolute top-1 left-1 w-5 h-5 bg-card rounded-full shadow-sm transition-transform ${preferences.compactMode ? 'translate-x-7' : 'translate-x-0'
-                                        }`}
-                                />
-                            </button>
                         </div>
 
                         <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
