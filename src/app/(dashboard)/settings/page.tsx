@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { createBrowserClient } from '@/lib/supabaseClient';
-import { Moon, Sun, Key, CreditCard, User, Bell, Shield, Mail, Phone, Globe, Clock, Save, Download, Trash2, ExternalLink, CheckCircle2, AlertCircle, Zap, Database, Link as LinkIcon, Eye, EyeOff, X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
+import { Moon, Sun, Key, CreditCard, User, Bell, Shield, Mail, Phone, Globe, Clock, Save, Download, Trash2, ExternalLink, CheckCircle2, AlertCircle, Database, Link as LinkIcon, Eye, EyeOff, X, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import Cropper from 'react-easy-crop';
 import type { Area, Point } from 'react-easy-crop';
 
@@ -181,12 +181,6 @@ export default function SettingsPage() {
         defaultView: 'dashboard',
     });
 
-    // API Keys state
-    const [apiKeys, setApiKeys] = useState([
-        { id: '1', name: 'Production API Key', key: 'api_key_production_placeholder', masked: 'api_key_••••••••••••••••', created: '2024-01-15', lastUsed: '2024-12-06' },
-        { id: '2', name: 'Development Key', key: 'api_key_development_placeholder', masked: 'api_key_••••••••••••••••', created: '2024-11-01', lastUsed: '2024-12-05' },
-    ]);
-    const [showApiKey, setShowApiKey] = useState<Record<string, boolean>>({});
 
     // Load saved preferences from localStorage
     useEffect(() => {
@@ -459,15 +453,6 @@ export default function SettingsPage() {
             // In a real app, this would call an API to delete the account
             alert('Account deletion request submitted. You will receive a confirmation email.');
         }
-    };
-
-    const toggleApiKeyVisibility = (id: string) => {
-        setShowApiKey(prev => ({ ...prev, [id]: !prev[id] }));
-    };
-
-    const copyApiKey = (key: string) => {
-        navigator.clipboard.writeText(key);
-        // Show toast notification
     };
 
     const memberSinceLabel = accountData.memberSince
@@ -1151,54 +1136,6 @@ export default function SettingsPage() {
                                 />
                             </button>
                         </div>
-                    </div>
-                </div>
-
-                {/* API Keys Section */}
-                <div className="bg-card rounded-xl border border-border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                            <Zap className="text-primary" size={24} />
-                            <h2 className="text-xl font-semibold text-foreground">API Keys</h2>
-                        </div>
-                        <button className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors">
-                            Create New Key
-                        </button>
-                    </div>
-                    <p className="text-muted-foreground mb-4">Manage your API keys for programmatic access</p>
-
-                    <div className="space-y-3">
-                        {apiKeys.map((apiKey) => (
-                            <div key={apiKey.id} className="p-4 bg-muted rounded-lg border border-border">
-                                <div className="flex items-start justify-between mb-2">
-                                    <div>
-                                        <p className="font-medium text-foreground">{apiKey.name}</p>
-                                        <p className="text-sm text-muted-foreground">
-                                            Created {new Date(apiKey.created).toLocaleDateString()} • Last used {new Date(apiKey.lastUsed).toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => toggleApiKeyVisibility(apiKey.id)}
-                                            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                                        >
-                                            {showApiKey[apiKey.id] ? <EyeOff size={18} /> : <Eye size={18} />}
-                                        </button>
-                                        <button
-                                            onClick={() => copyApiKey(apiKey.key)}
-                                            className="p-2 text-muted-foreground hover:text-foreground transition-colors"
-                                        >
-                                            <LinkIcon size={18} />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <code className="flex-1 px-3 py-2 bg-background border border-border rounded text-sm font-mono text-foreground break-all">
-                                        {showApiKey[apiKey.id] ? apiKey.key : apiKey.masked}
-                                    </code>
-                                </div>
-                            </div>
-                        ))}
                     </div>
                 </div>
 
