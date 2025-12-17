@@ -1203,7 +1203,16 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Integrations Section */}
-                <div className="bg-card rounded-xl border border-border p-6">
+                <div className="relative bg-card rounded-xl border border-border p-6 overflow-hidden">
+                    {/* Coming Soon Overlay */}
+                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                        <div className="text-center">
+                            <span className="px-6 py-3 bg-primary/20 border border-primary/30 rounded-full text-lg font-semibold text-primary">
+                                Coming Soon
+                            </span>
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-3 mb-4">
                         <LinkIcon className="text-primary" size={24} />
                         <h2 className="text-xl font-semibold text-foreground">Integrations</h2>
