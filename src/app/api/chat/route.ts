@@ -102,13 +102,24 @@ Examples:
               
 Result: ${resultText}
 
-Present this result to the user in a clear, friendly way. Follow these rules:
-1. DO NOT show IDs (id, account_id, contact_id, deal_id, pipeline_id, etc.) unless the user specifically asked for them
-2. DO NOT show technical fields like created_at, updated_at, insightly_id unless relevant
-3. Format data in a human-readable way (e.g., use names, not UUIDs)
-4. For lists, use bullet points or numbered lists
-5. Summarize counts and key information first
-6. Be concise but informative`,
+IMPORTANT FORMATTING RULES - YOU MUST FOLLOW THESE:
+1. NEVER show ID fields (id, account_id, contact_id, deal_id, pipeline_id, insightly_id) - these are internal UUIDs that mean nothing to users
+2. NEVER show timestamp fields (created_at, updated_at) unless the user asks about dates
+3. NEVER show empty arrays like "tags: []"
+4. For contacts: Show name, email, phone, role - NOT ids
+5. For accounts: Show name, industry, website - NOT ids  
+6. For deals: Show name, amount, stage, status - NOT ids
+7. Use a clean list format with bullet points, NOT tables with ID columns
+8. Start with a summary count, then list the key details
+
+Example good format for contacts:
+"Found 3 contacts:
+• John Smith - john@example.com, Sales Manager
+• Jane Doe - jane@example.com, CEO
+• Bob Wilson - bob@example.com, Developer"
+
+Example BAD format (DO NOT DO THIS):
+"| ID | Account ID | Name | Email |"`,
                         },
                     ],
                 });
