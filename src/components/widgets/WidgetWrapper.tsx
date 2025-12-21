@@ -17,11 +17,6 @@ interface WidgetWrapperProps {
     isDropTarget?: boolean;
 }
 
-const sizeClasses: Record<WidgetSize, string> = {
-    small: 'col-span-1',
-    medium: 'col-span-1 md:col-span-2',
-    large: 'col-span-1 md:col-span-2 lg:col-span-3',
-};
 
 const sizeLabels: Record<WidgetSize, string> = {
     small: 'S',
@@ -62,7 +57,7 @@ export function WidgetWrapper({
 
     return (
         <div 
-            className={`relative bg-card rounded-xl border shadow-sm overflow-visible group transition-all duration-200 ${sizeClasses[config.size]} ${
+            className={`relative bg-card rounded-xl border shadow-sm overflow-visible group transition-all duration-200 ${
                 isDragging ? 'opacity-60 scale-95 border-purple-500 border-2 z-50 ring-4 ring-purple-500/30' : 'border-border'
             }`}
             draggable

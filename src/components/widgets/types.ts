@@ -15,6 +15,13 @@ export type WidgetSize = 'small' | 'medium' | 'large';
 // Size order for cycling through sizes
 export const SIZE_ORDER: WidgetSize[] = ['small', 'medium', 'large'];
 
+// CSS classes for widget sizes in grid
+export const WIDGET_SIZE_CLASSES: Record<WidgetSize, string> = {
+    small: 'col-span-1',
+    medium: 'col-span-1 md:col-span-2',
+    large: 'col-span-1 md:col-span-2 lg:col-span-3',
+};
+
 export interface WidgetConfig {
     id: string;
     type: WidgetType;

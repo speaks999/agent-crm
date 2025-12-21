@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, LayoutGrid } from 'lucide-react';
-import { WidgetConfig, WidgetType, WidgetSize, WIDGET_CATALOG } from '@/components/widgets/types';
+import { WidgetConfig, WidgetType, WidgetSize, WIDGET_CATALOG, WIDGET_SIZE_CLASSES } from '@/components/widgets/types';
 import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
 import { AddWidgetModal } from '@/components/widgets/AddWidgetModal';
 
@@ -184,7 +184,7 @@ export default function Dashboard() {
                     {widgets.map((widget) => (
                         <div
                             key={widget.id}
-                            className="relative"
+                            className={`relative ${WIDGET_SIZE_CLASSES[widget.size]}`}
                             onDragEnter={() => handleDragEnter(widget.id)}
                         >
                             <WidgetRenderer
