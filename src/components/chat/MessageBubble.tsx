@@ -217,36 +217,30 @@ export function MessageBubble({ message, onAction, isLoading }: MessageBubblePro
                 {/* Chart */}
                 {message.chart && message.chart.data && message.chart.data.length > 0 && (
                     <div className="mt-4 -mx-4 -mb-3">
-                        <div className="bg-muted/30 rounded-b-2xl overflow-hidden">
+                        <div className="bg-muted/30 rounded-b-2xl p-2">
                             {message.chart.type === 'bar' && (
-                                <div className="h-[280px] p-4">
-                                    <BarChartComponent 
-                                        data={message.chart.data}
-                                        title={message.chart.title}
-                                        xAxisKey={message.chart.xAxisKey || 'name'}
-                                        yAxisKey={message.chart.yAxisKey || 'value'}
-                                    />
-                                </div>
+                                <BarChartComponent 
+                                    data={message.chart.data}
+                                    title={message.chart.title}
+                                    xAxisKey={message.chart.xAxisKey || 'name'}
+                                    yAxisKey={message.chart.yAxisKey || 'value'}
+                                />
                             )}
                             {message.chart.type === 'pie' && (
-                                <div className="h-[280px] p-4">
-                                    <PieChartComponent 
-                                        data={message.chart.data}
-                                        title={message.chart.title}
-                                        nameKey="name"
-                                        dataKey="value"
-                                    />
-                                </div>
+                                <PieChartComponent 
+                                    data={message.chart.data}
+                                    title={message.chart.title}
+                                    nameKey="name"
+                                    dataKey="value"
+                                />
                             )}
                             {message.chart.type === 'line' && (
-                                <div className="h-[280px] p-4">
-                                    <LineChartComponent 
-                                        data={message.chart.data}
-                                        title={message.chart.title}
-                                        xAxisKey={message.chart.xAxisKey || 'name'}
-                                        yAxisKey={message.chart.yAxisKey || 'value'}
-                                    />
-                                </div>
+                                <LineChartComponent 
+                                    data={message.chart.data}
+                                    title={message.chart.title}
+                                    xAxisKey={message.chart.xAxisKey || 'name'}
+                                    yAxisKey={message.chart.yAxisKey || 'value'}
+                                />
                             )}
                         </div>
                     </div>
