@@ -83,6 +83,7 @@ Examples:
         });
 
         let responseText = '';
+        let structuredContent: any = null;
         const intent = extractJSON(intentAnalysis.text);
 
         if (intent.needsTool && intent.toolName) {
@@ -90,6 +91,7 @@ Examples:
             try {
                 const toolResult = await callTool(intent.toolName, intent.args || {});
                 const resultText = toolResult.content[0]?.text || '';
+                structuredContent = toolResult.structuredContent;
 
                 // Have AI format the result nicely
                 const formattedResponse = await generateText({
@@ -132,31 +134,24 @@ Example BAD format (DO NOT DO THIS):
             responseText = intent.response || "I'm here to help with your CRM. What would you like to do?";
         }
 
-        // Return as plain text stream
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-            start(controller) {
-                controller.enqueue(encoder.encode(responseText));
-                controller.close();
-            },
-        });
+        // Return JSON with text and structured content
+        const responseData = {
+            text: responseText,
+            structuredContent,
+        };
 
-        return new Response(stream, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        return new Response(JSON.stringify(responseData), {
+            headers: { 'Content-Type': 'application/json' },
         });
 
     } catch (error: any) {
         console.error('Chat API error:', error);
         console.error('Error stack:', error.stack);
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream({
-            start(controller) {
-                controller.enqueue(encoder.encode(`Sorry, I encountered an error: ${error.message}`));
-                controller.close();
-            },
-        });
-        return new Response(stream, {
-            headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+        return new Response(JSON.stringify({
+            text: `Sorry, I encountered an error: ${error.message}`,
+            structuredContent: null,
+        }), {
+            headers: { 'Content-Type': 'application/json' },
         });
     }
 }

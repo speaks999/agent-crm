@@ -224,30 +224,42 @@ export function ChatInterface() {
                 throw new Error('Failed to get response from chat API');
             }
 
-            // Read the streaming response
-            const reader = response.body?.getReader();
-            const decoder = new TextDecoder();
-            let accumulatedText = '';
+            // Parse JSON response
+            const data = await response.json();
+            const responseText = data.text || '';
+            const structuredContent = data.structuredContent;
 
-            if (reader) {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-
-                    const chunk = decoder.decode(value, { stream: true });
-                    accumulatedText += chunk;
-
-                    // Detect actions based on content
-                    const actions = detectAndAddActions(accumulatedText);
-
-                    // Update the message with accumulated text and actions
-                    setMessages(prev => prev.map(msg =>
-                        msg.id === assistantMessageId
-                            ? { ...msg, content: accumulatedText, actions: actions.length > 0 ? actions : undefined }
-                            : msg
-                    ));
+            // Detect actions based on content
+            const actions = detectAndAddActions(responseText);
+            
+            // Extract duplicate data from structured content
+            let duplicates: Message['duplicates'] = undefined;
+            if (structuredContent) {
+                if (structuredContent.duplicateGroups) {
+                    duplicates = { groups: structuredContent.duplicateGroups };
+                }
+                if (structuredContent.toRemove) {
+                    duplicates = { ...duplicates, toRemove: structuredContent.toRemove };
+                }
+                if (structuredContent.toKeep) {
+                    // toKeep comes from dry run - we can show what will be kept
+                }
+                if (structuredContent.removed) {
+                    duplicates = { ...duplicates, removed: structuredContent.removed };
                 }
             }
+
+            // Update the message with response text, actions, and duplicates
+            setMessages(prev => prev.map(msg =>
+                msg.id === assistantMessageId
+                    ? { 
+                        ...msg, 
+                        content: responseText, 
+                        actions: actions.length > 0 ? actions : undefined,
+                        duplicates
+                    }
+                    : msg
+            ));
         } catch (error: any) {
             console.error('Chat error:', error);
             // Update the assistant message with error
