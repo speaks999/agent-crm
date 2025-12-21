@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 
 export default async function ContactsPage() {
@@ -34,9 +35,11 @@ export default async function ContactsPage() {
                     <tbody className="divide-y divide-border">
                         {contacts && contacts.length > 0 ? (
                             contacts.map((contact: any) => (
-                                <tr key={contact.id} className="hover:bg-muted">
+                                <tr key={contact.id} className="hover:bg-muted cursor-pointer transition-colors">
                                     <td className="px-6 py-4 font-medium text-foreground">
-                                        {contact.first_name} {contact.last_name}
+                                        <Link href={`/contacts/${contact.id}`} className="hover:text-primary">
+                                            {contact.first_name} {contact.last_name}
+                                        </Link>
                                     </td>
                                     <td className="px-6 py-4 text-foreground">{contact.email}</td>
                                     <td className="px-6 py-4 text-foreground">{contact.role || '-'}</td>

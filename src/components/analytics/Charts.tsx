@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import {
     BarChart,
     Bar,
@@ -109,7 +110,30 @@ const HIDDEN_FIELDS = [
     'insightly_id', 'created_at', 'updated_at', 'tags'
 ];
 
+// Detect entity type from data structure
+function detectEntityType(row: any): 'contact' | 'account' | 'deal' | 'organization' | null {
+    if ('first_name' in row || 'last_name' in row) return 'contact';
+    if ('stage' in row && 'amount' in row) return 'deal';
+    if ('industry' in row || ('name' in row && 'website' in row)) return 'account';
+    if ('address_billing_city' in row || 'background' in row) return 'organization';
+    return null;
+}
+
+// Get the detail URL for an entity
+function getEntityUrl(entityType: string | null, id: string): string | null {
+    if (!id || !entityType) return null;
+    switch (entityType) {
+        case 'contact': return `/contacts/${id}`;
+        case 'account': return `/accounts/${id}`;
+        case 'deal': return `/opportunities/${id}`;
+        case 'organization': return `/organizations/${id}`;
+        default: return null;
+    }
+}
+
 export function TableComponent({ data, title }: { data: any[], title: string }) {
+    const router = useRouter();
+    
     if (!data || data.length === 0) return null;
 
     // Filter out ID and technical columns
@@ -118,10 +142,25 @@ export function TableComponent({ data, title }: { data: any[], title: string }) 
 
     // If all columns were filtered out, show a subset of the original
     const displayColumns = columns.length > 0 ? columns : allColumns.slice(0, 5);
+    
+    // Detect entity type for clickable rows
+    const entityType = detectEntityType(data[0]);
+    const isClickable = entityType !== null && data[0]?.id;
+
+    const handleRowClick = (row: any) => {
+        if (!isClickable) return;
+        const url = getEntityUrl(entityType, row.id);
+        if (url) {
+            router.push(url);
+        }
+    };
 
     return (
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm w-full overflow-hidden">
             <h3 className="text-lg font-semibold text-foreground mb-4">{title}</h3>
+            {isClickable && (
+                <p className="text-xs text-muted-foreground mb-2">Click a row to view details</p>
+            )}
             <div className="overflow-x-auto">
                 <table className="w-full text-left text-sm text-foreground">
                     <thead className="bg-muted border-b border-border">
@@ -135,7 +174,11 @@ export function TableComponent({ data, title }: { data: any[], title: string }) 
                     </thead>
                     <tbody className="divide-y divide-border">
                         {data.map((row, i) => (
-                            <tr key={i} className="hover:bg-muted">
+                            <tr 
+                                key={row.id || i} 
+                                className={`hover:bg-muted ${isClickable ? 'cursor-pointer hover:bg-primary/5' : ''}`}
+                                onClick={() => handleRowClick(row)}
+                            >
                                 {displayColumns.map((col) => (
                                     <td key={col} className="px-4 py-3 whitespace-nowrap">
                                         {row[col] === null || row[col] === undefined
