@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createBrowserClient } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 
 interface Contact {
@@ -16,26 +15,32 @@ interface Contact {
 
 export default function ContactsPage() {
     const router = useRouter();
-    const supabase = useMemo(() => createBrowserClient(), []);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchContacts() {
-            const { data, error } = await supabase
-                .from('contacts')
-                .select('*, accounts(name)')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('Error fetching contacts:', error);
-            } else {
-                setContacts(data || []);
+            try {
+                const response = await fetch('/api/contacts');
+                if (!response.ok) {
+                    throw new Error('Failed to fetch contacts');
+                }
+                const data = await response.json();
+                if (Array.isArray(data)) {
+                    setContacts(data);
+                } else if (data.error) {
+                    setError(data.error);
+                }
+            } catch (err: any) {
+                console.error('Error fetching contacts:', err);
+                setError(err.message);
+            } finally {
+                setIsLoading(false);
             }
-            setIsLoading(false);
         }
         fetchContacts();
-    }, [supabase]);
+    }, []);
 
     const handleRowClick = (contactId: string) => {
         router.push(`/contacts/${contactId}`);
@@ -45,6 +50,17 @@ export default function ContactsPage() {
         return (
             <div className="flex-1 flex items-center justify-center">
                 <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                <div className="text-center">
+                    <p className="text-destructive mb-2">Error loading contacts</p>
+                    <p className="text-muted-foreground text-sm">{error}</p>
+                </div>
             </div>
         );
     }
