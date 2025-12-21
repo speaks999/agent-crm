@@ -1,8 +1,9 @@
 'use client';
 
-import { Message, MessageAction, DuplicateContact, DuplicateGroup } from './ChatInterface';
+import { Message, MessageAction, DuplicateContact, DuplicateGroup, ChartData } from './ChatInterface';
 import { Trash2 } from 'lucide-react';
 import React from 'react';
+import { BarChartComponent, PieChartComponent, LineChartComponent } from '@/components/analytics/Charts';
 
 interface MessageBubbleProps {
     message: Message;
@@ -211,6 +212,44 @@ export function MessageBubble({ message, onAction, isLoading }: MessageBubblePro
                         title="Removed" 
                         variant="removed"
                     />
+                )}
+                
+                {/* Chart */}
+                {message.chart && message.chart.data && message.chart.data.length > 0 && (
+                    <div className="mt-4 -mx-4 -mb-3">
+                        <div className="bg-muted/30 rounded-b-2xl overflow-hidden">
+                            {message.chart.type === 'bar' && (
+                                <div className="h-[280px] p-4">
+                                    <BarChartComponent 
+                                        data={message.chart.data}
+                                        title={message.chart.title}
+                                        xAxisKey={message.chart.xAxisKey || 'name'}
+                                        yAxisKey={message.chart.yAxisKey || 'value'}
+                                    />
+                                </div>
+                            )}
+                            {message.chart.type === 'pie' && (
+                                <div className="h-[280px] p-4">
+                                    <PieChartComponent 
+                                        data={message.chart.data}
+                                        title={message.chart.title}
+                                        nameKey="name"
+                                        dataKey="value"
+                                    />
+                                </div>
+                            )}
+                            {message.chart.type === 'line' && (
+                                <div className="h-[280px] p-4">
+                                    <LineChartComponent 
+                                        data={message.chart.data}
+                                        title={message.chart.title}
+                                        xAxisKey={message.chart.xAxisKey || 'name'}
+                                        yAxisKey={message.chart.yAxisKey || 'value'}
+                                    />
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 )}
                 
                 {/* Action Buttons */}

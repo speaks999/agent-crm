@@ -84,7 +84,18 @@ Examples:
 
         let responseText = '';
         let structuredContent: any = null;
+        let chartData: any = null;
         const intent = extractJSON(intentAnalysis.text);
+
+        // Detect if this is an analytics query
+        const userMessage = messages[messages.length - 1]?.content?.toLowerCase() || '';
+        const isAnalyticsQuery = userMessage.includes('revenue') || 
+            userMessage.includes('chart') || 
+            userMessage.includes('graph') ||
+            userMessage.includes('by stage') ||
+            userMessage.includes('analytics') ||
+            userMessage.includes('breakdown') ||
+            userMessage.includes('distribution');
 
         if (intent.needsTool && intent.toolName) {
             // Execute the tool
@@ -92,6 +103,55 @@ Examples:
                 const toolResult = await callTool(intent.toolName, intent.args || {});
                 const resultText = toolResult.content[0]?.text || '';
                 structuredContent = toolResult.structuredContent;
+
+                // Extract chart data if this is an analytics query with deal/account data
+                if (isAnalyticsQuery && structuredContent) {
+                    const deals = structuredContent.deals || [];
+                    const accounts = structuredContent.accounts || [];
+                    
+                    // Group deals by stage for revenue chart
+                    if (deals.length > 0 && (userMessage.includes('revenue') || userMessage.includes('stage'))) {
+                        const stageData: { [key: string]: { count: number; revenue: number } } = {};
+                        deals.forEach((deal: any) => {
+                            const stage = deal.stage || 'Unknown';
+                            if (!stageData[stage]) {
+                                stageData[stage] = { count: 0, revenue: 0 };
+                            }
+                            stageData[stage].count++;
+                            stageData[stage].revenue += (deal.amount || 0);
+                        });
+                        
+                        chartData = {
+                            type: 'bar',
+                            title: 'Revenue by Stage',
+                            data: Object.entries(stageData).map(([name, data]) => ({
+                                name,
+                                value: data.revenue,
+                                count: data.count,
+                            })),
+                            xAxisKey: 'name',
+                            yAxisKey: 'value',
+                        };
+                    }
+                    
+                    // Group accounts by industry
+                    if (accounts.length > 0 && userMessage.includes('industry')) {
+                        const industryData: { [key: string]: number } = {};
+                        accounts.forEach((account: any) => {
+                            const industry = account.industry || 'Unknown';
+                            industryData[industry] = (industryData[industry] || 0) + 1;
+                        });
+                        
+                        chartData = {
+                            type: 'pie',
+                            title: 'Accounts by Industry',
+                            data: Object.entries(industryData).map(([name, value]) => ({
+                                name,
+                                value,
+                            })),
+                        };
+                    }
+                }
 
                 // Have AI format the result nicely
                 const formattedResponse = await generateText({
@@ -113,6 +173,7 @@ IMPORTANT FORMATTING RULES - YOU MUST FOLLOW THESE:
 6. For deals: Show name, amount, stage, status - NOT ids
 7. Use a clean list format with bullet points, NOT tables with ID columns
 8. Start with a summary count, then list the key details
+${chartData ? '\n9. A chart will be displayed alongside your response, so provide a brief summary rather than listing all items.' : ''}
 
 Example good format for contacts:
 "Found 3 contacts:
@@ -134,10 +195,11 @@ Example BAD format (DO NOT DO THIS):
             responseText = intent.response || "I'm here to help with your CRM. What would you like to do?";
         }
 
-        // Return JSON with text and structured content
+        // Return JSON with text, structured content, and chart data
         const responseData = {
             text: responseText,
             structuredContent,
+            chartData,
         };
 
         return new Response(JSON.stringify(responseData), {

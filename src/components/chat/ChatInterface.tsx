@@ -26,6 +26,14 @@ export interface DuplicateGroup {
     contacts: DuplicateContact[];
 }
 
+export interface ChartData {
+    type: 'bar' | 'line' | 'pie';
+    title: string;
+    data: Array<{ name: string; value: number; [key: string]: any }>;
+    xAxisKey?: string;
+    yAxisKey?: string;
+}
+
 export interface Message {
     id: string;
     role: 'user' | 'assistant' | 'system';
@@ -41,6 +49,7 @@ export interface Message {
         toRemove?: DuplicateContact[];
         removed?: DuplicateContact[];
     };
+    chart?: ChartData;
     timestamp: Date;
 }
 
@@ -373,6 +382,7 @@ export function ChatInterface() {
             const data = await response.json();
             const responseText = data.text || '';
             const structuredContent = data.structuredContent;
+            const chartData = data.chartData;
 
             // Detect actions based on content
             const actions = detectAndAddActions(responseText);
@@ -394,14 +404,15 @@ export function ChatInterface() {
                 }
             }
 
-            // Update the message with response text, actions, and duplicates
+            // Update the message with response text, actions, duplicates, and chart
             setMessages(prev => prev.map(msg =>
                 msg.id === assistantMessageId
                     ? { 
                         ...msg, 
                         content: responseText, 
                         actions: actions.length > 0 ? actions : undefined,
-                        duplicates
+                        duplicates,
+                        chart: chartData || undefined,
                     }
                     : msg
             ));
