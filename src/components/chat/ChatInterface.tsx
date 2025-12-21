@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ToolResultCard } from './ToolResultCard';
+import { ChevronDown, Plus, Trash2, MessageSquare } from 'lucide-react';
 
 export interface MessageAction {
     label: string;
@@ -43,18 +44,163 @@ export interface Message {
     timestamp: Date;
 }
 
+interface ChatSession {
+    id: string;
+    title: string;
+    messages: Message[];
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const STORAGE_KEY = 'whitespace-chat-history';
+const MAX_SESSIONS = 20;
+
+// Helper to generate session title from first user message
+function generateTitle(messages: Message[]): string {
+    const firstUserMsg = messages.find(m => m.role === 'user');
+    if (firstUserMsg) {
+        return firstUserMsg.content.slice(0, 40) + (firstUserMsg.content.length > 40 ? '...' : '');
+    }
+    return 'New Chat';
+}
+
+// Load sessions from localStorage
+function loadSessions(): ChatSession[] {
+    if (typeof window === 'undefined') return [];
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            const sessions = JSON.parse(stored);
+            return sessions.map((s: any) => ({
+                ...s,
+                createdAt: new Date(s.createdAt),
+                updatedAt: new Date(s.updatedAt),
+                messages: s.messages.map((m: any) => ({
+                    ...m,
+                    timestamp: new Date(m.timestamp),
+                })),
+            }));
+        }
+    } catch (e) {
+        console.error('Failed to load chat history:', e);
+    }
+    return [];
+}
+
+// Save sessions to localStorage
+function saveSessions(sessions: ChatSession[]) {
+    if (typeof window === 'undefined') return;
+    try {
+        // Keep only the most recent sessions
+        const toSave = sessions.slice(0, MAX_SESSIONS);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+    } catch (e) {
+        console.error('Failed to save chat history:', e);
+    }
+}
+
+const DEFAULT_MESSAGE: Message = {
+    id: '1',
+    role: 'assistant',
+    content: 'Hi! Tell me about your customer interactions and I\'ll update the CRM for you. You can also ask me for analytics like \'Show me revenue by stage\'.',
+    timestamp: new Date(),
+};
+
 export function ChatInterface() {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            id: '1',
-            role: 'assistant',
-            content: 'Hi! Tell me about your customer interactions and I\'ll update the CRM for you. You can also ask me for analytics like \'Show me revenue by stage\'.',
-            timestamp: new Date(),
-        },
-    ]);
+    const [sessions, setSessions] = useState<ChatSession[]>([]);
+    const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+    const [messages, setMessages] = useState<Message[]>([DEFAULT_MESSAGE]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Load sessions on mount
+    useEffect(() => {
+        const loaded = loadSessions();
+        setSessions(loaded);
+    }, []);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        function handleClickOutside(event: MouseEvent) {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setShowHistory(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    // Save current session when messages change
+    useEffect(() => {
+        if (messages.length <= 1) return; // Don't save empty sessions
+        
+        const hasUserMessage = messages.some(m => m.role === 'user');
+        if (!hasUserMessage) return;
+
+        setSessions(prev => {
+            let updated: ChatSession[];
+            
+            if (currentSessionId) {
+                // Update existing session
+                updated = prev.map(s => 
+                    s.id === currentSessionId 
+                        ? { ...s, messages, title: generateTitle(messages), updatedAt: new Date() }
+                        : s
+                );
+            } else {
+                // Create new session
+                const newSession: ChatSession = {
+                    id: Date.now().toString(),
+                    title: generateTitle(messages),
+                    messages,
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+                setCurrentSessionId(newSession.id);
+                updated = [newSession, ...prev];
+            }
+            
+            // Sort by most recent
+            updated.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+            saveSessions(updated);
+            return updated;
+        });
+    }, [messages, currentSessionId]);
+
+    // Start a new chat
+    const handleNewChat = () => {
+        setCurrentSessionId(null);
+        setMessages([DEFAULT_MESSAGE]);
+        setShowHistory(false);
+    };
+
+    // Load a previous session
+    const handleLoadSession = (session: ChatSession) => {
+        setCurrentSessionId(session.id);
+        setMessages(session.messages);
+        setShowHistory(false);
+    };
+
+    // Delete a session
+    const handleDeleteSession = (e: React.MouseEvent, sessionId: string) => {
+        e.stopPropagation();
+        setSessions(prev => {
+            const updated = prev.filter(s => s.id !== sessionId);
+            saveSessions(updated);
+            return updated;
+        });
+        if (currentSessionId === sessionId) {
+            handleNewChat();
+        }
+    };
+
+    // Get current session title
+    const currentTitle = currentSessionId 
+        ? sessions.find(s => s.id === currentSessionId)?.title || 'Chat'
+        : 'New Chat';
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -281,6 +427,76 @@ export function ChatInterface() {
 
     return (
         <div className="flex h-full flex-col bg-background">
+            {/* Chat Header with History Dropdown */}
+            <div className="border-b border-border px-8 py-3 flex items-center justify-between bg-background">
+                <div className="relative" ref={dropdownRef}>
+                    <button
+                        onClick={() => setShowHistory(!showHistory)}
+                        className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                        <MessageSquare size={16} />
+                        <span className="max-w-[200px] truncate">{currentTitle}</span>
+                        <ChevronDown size={16} className={`transition-transform ${showHistory ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {/* Dropdown */}
+                    {showHistory && (
+                        <div className="absolute top-full left-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                            {/* New Chat Button */}
+                            <button
+                                onClick={handleNewChat}
+                                className="w-full px-4 py-3 flex items-center gap-2 text-sm text-primary hover:bg-muted transition-colors border-b border-border"
+                            >
+                                <Plus size={16} />
+                                New Chat
+                            </button>
+                            
+                            {/* Session List */}
+                            <div className="max-h-64 overflow-y-auto">
+                                {sessions.length === 0 ? (
+                                    <div className="px-4 py-6 text-center text-muted-foreground text-sm">
+                                        No chat history yet
+                                    </div>
+                                ) : (
+                                    sessions.map(session => (
+                                        <div
+                                            key={session.id}
+                                            onClick={() => handleLoadSession(session)}
+                                            className={`px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-muted transition-colors group ${
+                                                session.id === currentSessionId ? 'bg-muted' : ''
+                                            }`}
+                                        >
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-foreground truncate">{session.title}</p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {session.updatedAt.toLocaleDateString()} {session.updatedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                            <button
+                                                onClick={(e) => handleDeleteSession(e, session.id)}
+                                                className="p-1 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Delete chat"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {/* New Chat Button (always visible) */}
+                <button
+                    onClick={handleNewChat}
+                    className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                    title="New Chat"
+                >
+                    <Plus size={18} />
+                </button>
+            </div>
+
             {/* Messages */}
             <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
                 {messages.map(message => (
