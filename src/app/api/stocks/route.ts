@@ -1,18 +1,5 @@
 import { NextRequest } from 'next/server';
 
-interface YahooQuoteResult {
-    symbol: string;
-    regularMarketPrice: number;
-    regularMarketChange: number;
-    regularMarketChangePercent: number;
-    regularMarketPreviousClose: number;
-    shortName: string;
-    regularMarketOpen: number;
-    regularMarketDayHigh: number;
-    regularMarketDayLow: number;
-    regularMarketVolume: number;
-}
-
 interface StockQuote {
     symbol: string;
     name: string;
@@ -26,6 +13,18 @@ interface StockQuote {
     volume: number;
 }
 
+// Stock name mapping
+const STOCK_NAMES: Record<string, string> = {
+    'AAPL': 'Apple Inc.',
+    'GOOGL': 'Alphabet Inc.',
+    'MSFT': 'Microsoft Corp.',
+    'AMZN': 'Amazon.com Inc.',
+    'TSLA': 'Tesla Inc.',
+    'META': 'Meta Platforms',
+    'NVDA': 'NVIDIA Corp.',
+    'JPM': 'JPMorgan Chase',
+};
+
 // Fetch current stock quotes from Yahoo Finance
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -33,39 +32,83 @@ export async function GET(request: NextRequest) {
     
     try {
         const symbolList = symbols.split(',').map(s => s.trim().toUpperCase());
-        const symbolsParam = symbolList.join(',');
         
-        // Yahoo Finance API endpoint (same as yfinance uses)
-        const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbolsParam}`;
-        
-        const response = await fetch(url, {
-            headers: {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            },
-            next: { revalidate: 30 }, // Cache for 30 seconds
-        });
+        // Try Yahoo Finance chart API (more reliable than quote API)
+        const quotes: StockQuote[] = await Promise.all(
+            symbolList.map(async (symbol) => {
+                try {
+                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+                    
+                    const response = await fetch(url, {
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                            'Accept': 'application/json',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Origin': 'https://finance.yahoo.com',
+                            'Referer': 'https://finance.yahoo.com/',
+                        },
+                        cache: 'no-store',
+                    });
 
-        if (!response.ok) {
-            throw new Error(`Yahoo Finance API error: ${response.status}`);
+                    if (!response.ok) {
+                        throw new Error(`API error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const result = data.chart?.result?.[0];
+                    
+                    if (!result) {
+                        throw new Error('No data');
+                    }
+
+                    const meta = result.meta;
+                    const quote = result.indicators?.quote?.[0];
+                    const closes = quote?.close?.filter((c: number) => c != null) || [];
+                    
+                    const currentPrice = meta.regularMarketPrice || closes[closes.length - 1] || 0;
+                    const previousClose = meta.previousClose || meta.chartPreviousClose || closes[closes.length - 2] || currentPrice;
+                    const change = currentPrice - previousClose;
+                    const changePercent = previousClose ? (change / previousClose) * 100 : 0;
+
+                    return {
+                        symbol,
+                        name: STOCK_NAMES[symbol] || meta.shortName || symbol,
+                        price: currentPrice,
+                        change,
+                        changePercent,
+                        previousClose,
+                        open: meta.regularMarketOpen || quote?.open?.[quote.open.length - 1] || 0,
+                        dayHigh: meta.regularMarketDayHigh || 0,
+                        dayLow: meta.regularMarketDayLow || 0,
+                        volume: meta.regularMarketVolume || 0,
+                    };
+                } catch (err) {
+                    console.error(`Failed to fetch ${symbol}:`, err);
+                    // Return placeholder data if fetch fails
+                    return {
+                        symbol,
+                        name: STOCK_NAMES[symbol] || symbol,
+                        price: 0,
+                        change: 0,
+                        changePercent: 0,
+                        previousClose: 0,
+                        open: 0,
+                        dayHigh: 0,
+                        dayLow: 0,
+                        volume: 0,
+                    };
+                }
+            })
+        );
+
+        // Filter out failed quotes (price = 0)
+        const validQuotes = quotes.filter(q => q.price > 0);
+        
+        if (validQuotes.length === 0) {
+            throw new Error('Unable to fetch stock data. Yahoo Finance may be temporarily unavailable.');
         }
 
-        const data = await response.json();
-        const results: YahooQuoteResult[] = data.quoteResponse?.result || [];
-
-        const quotes: StockQuote[] = results.map((quote) => ({
-            symbol: quote.symbol,
-            name: quote.shortName || quote.symbol,
-            price: quote.regularMarketPrice || 0,
-            change: quote.regularMarketChange || 0,
-            changePercent: quote.regularMarketChangePercent || 0,
-            previousClose: quote.regularMarketPreviousClose || 0,
-            open: quote.regularMarketOpen || 0,
-            dayHigh: quote.regularMarketDayHigh || 0,
-            dayLow: quote.regularMarketDayLow || 0,
-            volume: quote.regularMarketVolume || 0,
-        }));
-
-        return Response.json({ quotes, timestamp: new Date().toISOString() });
+        return Response.json({ quotes: validQuotes, timestamp: new Date().toISOString() });
     } catch (error: any) {
         console.error('Stock API error:', error);
         return Response.json(
