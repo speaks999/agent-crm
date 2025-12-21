@@ -1,16 +1,51 @@
-import React from 'react';
-import Link from 'next/link';
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { Loader2 } from 'lucide-react';
 
-export default async function ContactsPage() {
+interface Contact {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    role?: string;
+    accounts?: { name: string };
+}
 
-    const { data: contacts, error } = await supabase
-        .from('contacts')
-        .select('*, accounts(name)')
-        .order('created_at', { ascending: false });
+export default function ContactsPage() {
+    const router = useRouter();
+    const [contacts, setContacts] = useState<Contact[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    if (error) {
-        console.error('Error fetching contacts:', error);
+    useEffect(() => {
+        async function fetchContacts() {
+            const { data, error } = await supabase
+                .from('contacts')
+                .select('*, accounts(name)')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching contacts:', error);
+            } else {
+                setContacts(data || []);
+            }
+            setIsLoading(false);
+        }
+        fetchContacts();
+    }, []);
+
+    const handleRowClick = (contactId: string) => {
+        router.push(`/contacts/${contactId}`);
+    };
+
+    if (isLoading) {
+        return (
+            <div className="flex-1 flex items-center justify-center">
+                <Loader2 className="animate-spin text-primary" size={40} />
+            </div>
+        );
     }
 
     return (
@@ -33,15 +68,17 @@ export default async function ContactsPage() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                        {contacts && contacts.length > 0 ? (
-                            contacts.map((contact: any) => (
-                                <tr key={contact.id} className="hover:bg-muted cursor-pointer transition-colors">
+                        {contacts.length > 0 ? (
+                            contacts.map((contact) => (
+                                <tr 
+                                    key={contact.id} 
+                                    className="hover:bg-muted cursor-pointer transition-colors"
+                                    onClick={() => handleRowClick(contact.id)}
+                                >
                                     <td className="px-6 py-4 font-medium text-foreground">
-                                        <Link href={`/contacts/${contact.id}`} className="hover:text-primary">
-                                            {contact.first_name} {contact.last_name}
-                                        </Link>
+                                        {contact.first_name} {contact.last_name}
                                     </td>
-                                    <td className="px-6 py-4 text-foreground">{contact.email}</td>
+                                    <td className="px-6 py-4 text-foreground">{contact.email || '-'}</td>
                                     <td className="px-6 py-4 text-foreground">{contact.role || '-'}</td>
                                     <td className="px-6 py-4 text-foreground">{contact.accounts?.name || '-'}</td>
                                 </tr>
