@@ -102,7 +102,13 @@ Examples:
               
 Result: ${resultText}
 
-Present this result to the user in a clear, friendly way. If it's JSON data, format it nicely.`,
+Present this result to the user in a clear, friendly way. Follow these rules:
+1. DO NOT show IDs (id, account_id, contact_id, deal_id, pipeline_id, etc.) unless the user specifically asked for them
+2. DO NOT show technical fields like created_at, updated_at, insightly_id unless relevant
+3. Format data in a human-readable way (e.g., use names, not UUIDs)
+4. For lists, use bullet points or numbered lists
+5. Summarize counts and key information first
+6. Be concise but informative`,
                         },
                     ],
                 });
