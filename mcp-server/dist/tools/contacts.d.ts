@@ -15,6 +15,11 @@ export declare function handleContactTool(request: any, supabase: SupabaseClient
         contacts: any[];
         duplicateMatches?: undefined;
         suggestedAction?: undefined;
+        duplicateGroups?: undefined;
+        toRemove?: undefined;
+        toKeep?: undefined;
+        removed?: undefined;
+        kept?: undefined;
     };
     isError?: undefined;
 } | {
@@ -27,7 +32,64 @@ export declare function handleContactTool(request: any, supabase: SupabaseClient
         duplicateMatches: import("../utils/deduplication.js").DuplicateMatch[];
         suggestedAction: "create" | "merge" | "update" | "skip";
         contacts?: undefined;
+        duplicateGroups?: undefined;
+        toRemove?: undefined;
+        toKeep?: undefined;
+        removed?: undefined;
+        kept?: undefined;
     };
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        duplicateGroups: {
+            name: string;
+            count: number;
+            contacts: any[];
+        }[];
+        contacts?: undefined;
+        duplicateMatches?: undefined;
+        suggestedAction?: undefined;
+        toRemove?: undefined;
+        toKeep?: undefined;
+        removed?: undefined;
+        kept?: undefined;
+    };
+    isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        toRemove: any[];
+        toKeep: any[];
+        contacts?: undefined;
+        duplicateMatches?: undefined;
+        suggestedAction?: undefined;
+        duplicateGroups?: undefined;
+        removed?: undefined;
+        kept?: undefined;
+    };
+    isError?: undefined;
+} | {
+    content: {
+        type: string;
+        text: string;
+    }[];
+    structuredContent: {
+        removed: any[];
+        kept: any[];
+        contacts?: undefined;
+        duplicateMatches?: undefined;
+        suggestedAction?: undefined;
+        duplicateGroups?: undefined;
+        toRemove?: undefined;
+        toKeep?: undefined;
+    };
+    isError?: undefined;
 } | null>;
 export declare const contactToolDefinitions: ({
     name: string;
@@ -60,6 +122,7 @@ export declare const contactToolDefinitions: ({
                 description: string;
             };
             id?: undefined;
+            dry_run?: undefined;
         };
         required: string[];
     };
@@ -79,6 +142,7 @@ export declare const contactToolDefinitions: ({
             email?: undefined;
             phone?: undefined;
             role?: undefined;
+            dry_run?: undefined;
         };
         required: string[];
     };
@@ -98,6 +162,7 @@ export declare const contactToolDefinitions: ({
             phone?: undefined;
             role?: undefined;
             id?: undefined;
+            dry_run?: undefined;
         };
         required?: undefined;
     };
@@ -135,8 +200,47 @@ export declare const contactToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            dry_run?: undefined;
         };
         required: string[];
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            first_name?: undefined;
+            last_name?: undefined;
+            account_id?: undefined;
+            email?: undefined;
+            phone?: undefined;
+            role?: undefined;
+            id?: undefined;
+            dry_run?: undefined;
+        };
+        required?: undefined;
+    };
+} | {
+    name: string;
+    description: string;
+    inputSchema: {
+        type: string;
+        properties: {
+            dry_run: {
+                type: string;
+                description: string;
+                default: boolean;
+            };
+            first_name?: undefined;
+            last_name?: undefined;
+            account_id?: undefined;
+            email?: undefined;
+            phone?: undefined;
+            role?: undefined;
+            id?: undefined;
+        };
+        required?: undefined;
     };
 })[];
 //# sourceMappingURL=contacts.d.ts.map

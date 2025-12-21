@@ -487,6 +487,165 @@ export async function handleContactTool(request: any, supabase: SupabaseClient) 
         };
     }
 
+    // Find Duplicate Contacts
+    if (request.params.name === 'find_duplicate_contacts') {
+        const { data: contacts, error } = await supabase
+            .from('contacts')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
+        }
+
+        // Group contacts by normalized name (first_name + last_name, lowercase)
+        const nameGroups: { [key: string]: any[] } = {};
+        (contacts || []).forEach((contact) => {
+            const normalizedName = `${(contact.first_name || '').toLowerCase().trim()} ${(contact.last_name || '').toLowerCase().trim()}`;
+            if (!nameGroups[normalizedName]) {
+                nameGroups[normalizedName] = [];
+            }
+            nameGroups[normalizedName].push(contact);
+        });
+
+        // Find groups with more than one contact (duplicates)
+        const duplicateGroups = Object.entries(nameGroups)
+            .filter(([_, group]) => group.length > 1)
+            .map(([name, group]) => ({
+                name,
+                count: group.length,
+                contacts: group,
+            }));
+
+        const totalDuplicates = duplicateGroups.reduce((sum, g) => sum + g.count - 1, 0);
+
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: duplicateGroups.length > 0
+                        ? `Found ${duplicateGroups.length} name(s) with duplicates (${totalDuplicates} duplicate contacts total):\n${duplicateGroups.map(g => `• "${g.name}" has ${g.count} contacts`).join('\n')}`
+                        : 'No duplicate contacts found.',
+                },
+            ],
+            structuredContent: { duplicateGroups },
+        };
+    }
+
+    // Remove Duplicate Contacts (keeps the oldest, removes newer duplicates)
+    if (request.params.name === 'remove_duplicate_contacts') {
+        const { dry_run = true } = request.params.arguments || {};
+
+        const { data: contacts, error } = await supabase
+            .from('contacts')
+            .select('*')
+            .order('created_at', { ascending: true });
+
+        if (error) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+                isError: true,
+            };
+        }
+
+        // Group contacts by normalized name
+        const nameGroups: { [key: string]: any[] } = {};
+        (contacts || []).forEach((contact) => {
+            const normalizedName = `${(contact.first_name || '').toLowerCase().trim()} ${(contact.last_name || '').toLowerCase().trim()}`;
+            if (!nameGroups[normalizedName]) {
+                nameGroups[normalizedName] = [];
+            }
+            nameGroups[normalizedName].push(contact);
+        });
+
+        // Find duplicates to remove (keep first/oldest, remove rest)
+        const toDelete: any[] = [];
+        const kept: any[] = [];
+        
+        Object.entries(nameGroups).forEach(([_, group]) => {
+            if (group.length > 1) {
+                // Keep the first one (oldest by created_at)
+                kept.push(group[0]);
+                // Mark the rest for deletion
+                toDelete.push(...group.slice(1));
+            }
+        });
+
+        if (toDelete.length === 0) {
+            return {
+                content: [{ type: 'text', text: 'No duplicate contacts found to remove.' }],
+                structuredContent: { removed: [], kept: [] },
+            };
+        }
+
+        if (dry_run) {
+            return {
+                content: [
+                    {
+                        type: 'text',
+                        text: `DRY RUN: Would remove ${toDelete.length} duplicate contact(s):\n${toDelete.map(c => `• ${c.first_name} ${c.last_name} (${c.email || 'no email'})`).join('\n')}\n\nTo actually remove them, call this tool with dry_run: false`,
+                    },
+                ],
+                structuredContent: { toRemove: toDelete, toKeep: kept },
+            };
+        }
+
+        // Actually delete the duplicates
+        const deleteIds = toDelete.map(c => c.id);
+        
+        // Delete embeddings for these contacts first
+        await supabase
+            .from('embeddings')
+            .delete()
+            .eq('source_table', 'contacts')
+            .in('source_id', deleteIds);
+
+        // Delete interactions for these contacts
+        const { data: interactions } = await supabase
+            .from('interactions')
+            .select('id')
+            .in('contact_id', deleteIds);
+
+        if (interactions && interactions.length > 0) {
+            const interactionIds = interactions.map(i => i.id);
+            await supabase
+                .from('embeddings')
+                .delete()
+                .eq('source_table', 'interactions')
+                .in('source_id', interactionIds);
+            await supabase
+                .from('interactions')
+                .delete()
+                .in('contact_id', deleteIds);
+        }
+
+        // Delete the duplicate contacts
+        const { error: deleteError } = await supabase
+            .from('contacts')
+            .delete()
+            .in('id', deleteIds);
+
+        if (deleteError) {
+            return {
+                content: [{ type: 'text', text: `Error deleting contacts: ${deleteError.message}` }],
+                isError: true,
+            };
+        }
+
+        return {
+            content: [
+                {
+                    type: 'text',
+                    text: `Successfully removed ${toDelete.length} duplicate contact(s). Kept ${kept.length} original contact(s).`,
+                },
+            ],
+            structuredContent: { removed: toDelete, kept },
+        };
+    }
+
     return null;
 }
 
@@ -554,6 +713,28 @@ export const contactToolDefinitions = [
                 id: { type: 'string', description: 'Contact UUID' },
             },
             required: ['id'],
+        },
+    },
+    {
+        name: 'find_duplicate_contacts',
+        description: 'Find duplicate contacts by name. Returns groups of contacts with the same first and last name.',
+        inputSchema: {
+            type: 'object',
+            properties: {},
+        },
+    },
+    {
+        name: 'remove_duplicate_contacts',
+        description: 'Remove duplicate contacts by name. Keeps the oldest contact (first created) and removes newer duplicates. Use dry_run: true to preview what will be removed.',
+        inputSchema: {
+            type: 'object',
+            properties: {
+                dry_run: { 
+                    type: 'boolean', 
+                    description: 'If true (default), only shows what would be removed without actually deleting. Set to false to actually remove duplicates.',
+                    default: true,
+                },
+            },
         },
     },
 ];
