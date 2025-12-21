@@ -11,6 +11,20 @@ export interface MessageAction {
     args: any;
 }
 
+export interface DuplicateContact {
+    id: string;
+    first_name?: string;
+    last_name?: string;
+    email?: string;
+    created_at?: string;
+}
+
+export interface DuplicateGroup {
+    name: string;
+    count: number;
+    contacts: DuplicateContact[];
+}
+
 export interface Message {
     id: string;
     role: 'user' | 'assistant' | 'system';
@@ -21,6 +35,11 @@ export interface Message {
         result?: any;
     }>;
     actions?: MessageAction[];
+    duplicates?: {
+        groups?: DuplicateGroup[];
+        toRemove?: DuplicateContact[];
+        removed?: DuplicateContact[];
+    };
     timestamp: Date;
 }
 
@@ -123,13 +142,33 @@ export function ChatInterface() {
 
             const result = await response.json();
             const resultText = result.result?.content?.[0]?.text || JSON.stringify(result);
+            const structuredContent = result.result?.structuredContent;
             
             // Detect actions for this response too
             const newActions = detectAndAddActions(resultText);
+            
+            // Extract duplicate data from structured content
+            let duplicates: Message['duplicates'] = undefined;
+            if (structuredContent) {
+                if (structuredContent.duplicateGroups) {
+                    duplicates = { groups: structuredContent.duplicateGroups };
+                }
+                if (structuredContent.toRemove) {
+                    duplicates = { ...duplicates, toRemove: structuredContent.toRemove };
+                }
+                if (structuredContent.removed) {
+                    duplicates = { ...duplicates, removed: structuredContent.removed };
+                }
+            }
 
             setMessages(prev => prev.map(msg =>
                 msg.id === assistantMessageId
-                    ? { ...msg, content: resultText, actions: newActions.length > 0 ? newActions : undefined }
+                    ? { 
+                        ...msg, 
+                        content: resultText, 
+                        actions: newActions.length > 0 ? newActions : undefined,
+                        duplicates 
+                    }
                     : msg
             ));
         } catch (error: any) {
