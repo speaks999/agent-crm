@@ -32,7 +32,7 @@ function generateMockData(symbol: string): ChartPoint[] {
 
 const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
 
-export function StockChartWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
+export function StockChartWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
     const [selectedSymbol, setSelectedSymbol] = useState(config.settings?.symbol || 'AAPL');
     const [data, setData] = useState<ChartPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +53,7 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings }: Wid
     const isPositive = change >= 0;
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
             <div className="space-y-4">
                 {/* Symbol Selector and Price */}
                 <div className="flex items-center justify-between">

@@ -17,10 +17,35 @@ interface WidgetRendererProps {
     onRemove: (id: string) => void;
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
+    onDragStart?: (e: React.DragEvent, id: string) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent, id: string) => void;
+    isDragging?: boolean;
+    isDropTarget?: boolean;
 }
 
-export function WidgetRenderer({ config, onRemove, onResize, onSettings }: WidgetRendererProps) {
-    const props: WidgetProps = { config, onRemove, onResize, onSettings };
+export function WidgetRenderer({ 
+    config, 
+    onRemove, 
+    onResize, 
+    onSettings,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    isDragging,
+    isDropTarget,
+}: WidgetRendererProps) {
+    const props: WidgetProps = { 
+        config, 
+        onRemove, 
+        onResize, 
+        onSettings,
+        onDragStart,
+        onDragOver,
+        onDrop,
+        isDragging,
+        isDropTarget,
+    };
 
     switch (config.type) {
         case 'revenue-chart':

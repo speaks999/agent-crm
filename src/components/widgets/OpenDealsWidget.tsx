@@ -13,7 +13,7 @@ interface Deal {
     status: string;
 }
 
-export function OpenDealsWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
+export function OpenDealsWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
     const [deals, setDeals] = useState<Deal[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -44,7 +44,7 @@ export function OpenDealsWidget({ config, onRemove, onResize, onSettings }: Widg
     const totalValue = deals.reduce((sum, d) => sum + (d.amount || 0), 0);
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
             {isLoading ? (
                 <div className="h-[180px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

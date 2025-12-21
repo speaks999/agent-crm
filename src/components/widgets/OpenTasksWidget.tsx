@@ -13,7 +13,7 @@ interface Task {
     due_date?: string;
 }
 
-export function OpenTasksWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
+export function OpenTasksWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
     const [tasks, setTasks] = useState<Task[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -50,7 +50,7 @@ export function OpenTasksWidget({ config, onRemove, onResize, onSettings }: Widg
     };
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
             {isLoading ? (
                 <div className="h-[180px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

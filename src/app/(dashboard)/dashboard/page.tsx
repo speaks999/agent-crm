@@ -21,6 +21,10 @@ export default function Dashboard() {
     const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    
+    // Drag and drop state
+    const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
+    const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
     // Load widgets from localStorage
     useEffect(() => {
@@ -69,6 +73,58 @@ export default function Dashboard() {
 
     const handleResetWidgets = useCallback(() => {
         setWidgets(DEFAULT_WIDGETS);
+    }, []);
+
+    // Drag and drop handlers
+    const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
+        if (!id) {
+            setDraggedWidgetId(null);
+            setDropTargetId(null);
+            return;
+        }
+        setDraggedWidgetId(id);
+        e.dataTransfer.setData('text/plain', id);
+    }, []);
+
+    const handleDragOver = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+    }, []);
+
+    const handleDrop = useCallback((e: React.DragEvent, targetId: string) => {
+        e.preventDefault();
+        
+        if (!draggedWidgetId || draggedWidgetId === targetId) {
+            setDraggedWidgetId(null);
+            setDropTargetId(null);
+            return;
+        }
+
+        setWidgets(prev => {
+            const newWidgets = [...prev];
+            const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+            const targetIndex = newWidgets.findIndex(w => w.id === targetId);
+            
+            if (draggedIndex === -1 || targetIndex === -1) return prev;
+            
+            // Remove dragged widget and insert at target position
+            const [draggedWidget] = newWidgets.splice(draggedIndex, 1);
+            newWidgets.splice(targetIndex, 0, draggedWidget);
+            
+            return newWidgets;
+        });
+
+        setDraggedWidgetId(null);
+        setDropTargetId(null);
+    }, [draggedWidgetId]);
+
+    const handleDragEnter = useCallback((id: string) => {
+        if (draggedWidgetId && id !== draggedWidgetId) {
+            setDropTargetId(id);
+        }
+    }, [draggedWidgetId]);
+
+    const handleDragLeave = useCallback(() => {
+        setDropTargetId(null);
     }, []);
 
     if (!isLoaded) {
@@ -121,14 +177,26 @@ export default function Dashboard() {
                     </button>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div 
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    onDragLeave={handleDragLeave}
+                >
                     {widgets.map((widget) => (
-                        <WidgetRenderer
+                        <div
                             key={widget.id}
-                            config={widget}
-                            onRemove={handleRemoveWidget}
-                            onResize={handleResizeWidget}
-                        />
+                            onDragEnter={() => handleDragEnter(widget.id)}
+                        >
+                            <WidgetRenderer
+                                config={widget}
+                                onRemove={handleRemoveWidget}
+                                onResize={handleResizeWidget}
+                                onDragStart={handleDragStart}
+                                onDragOver={handleDragOver}
+                                onDrop={handleDrop}
+                                isDragging={draggedWidgetId === widget.id}
+                                isDropTarget={dropTargetId === widget.id}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

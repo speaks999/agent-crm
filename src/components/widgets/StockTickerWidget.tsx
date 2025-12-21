@@ -21,7 +21,7 @@ const MOCK_STOCKS: StockData[] = [
     { symbol: 'TSLA', price: 248.50, change: -3.20, changePercent: -1.27 },
 ];
 
-export function StockTickerWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
+export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
     const [stocks, setStocks] = useState<StockData[]>(MOCK_STOCKS);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings }: Wi
     };
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
             <div className="space-y-2">
                 {stocks.slice(0, config.size === 'small' ? 3 : 5).map((stock) => (
                     <div key={stock.symbol} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">

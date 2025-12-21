@@ -10,6 +10,11 @@ interface WidgetWrapperProps {
     onRemove: (id: string) => void;
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
+    onDragStart?: (e: React.DragEvent, id: string) => void;
+    onDragOver?: (e: React.DragEvent) => void;
+    onDrop?: (e: React.DragEvent, id: string) => void;
+    isDragging?: boolean;
+    isDropTarget?: boolean;
 }
 
 const sizeClasses: Record<WidgetSize, string> = {
@@ -24,25 +29,55 @@ const sizeLabels: Record<WidgetSize, string> = {
     large: 'L',
 };
 
-export function WidgetWrapper({ config, children, onRemove, onResize, onSettings }: WidgetWrapperProps) {
+export function WidgetWrapper({ 
+    config, 
+    children, 
+    onRemove, 
+    onResize, 
+    onSettings,
+    onDragStart,
+    onDragOver,
+    onDrop,
+    isDragging,
+    isDropTarget,
+}: WidgetWrapperProps) {
     const allowedSizes = getAllowedSizes(config.type);
     const canResize = allowedSizes.length > 1;
-    const isAtMinSize = config.size === allowedSizes[0];
-    const isAtMaxSize = config.size === 'large';
 
-    const handleResize = () => {
-        if (onResize && canResize) {
-            const nextSize = getNextSize(config.type, config.size);
-            onResize(config.id, nextSize);
-        }
+    const handleDragStart = (e: React.DragEvent) => {
+        e.dataTransfer.effectAllowed = 'move';
+        onDragStart?.(e, config.id);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        onDragOver?.(e);
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        onDrop?.(e, config.id);
     };
 
     return (
-        <div className={`bg-card rounded-xl border border-border shadow-sm overflow-hidden group ${sizeClasses[config.size]}`}>
+        <div 
+            className={`bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 ${sizeClasses[config.size]} ${
+                isDragging ? 'opacity-50 scale-95 border-primary' : 'border-border'
+            } ${isDropTarget ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+            draggable
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onDragEnd={() => onDragStart?.(null as any, '')}
+        >
             {/* Widget Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center gap-2">
-                    <GripVertical size={16} className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <GripVertical 
+                        size={16} 
+                        className="text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground" 
+                    />
                     <h3 className="font-semibold text-foreground text-sm">{config.title}</h3>
                     {/* Size indicator */}
                     <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
