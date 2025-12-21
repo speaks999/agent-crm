@@ -125,9 +125,8 @@ export function ChatInterface() {
         }]);
 
         try {
-            // Call MCP tool directly
-            const mcpUrl = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001';
-            const response = await fetch(`${mcpUrl}/mcp/call-tool`, {
+            // Call MCP tool through our API (avoids CORS issues)
+            const response = await fetch('/api/mcp/call-tool', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
