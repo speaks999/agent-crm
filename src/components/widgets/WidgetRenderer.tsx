@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { WidgetConfig, WidgetProps } from './types';
+import { WidgetConfig, WidgetProps, WidgetSize } from './types';
 import { RevenueChartWidget } from './RevenueChartWidget';
 import { OpenDealsWidget } from './OpenDealsWidget';
 import { OpenTasksWidget } from './OpenTasksWidget';
@@ -15,11 +15,12 @@ import { CalendarWidget } from './CalendarWidget';
 interface WidgetRendererProps {
     config: WidgetConfig;
     onRemove: (id: string) => void;
+    onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
 }
 
-export function WidgetRenderer({ config, onRemove, onSettings }: WidgetRendererProps) {
-    const props: WidgetProps = { config, onRemove, onSettings };
+export function WidgetRenderer({ config, onRemove, onResize, onSettings }: WidgetRendererProps) {
+    const props: WidgetProps = { config, onRemove, onResize, onSettings };
 
     switch (config.type) {
         case 'revenue-chart':

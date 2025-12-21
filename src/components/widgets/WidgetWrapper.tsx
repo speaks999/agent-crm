@@ -1,8 +1,8 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { X, Settings, GripVertical, Maximize2, Minimize2 } from 'lucide-react';
-import { WidgetConfig, WidgetSize } from './types';
+import { X, Settings, GripVertical, Maximize2, Minimize2, Square } from 'lucide-react';
+import { WidgetConfig, WidgetSize, getAllowedSizes, getNextSize, SIZE_ORDER } from './types';
 
 interface WidgetWrapperProps {
     config: WidgetConfig;
@@ -18,11 +18,23 @@ const sizeClasses: Record<WidgetSize, string> = {
     large: 'col-span-1 md:col-span-2 lg:col-span-3',
 };
 
+const sizeLabels: Record<WidgetSize, string> = {
+    small: 'S',
+    medium: 'M',
+    large: 'L',
+};
+
 export function WidgetWrapper({ config, children, onRemove, onResize, onSettings }: WidgetWrapperProps) {
-    const nextSize: Record<WidgetSize, WidgetSize> = {
-        small: 'medium',
-        medium: 'large',
-        large: 'small',
+    const allowedSizes = getAllowedSizes(config.type);
+    const canResize = allowedSizes.length > 1;
+    const isAtMinSize = config.size === allowedSizes[0];
+    const isAtMaxSize = config.size === 'large';
+
+    const handleResize = () => {
+        if (onResize && canResize) {
+            const nextSize = getNextSize(config.type, config.size);
+            onResize(config.id, nextSize);
+        }
     };
 
     return (
@@ -32,16 +44,37 @@ export function WidgetWrapper({ config, children, onRemove, onResize, onSettings
                 <div className="flex items-center gap-2">
                     <GripVertical size={16} className="text-muted-foreground cursor-grab opacity-0 group-hover:opacity-100 transition-opacity" />
                     <h3 className="font-semibold text-foreground text-sm">{config.title}</h3>
+                    {/* Size indicator */}
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                        {sizeLabels[config.size]}
+                    </span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {onResize && (
-                        <button
-                            onClick={() => onResize(config.id, nextSize[config.size])}
-                            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                            title="Resize widget"
-                        >
-                            {config.size === 'large' ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
-                        </button>
+                    {/* Size selector buttons */}
+                    {onResize && canResize && (
+                        <div className="flex items-center gap-0.5 mr-1">
+                            {SIZE_ORDER.map((size) => {
+                                const isAllowed = allowedSizes.includes(size);
+                                const isActive = config.size === size;
+                                return (
+                                    <button
+                                        key={size}
+                                        onClick={() => isAllowed && onResize(config.id, size)}
+                                        disabled={!isAllowed}
+                                        className={`w-5 h-5 rounded text-[10px] font-bold transition-colors ${
+                                            isActive
+                                                ? 'bg-primary text-primary-foreground'
+                                                : isAllowed
+                                                    ? 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                                                    : 'bg-muted/30 text-muted-foreground/30 cursor-not-allowed'
+                                        }`}
+                                        title={isAllowed ? `Resize to ${size}` : `${size} is too small for this widget`}
+                                    >
+                                        {sizeLabels[size]}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     )}
                     {onSettings && (
                         <button

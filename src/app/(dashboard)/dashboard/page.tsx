@@ -127,6 +127,7 @@ export default function Dashboard() {
                             key={widget.id}
                             config={widget}
                             onRemove={handleRemoveWidget}
+                            onResize={handleResizeWidget}
                         />
                     ))}
                 </div>

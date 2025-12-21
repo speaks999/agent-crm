@@ -13,7 +13,7 @@ interface Activity {
     contact?: string;
 }
 
-export function RecentActivityWidget({ config, onRemove, onSettings }: WidgetProps) {
+export function RecentActivityWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -74,7 +74,7 @@ export function RecentActivityWidget({ config, onRemove, onSettings }: WidgetPro
     };
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
             {isLoading ? (
                 <div className="h-[180px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

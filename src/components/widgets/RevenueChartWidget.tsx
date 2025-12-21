@@ -11,7 +11,7 @@ interface DealData {
     count: number;
 }
 
-export function RevenueChartWidget({ config, onRemove, onSettings }: WidgetProps) {
+export function RevenueChartWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
     const [data, setData] = useState<DealData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -52,7 +52,7 @@ export function RevenueChartWidget({ config, onRemove, onSettings }: WidgetProps
     }, []);
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
             {isLoading ? (
                 <div className="h-[200px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

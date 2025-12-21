@@ -20,7 +20,7 @@ const MOCK_EVENTS: Event[] = [
     { id: '4', title: 'Team Sync', date: new Date(Date.now() + 345600000), type: 'meeting' },
 ];
 
-export function CalendarWidget({ config, onRemove, onSettings }: WidgetProps) {
+export function CalendarWidget({ config, onRemove, onResize, onSettings }: WidgetProps) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [events] = useState<Event[]>(MOCK_EVENTS);
 
@@ -67,7 +67,7 @@ export function CalendarWidget({ config, onRemove, onSettings }: WidgetProps) {
     };
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onSettings={onSettings}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings}>
             <div className="space-y-4">
                 {/* Calendar Header */}
                 <div className="flex items-center justify-between">
