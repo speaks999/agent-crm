@@ -2,11 +2,70 @@
 
 import { Message, MessageAction, DuplicateContact, DuplicateGroup } from './ChatInterface';
 import { Trash2 } from 'lucide-react';
+import React from 'react';
 
 interface MessageBubbleProps {
     message: Message;
     onAction?: (action: MessageAction) => void;
     isLoading?: boolean;
+}
+
+// Parse basic markdown and return React elements
+function parseMarkdown(text: string): React.ReactNode[] {
+    const parts: React.ReactNode[] = [];
+    let key = 0;
+    
+    // Split by lines first to handle line-by-line formatting
+    const lines = text.split('\n');
+    
+    lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) {
+            parts.push(<br key={`br-${key++}`} />);
+        }
+        
+        // Parse inline formatting: **bold**, *italic*, `code`
+        let remaining = line;
+        let match;
+        
+        while (remaining.length > 0) {
+            // Bold: **text**
+            match = remaining.match(/^(.*?)\*\*(.+?)\*\*(.*)/);
+            if (match) {
+                if (match[1]) parts.push(<span key={key++}>{match[1]}</span>);
+                parts.push(<strong key={key++} className="font-semibold">{match[2]}</strong>);
+                remaining = match[3];
+                continue;
+            }
+            
+            // Italic: *text*
+            match = remaining.match(/^(.*?)\*(.+?)\*(.*)/);
+            if (match) {
+                if (match[1]) parts.push(<span key={key++}>{match[1]}</span>);
+                parts.push(<em key={key++}>{match[2]}</em>);
+                remaining = match[3];
+                continue;
+            }
+            
+            // Inline code: `code`
+            match = remaining.match(/^(.*?)`(.+?)`(.*)/);
+            if (match) {
+                if (match[1]) parts.push(<span key={key++}>{match[1]}</span>);
+                parts.push(
+                    <code key={key++} className="bg-muted px-1 py-0.5 rounded text-xs font-mono">
+                        {match[2]}
+                    </code>
+                );
+                remaining = match[3];
+                continue;
+            }
+            
+            // No more matches, add remaining text
+            parts.push(<span key={key++}>{remaining}</span>);
+            break;
+        }
+    });
+    
+    return parts;
 }
 
 // Compact table for duplicate contacts
@@ -129,7 +188,7 @@ export function MessageBubble({ message, onAction, isLoading }: MessageBubblePro
                         : 'bg-card border border-border text-foreground'
                     }`}
             >
-                <div className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</div>
+                <div className="text-sm leading-relaxed">{parseMarkdown(message.content)}</div>
                 
                 {/* Duplicate Groups Table */}
                 {message.duplicates?.groups && (
