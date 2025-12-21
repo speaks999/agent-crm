@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import ChatInterface from '@/components/ChatInterface';
+import { ChatInterface } from '@/components/chat/ChatInterface';
 import { TodoList } from '@/components/chat/TodoList';
 
 export default function ChatPage() {
