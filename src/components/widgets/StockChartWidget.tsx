@@ -1,62 +1,116 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { TrendingUp, TrendingDown, RefreshCw, AlertCircle } from 'lucide-react';
 
 interface ChartPoint {
-    time: string;
-    price: number;
+    date: string;
+    close: number;
+    displayDate: string;
 }
 
-// Generate mock historical data
-function generateMockData(symbol: string): ChartPoint[] {
-    const data: ChartPoint[] = [];
-    let basePrice = symbol === 'AAPL' ? 175 : symbol === 'GOOGL' ? 140 : symbol === 'MSFT' ? 375 : 180;
-    const now = new Date();
-    
-    for (let i = 30; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        const randomWalk = (Math.random() - 0.5) * 5;
-        basePrice += randomWalk;
-        data.push({
-            time: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-            price: Math.round(basePrice * 100) / 100,
-        });
-    }
-    return data;
+interface StockMeta {
+    symbol: string;
+    currency: string;
 }
 
-const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
+const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM'];
+const RANGES = [
+    { value: '1d', label: '1D' },
+    { value: '5d', label: '5D' },
+    { value: '1mo', label: '1M' },
+    { value: '3mo', label: '3M' },
+    { value: '6mo', label: '6M' },
+    { value: '1y', label: '1Y' },
+];
 
 export function StockChartWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
     const [selectedSymbol, setSelectedSymbol] = useState(config.settings?.symbol || 'AAPL');
+    const [selectedRange, setSelectedRange] = useState(config.settings?.range || '1mo');
     const [data, setData] = useState<ChartPoint[]>([]);
+    const [meta, setMeta] = useState<StockMeta | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const fetchHistory = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        
+        try {
+            // Determine interval based on range
+            let interval = '1d';
+            if (selectedRange === '1d') interval = '5m';
+            else if (selectedRange === '5d') interval = '15m';
+            
+            const response = await fetch(
+                `/api/stocks/history?symbol=${selectedSymbol}&range=${selectedRange}&interval=${interval}`
+            );
+            const result = await response.json();
+            
+            if (result.error) {
+                throw new Error(result.error);
+            }
+            
+            const history = result.history || [];
+            
+            // Format dates based on range
+            const formattedData = history.map((point: any) => {
+                const date = new Date(point.date);
+                let displayDate: string;
+                
+                if (selectedRange === '1d') {
+                    displayDate = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                } else if (selectedRange === '5d') {
+                    displayDate = date.toLocaleDateString('en-US', { weekday: 'short', hour: '2-digit' });
+                } else {
+                    displayDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                }
+                
+                return {
+                    date: point.date,
+                    close: point.close,
+                    displayDate,
+                };
+            });
+            
+            setData(formattedData);
+            setMeta({ symbol: result.symbol, currency: result.currency || 'USD' });
+        } catch (err: any) {
+            console.error('Failed to fetch stock history:', err);
+            setError(err.message || 'Failed to load chart data');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [selectedSymbol, selectedRange]);
 
     useEffect(() => {
-        setIsLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            setData(generateMockData(selectedSymbol));
-            setIsLoading(false);
-        }, 500);
-    }, [selectedSymbol]);
+        fetchHistory();
+    }, [fetchHistory]);
 
-    const currentPrice = data[data.length - 1]?.price || 0;
-    const startPrice = data[0]?.price || 0;
+    const currentPrice = data[data.length - 1]?.close || 0;
+    const startPrice = data[0]?.close || 0;
     const change = currentPrice - startPrice;
     const changePercent = startPrice ? (change / startPrice) * 100 : 0;
     const isPositive = change >= 0;
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
+        <WidgetWrapper 
+            config={config} 
+            onRemove={onRemove} 
+            onResize={onResize} 
+            onSettings={onSettings}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            isDragging={isDragging}
+            isDropTarget={isDropTarget}
+        >
             <div className="space-y-4">
-                {/* Symbol Selector and Price */}
-                <div className="flex items-center justify-between">
+                {/* Symbol and Range Selectors */}
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">
                         <select
                             value={selectedSymbol}
@@ -67,22 +121,50 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                                 <option key={s} value={s}>{s}</option>
                             ))}
                         </select>
+                        
+                        {!isLoading && !error && (
+                            <div className="text-right">
+                                <span className="font-bold text-foreground text-lg">${currentPrice.toFixed(2)}</span>
+                                <span className={`text-sm ml-2 ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                                    {isPositive ? <TrendingUp size={14} className="inline" /> : <TrendingDown size={14} className="inline" />}
+                                    {' '}{isPositive ? '+' : ''}{change.toFixed(2)} ({changePercent.toFixed(2)}%)
+                                </span>
+                            </div>
+                        )}
                     </div>
-                    {!isLoading && (
-                        <div className="text-right">
-                            <p className="font-bold text-foreground text-lg">${currentPrice.toFixed(2)}</p>
-                            <p className={`text-sm flex items-center gap-1 justify-end ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
-                                {isPositive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                {isPositive ? '+' : ''}{change.toFixed(2)} ({changePercent.toFixed(2)}%)
-                            </p>
-                        </div>
-                    )}
+                    
+                    <div className="flex gap-1">
+                        {RANGES.map(range => (
+                            <button
+                                key={range.value}
+                                onClick={() => setSelectedRange(range.value)}
+                                className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+                                    selectedRange === range.value
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'bg-muted text-muted-foreground hover:text-foreground'
+                                }`}
+                            >
+                                {range.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Chart */}
                 {isLoading ? (
                     <div className="h-[180px] flex items-center justify-center">
-                        <div className="animate-pulse text-muted-foreground">Loading chart...</div>
+                        <RefreshCw className="animate-spin text-muted-foreground" size={24} />
+                    </div>
+                ) : error ? (
+                    <div className="h-[180px] flex flex-col items-center justify-center text-center">
+                        <AlertCircle className="text-destructive mb-2" size={24} />
+                        <p className="text-sm text-muted-foreground">{error}</p>
+                        <button 
+                            onClick={fetchHistory}
+                            className="mt-2 text-xs text-primary hover:underline"
+                        >
+                            Try again
+                        </button>
                     </div>
                 ) : (
                     <div className="h-[180px]">
@@ -96,19 +178,20 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
                                 <XAxis 
-                                    dataKey="time" 
+                                    dataKey="displayDate" 
                                     axisLine={false} 
                                     tickLine={false} 
                                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
                                     interval="preserveStartEnd"
+                                    minTickGap={30}
                                 />
                                 <YAxis 
                                     axisLine={false} 
                                     tickLine={false} 
                                     tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 10 }}
-                                    domain={['dataMin - 5', 'dataMax + 5']}
-                                    tickFormatter={(v) => `$${v}`}
-                                    width={50}
+                                    domain={['dataMin - 2', 'dataMax + 2']}
+                                    tickFormatter={(v) => `$${v.toFixed(0)}`}
+                                    width={45}
                                 />
                                 <Tooltip
                                     contentStyle={{ 
@@ -118,10 +201,11 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                                         color: 'hsl(var(--foreground))' 
                                     }}
                                     formatter={(value: number) => [`$${value.toFixed(2)}`, 'Price']}
+                                    labelFormatter={(label) => label}
                                 />
                                 <Area
                                     type="monotone"
-                                    dataKey="price"
+                                    dataKey="close"
                                     stroke={isPositive ? '#22c55e' : '#ef4444'}
                                     strokeWidth={2}
                                     fill={`url(#gradient-${selectedSymbol})`}
@@ -132,10 +216,9 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                 )}
 
                 <p className="text-xs text-muted-foreground text-center">
-                    Demo data • 30 day history
+                    Live data via Yahoo Finance • {meta?.currency || 'USD'}
                 </p>
             </div>
         </WidgetWrapper>
     );
 }
-

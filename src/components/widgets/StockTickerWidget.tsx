@@ -1,48 +1,55 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, RefreshCw, AlertCircle } from 'lucide-react';
 
-interface StockData {
+interface StockQuote {
     symbol: string;
+    name: string;
     price: number;
     change: number;
     changePercent: number;
 }
 
-// Mock stock data - in production, this would come from a real API
-const MOCK_STOCKS: StockData[] = [
-    { symbol: 'AAPL', price: 178.72, change: 2.34, changePercent: 1.33 },
-    { symbol: 'GOOGL', price: 141.80, change: -0.45, changePercent: -0.32 },
-    { symbol: 'MSFT', price: 378.91, change: 4.12, changePercent: 1.10 },
-    { symbol: 'AMZN', price: 178.25, change: 1.89, changePercent: 1.07 },
-    { symbol: 'TSLA', price: 248.50, change: -3.20, changePercent: -1.27 },
-];
+const DEFAULT_SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
 
 export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
-    const [stocks, setStocks] = useState<StockData[]>(MOCK_STOCKS);
-    const [isLoading, setIsLoading] = useState(false);
+    const [stocks, setStocks] = useState<StockQuote[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-    // Simulate live updates
+    const symbols = config.settings?.symbols || DEFAULT_SYMBOLS;
+
+    const fetchStocks = useCallback(async () => {
+        try {
+            setError(null);
+            const response = await fetch(`/api/stocks?symbols=${symbols.join(',')}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            setStocks(data.quotes || []);
+            setLastUpdated(new Date());
+        } catch (err: any) {
+            console.error('Failed to fetch stocks:', err);
+            setError(err.message || 'Failed to load stock data');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [symbols]);
+
     useEffect(() => {
-        const interval = setInterval(() => {
-            setStocks(prev => prev.map(stock => {
-                const randomChange = (Math.random() - 0.5) * 2;
-                const newPrice = stock.price + randomChange;
-                const newChange = stock.change + randomChange * 0.1;
-                return {
-                    ...stock,
-                    price: Math.round(newPrice * 100) / 100,
-                    change: Math.round(newChange * 100) / 100,
-                    changePercent: Math.round((newChange / newPrice) * 10000) / 100,
-                };
-            }));
-        }, 5000);
-
+        fetchStocks();
+        
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchStocks, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchStocks]);
 
     const getTrendIcon = (change: number) => {
         if (change > 0) return <TrendingUp size={14} className="text-green-500" />;
@@ -50,28 +57,68 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDr
         return <Minus size={14} className="text-muted-foreground" />;
     };
 
+    const displayCount = config.size === 'small' ? 3 : config.size === 'medium' ? 4 : 5;
+
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
-            <div className="space-y-2">
-                {stocks.slice(0, config.size === 'small' ? 3 : 5).map((stock) => (
-                    <div key={stock.symbol} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
-                        <div className="flex items-center gap-2">
-                            {getTrendIcon(stock.change)}
-                            <span className="font-semibold text-foreground text-sm">{stock.symbol}</span>
+        <WidgetWrapper 
+            config={config} 
+            onRemove={onRemove} 
+            onResize={onResize} 
+            onSettings={onSettings}
+            onDragStart={onDragStart}
+            onDragOver={onDragOver}
+            onDrop={onDrop}
+            isDragging={isDragging}
+            isDropTarget={isDropTarget}
+        >
+            {isLoading ? (
+                <div className="h-[140px] flex items-center justify-center">
+                    <RefreshCw className="animate-spin text-muted-foreground" size={20} />
+                </div>
+            ) : error ? (
+                <div className="h-[140px] flex flex-col items-center justify-center text-center">
+                    <AlertCircle className="text-destructive mb-2" size={24} />
+                    <p className="text-sm text-muted-foreground">{error}</p>
+                    <button 
+                        onClick={fetchStocks}
+                        className="mt-2 text-xs text-primary hover:underline"
+                    >
+                        Try again
+                    </button>
+                </div>
+            ) : (
+                <div className="space-y-2">
+                    {stocks.slice(0, displayCount).map((stock) => (
+                        <div key={stock.symbol} className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 transition-colors">
+                            <div className="flex items-center gap-2">
+                                {getTrendIcon(stock.change)}
+                                <div>
+                                    <span className="font-semibold text-foreground text-sm">{stock.symbol}</span>
+                                    {config.size !== 'small' && (
+                                        <p className="text-xs text-muted-foreground truncate max-w-[100px]">{stock.name}</p>
+                                    )}
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-medium text-foreground text-sm">${stock.price.toFixed(2)}</p>
+                                <p className={`text-xs ${stock.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
+                                </p>
+                            </div>
                         </div>
-                        <div className="text-right">
-                            <p className="font-medium text-foreground text-sm">${stock.price.toFixed(2)}</p>
-                            <p className={`text-xs ${stock.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                {stock.change >= 0 ? '+' : ''}{stock.change.toFixed(2)} ({stock.changePercent.toFixed(2)}%)
+                    ))}
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <p className="text-xs text-muted-foreground">
+                            Live data via Yahoo Finance
+                        </p>
+                        {lastUpdated && (
+                            <p className="text-xs text-muted-foreground">
+                                {lastUpdated.toLocaleTimeString()}
                             </p>
-                        </div>
+                        )}
                     </div>
-                ))}
-                <p className="text-xs text-muted-foreground text-center pt-2">
-                    Demo data • Updates every 5s
-                </p>
-            </div>
+                </div>
+            )}
         </WidgetWrapper>
     );
 }
-
