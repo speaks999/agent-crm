@@ -100,7 +100,7 @@ export default function ChatInterface() {
                         ...prev,
                         {
                             role: 'assistant',
-                            content: `✅ Got it! I've recorded this interaction.\n\n**Summary:** ${result.data.summary}\n**Sentiment:** ${result.data.sentiment}\n${result.data.nextSteps?.length > 0 ? `\n**Next Steps:**\n${result.data.nextSteps.map((s: string) => `• ${s}`).join('\n')}` : ''}`,
+                            content: `✅ Got it! I've recorded this interaction.\n\nSummary: ${result.data.summary}\nSentiment: ${result.data.sentiment}${result.data.nextSteps?.length > 0 ? `\n\nNext Steps:\n${result.data.nextSteps.map((s: string) => `• ${s}`).join('\n')}` : ''}`,
                         },
                     ]);
                 } else {
