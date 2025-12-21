@@ -83,10 +83,6 @@ export function WidgetWrapper({
                         className="text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity hover:text-foreground" 
                     />
                     <h3 className="font-semibold text-foreground text-sm">{config.title}</h3>
-                    {/* Size indicator */}
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        {sizeLabels[config.size]}
-                    </span>
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     {/* Size selector buttons */}
