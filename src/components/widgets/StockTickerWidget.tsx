@@ -11,6 +11,7 @@ interface StockQuote {
     price: number;
     change: number;
     changePercent: number;
+    isDemo?: boolean;
 }
 
 const DEFAULT_SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
@@ -109,7 +110,7 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDr
                     ))}
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                         <p className="text-xs text-muted-foreground">
-                            Live data via Yahoo Finance
+                            {stocks[0]?.isDemo ? '📊 Demo data' : '🔴 Live'}
                         </p>
                         {lastUpdated && (
                             <p className="text-xs text-muted-foreground">

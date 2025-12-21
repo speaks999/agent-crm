@@ -11,110 +11,116 @@ interface StockQuote {
     dayHigh: number;
     dayLow: number;
     volume: number;
+    isDemo?: boolean;
 }
 
-// Stock name mapping
-const STOCK_NAMES: Record<string, string> = {
-    'AAPL': 'Apple Inc.',
-    'GOOGL': 'Alphabet Inc.',
-    'MSFT': 'Microsoft Corp.',
-    'AMZN': 'Amazon.com Inc.',
-    'TSLA': 'Tesla Inc.',
-    'META': 'Meta Platforms',
-    'NVDA': 'NVIDIA Corp.',
-    'JPM': 'JPMorgan Chase',
+// Stock name and base price mapping for demo data
+const STOCK_INFO: Record<string, { name: string; basePrice: number }> = {
+    'AAPL': { name: 'Apple Inc.', basePrice: 178.50 },
+    'GOOGL': { name: 'Alphabet Inc.', basePrice: 141.80 },
+    'MSFT': { name: 'Microsoft Corp.', basePrice: 378.90 },
+    'AMZN': { name: 'Amazon.com Inc.', basePrice: 178.25 },
+    'TSLA': { name: 'Tesla Inc.', basePrice: 248.50 },
+    'META': { name: 'Meta Platforms', basePrice: 505.75 },
+    'NVDA': { name: 'NVIDIA Corp.', basePrice: 495.20 },
+    'JPM': { name: 'JPMorgan Chase', basePrice: 195.30 },
 };
 
-// Fetch current stock quotes from Yahoo Finance
-export async function GET(request: NextRequest) {
-    const searchParams = request.nextUrl.searchParams;
-    const symbols = searchParams.get('symbols') || 'AAPL,GOOGL,MSFT,AMZN,TSLA';
+// Generate realistic demo data with small random variations
+function generateDemoQuote(symbol: string): StockQuote {
+    const info = STOCK_INFO[symbol] || { name: symbol, basePrice: 100 };
     
+    // Add some randomness based on current time (changes every few minutes)
+    const seed = Math.floor(Date.now() / 300000); // Changes every 5 minutes
+    const random = Math.sin(seed + symbol.charCodeAt(0)) * 0.5 + 0.5;
+    const variation = (random - 0.5) * 0.04; // ±2% variation
+    
+    const price = info.basePrice * (1 + variation);
+    const previousClose = info.basePrice * (1 + (random - 0.5) * 0.02);
+    const change = price - previousClose;
+    const changePercent = (change / previousClose) * 100;
+    
+    return {
+        symbol,
+        name: info.name,
+        price: Math.round(price * 100) / 100,
+        change: Math.round(change * 100) / 100,
+        changePercent: Math.round(changePercent * 100) / 100,
+        previousClose: Math.round(previousClose * 100) / 100,
+        open: Math.round((previousClose + (random - 0.5) * 2) * 100) / 100,
+        dayHigh: Math.round((price * 1.01) * 100) / 100,
+        dayLow: Math.round((price * 0.99) * 100) / 100,
+        volume: Math.floor(10000000 + random * 50000000),
+        isDemo: true,
+    };
+}
+
+// Try to fetch from Finnhub API (free tier: 60 calls/minute)
+async function fetchFromFinnhub(symbol: string, apiKey: string): Promise<StockQuote | null> {
     try {
-        const symbolList = symbols.split(',').map(s => s.trim().toUpperCase());
+        const url = `https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`;
+        const response = await fetch(url, { cache: 'no-store' });
         
-        // Try Yahoo Finance chart API (more reliable than quote API)
-        const quotes: StockQuote[] = await Promise.all(
-            symbolList.map(async (symbol) => {
-                try {
-                    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
-                    
-                    const response = await fetch(url, {
-                        headers: {
-                            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                            'Accept': 'application/json',
-                            'Accept-Language': 'en-US,en;q=0.9',
-                            'Origin': 'https://finance.yahoo.com',
-                            'Referer': 'https://finance.yahoo.com/',
-                        },
-                        cache: 'no-store',
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`API error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    const result = data.chart?.result?.[0];
-                    
-                    if (!result) {
-                        throw new Error('No data');
-                    }
-
-                    const meta = result.meta;
-                    const quote = result.indicators?.quote?.[0];
-                    const closes = quote?.close?.filter((c: number) => c != null) || [];
-                    
-                    const currentPrice = meta.regularMarketPrice || closes[closes.length - 1] || 0;
-                    const previousClose = meta.previousClose || meta.chartPreviousClose || closes[closes.length - 2] || currentPrice;
-                    const change = currentPrice - previousClose;
-                    const changePercent = previousClose ? (change / previousClose) * 100 : 0;
-
-                    return {
-                        symbol,
-                        name: STOCK_NAMES[symbol] || meta.shortName || symbol,
-                        price: currentPrice,
-                        change,
-                        changePercent,
-                        previousClose,
-                        open: meta.regularMarketOpen || quote?.open?.[quote.open.length - 1] || 0,
-                        dayHigh: meta.regularMarketDayHigh || 0,
-                        dayLow: meta.regularMarketDayLow || 0,
-                        volume: meta.regularMarketVolume || 0,
-                    };
-                } catch (err) {
-                    console.error(`Failed to fetch ${symbol}:`, err);
-                    // Return placeholder data if fetch fails
-                    return {
-                        symbol,
-                        name: STOCK_NAMES[symbol] || symbol,
-                        price: 0,
-                        change: 0,
-                        changePercent: 0,
-                        previousClose: 0,
-                        open: 0,
-                        dayHigh: 0,
-                        dayLow: 0,
-                        volume: 0,
-                    };
-                }
-            })
-        );
-
-        // Filter out failed quotes (price = 0)
-        const validQuotes = quotes.filter(q => q.price > 0);
+        if (!response.ok) return null;
         
-        if (validQuotes.length === 0) {
-            throw new Error('Unable to fetch stock data. Yahoo Finance may be temporarily unavailable.');
-        }
-
-        return Response.json({ quotes: validQuotes, timestamp: new Date().toISOString() });
-    } catch (error: any) {
-        console.error('Stock API error:', error);
-        return Response.json(
-            { error: error.message, quotes: [] },
-            { status: 500 }
-        );
+        const data = await response.json();
+        
+        if (!data.c || data.c === 0) return null;
+        
+        const info = STOCK_INFO[symbol] || { name: symbol, basePrice: 100 };
+        
+        return {
+            symbol,
+            name: info.name,
+            price: data.c, // Current price
+            change: data.d, // Change
+            changePercent: data.dp, // Change percent
+            previousClose: data.pc, // Previous close
+            open: data.o, // Open
+            dayHigh: data.h, // High
+            dayLow: data.l, // Low
+            volume: 0, // Not provided in basic quote
+            isDemo: false,
+        };
+    } catch (err) {
+        console.error(`Finnhub error for ${symbol}:`, err);
+        return null;
     }
 }
 
+export async function GET(request: NextRequest) {
+    const searchParams = request.nextUrl.searchParams;
+    const symbols = searchParams.get('symbols') || 'AAPL,GOOGL,MSFT,AMZN,TSLA';
+    const finnhubKey = process.env.FINNHUB_API_KEY;
+    
+    const symbolList = symbols.split(',').map(s => s.trim().toUpperCase());
+    
+    let quotes: StockQuote[] = [];
+    let isDemo = true;
+    
+    // Try Finnhub if API key is configured
+    if (finnhubKey) {
+        const finnhubQuotes = await Promise.all(
+            symbolList.map(symbol => fetchFromFinnhub(symbol, finnhubKey))
+        );
+        
+        const validQuotes = finnhubQuotes.filter((q): q is StockQuote => q !== null);
+        
+        if (validQuotes.length > 0) {
+            quotes = validQuotes;
+            isDemo = false;
+        }
+    }
+    
+    // Fall back to demo data
+    if (quotes.length === 0) {
+        quotes = symbolList.map(symbol => generateDemoQuote(symbol));
+    }
+    
+    return Response.json({ 
+        quotes, 
+        timestamp: new Date().toISOString(),
+        isDemo,
+        message: isDemo ? 'Using demo data. Add FINNHUB_API_KEY to .env.local for live data.' : undefined,
+    });
+}

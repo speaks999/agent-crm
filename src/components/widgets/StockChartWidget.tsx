@@ -15,6 +15,7 @@ interface ChartPoint {
 interface StockMeta {
     symbol: string;
     currency: string;
+    isDemo?: boolean;
 }
 
 const SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA', 'META', 'NVDA', 'JPM'];
@@ -77,7 +78,7 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
             });
             
             setData(formattedData);
-            setMeta({ symbol: result.symbol, currency: result.currency || 'USD' });
+            setMeta({ symbol: result.symbol, currency: result.currency || 'USD', isDemo: result.isDemo });
         } catch (err: any) {
             console.error('Failed to fetch stock history:', err);
             setError(err.message || 'Failed to load chart data');
@@ -216,7 +217,7 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                 )}
 
                 <p className="text-xs text-muted-foreground text-center">
-                    Live data via Yahoo Finance • {meta?.currency || 'USD'}
+                    {meta?.isDemo ? '📊 Demo data' : '🔴 Live'} • {meta?.currency || 'USD'}
                 </p>
             </div>
         </WidgetWrapper>
