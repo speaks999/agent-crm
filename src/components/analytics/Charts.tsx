@@ -103,10 +103,21 @@ export function PieChartComponent({ data, title, dataKey = 'value', nameKey = 'n
     );
 }
 
+// Fields to hide from table display (IDs and technical fields)
+const HIDDEN_FIELDS = [
+    'id', 'account_id', 'contact_id', 'deal_id', 'pipeline_id', 'interaction_id',
+    'insightly_id', 'created_at', 'updated_at', 'tags'
+];
+
 export function TableComponent({ data, title }: { data: any[], title: string }) {
     if (!data || data.length === 0) return null;
 
-    const columns = Object.keys(data[0]);
+    // Filter out ID and technical columns
+    const allColumns = Object.keys(data[0]);
+    const columns = allColumns.filter(col => !HIDDEN_FIELDS.includes(col.toLowerCase()));
+
+    // If all columns were filtered out, show a subset of the original
+    const displayColumns = columns.length > 0 ? columns : allColumns.slice(0, 5);
 
     return (
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm w-full overflow-hidden">
@@ -115,7 +126,7 @@ export function TableComponent({ data, title }: { data: any[], title: string }) 
                 <table className="w-full text-left text-sm text-foreground">
                     <thead className="bg-muted border-b border-border">
                         <tr>
-                            {columns.map((col) => (
+                            {displayColumns.map((col) => (
                                 <th key={col} className="px-4 py-3 font-semibold text-foreground capitalize whitespace-nowrap">
                                     {col.replace(/_/g, ' ')}
                                 </th>
@@ -125,11 +136,13 @@ export function TableComponent({ data, title }: { data: any[], title: string }) 
                     <tbody className="divide-y divide-border">
                         {data.map((row, i) => (
                             <tr key={i} className="hover:bg-muted">
-                                {columns.map((col) => (
+                                {displayColumns.map((col) => (
                                     <td key={col} className="px-4 py-3 whitespace-nowrap">
-                                        {typeof row[col] === 'object' && row[col] !== null
-                                            ? JSON.stringify(row[col])
-                                            : String(row[col])}
+                                        {row[col] === null || row[col] === undefined
+                                            ? '—'
+                                            : typeof row[col] === 'object'
+                                                ? JSON.stringify(row[col])
+                                                : String(row[col])}
                                     </td>
                                 ))}
                             </tr>
