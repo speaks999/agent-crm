@@ -178,12 +178,13 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <div 
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-2"
                     onDragLeave={handleDragLeave}
                 >
                     {widgets.map((widget) => (
                         <div
                             key={widget.id}
+                            className="relative"
                             onDragEnter={() => handleDragEnter(widget.id)}
                         >
                             <WidgetRenderer

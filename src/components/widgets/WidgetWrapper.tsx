@@ -62,15 +62,20 @@ export function WidgetWrapper({
 
     return (
         <div 
-            className={`bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 ${sizeClasses[config.size]} ${
-                isDragging ? 'opacity-50 scale-95 border-primary' : 'border-border'
-            } ${isDropTarget ? 'ring-2 ring-primary ring-offset-2 ring-offset-background' : ''}`}
+            className={`relative bg-card rounded-xl border shadow-sm overflow-visible group transition-all duration-200 ${sizeClasses[config.size]} ${
+                isDragging ? 'opacity-50 scale-95 border-primary z-50' : 'border-border'
+            }`}
             draggable
             onDragStart={handleDragStart}
             onDragOver={handleDragOver}
             onDrop={handleDrop}
             onDragEnd={() => onDragStart?.(null as any, '')}
         >
+            {/* Large invisible drop zone that extends beyond the widget */}
+            {isDropTarget && (
+                <div className="absolute -inset-4 rounded-2xl border-2 border-dashed border-primary bg-primary/10 animate-pulse pointer-events-none z-10" />
+            )}
+            <div className={`relative bg-card rounded-xl overflow-hidden ${isDropTarget ? 'ring-2 ring-primary' : ''}`}>
             {/* Widget Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center gap-2">
@@ -132,6 +137,7 @@ export function WidgetWrapper({
             {/* Widget Content */}
             <div className="p-4">
                 {children}
+            </div>
             </div>
         </div>
     );
