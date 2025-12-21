@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
+import { createBrowserClient } from '@/lib/supabaseClient';
 import { Loader2 } from 'lucide-react';
 
 interface Contact {
@@ -16,6 +16,7 @@ interface Contact {
 
 export default function ContactsPage() {
     const router = useRouter();
+    const supabase = useMemo(() => createBrowserClient(), []);
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -34,7 +35,7 @@ export default function ContactsPage() {
             setIsLoading(false);
         }
         fetchContacts();
-    }, []);
+    }, [supabase]);
 
     const handleRowClick = (contactId: string) => {
         router.push(`/contacts/${contactId}`);
