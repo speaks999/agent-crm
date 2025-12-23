@@ -16,7 +16,7 @@ interface StockQuote {
 
 const DEFAULT_SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
 
-export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
+export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
     const [stocks, setStocks] = useState<StockQuote[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -67,10 +67,7 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDr
             onResize={onResize} 
             onSettings={onSettings}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
             isDragging={isDragging}
-            isDropTarget={isDropTarget}
         >
             {isLoading ? (
                 <div className="h-[140px] flex items-center justify-center">

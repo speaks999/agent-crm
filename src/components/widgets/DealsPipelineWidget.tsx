@@ -22,7 +22,7 @@ const STAGE_COLORS: Record<string, string> = {
     'default': 'bg-primary',
 };
 
-export function DealsPipelineWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
+export function DealsPipelineWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
     const [stages, setStages] = useState<StageData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -67,7 +67,7 @@ export function DealsPipelineWidget({ config, onRemove, onResize, onSettings, on
     const totalValue = stages.reduce((sum, s) => sum + s.value, 0);
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} isDragging={isDragging}>
             {isLoading ? (
                 <div className="h-[200px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

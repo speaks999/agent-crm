@@ -11,7 +11,7 @@ interface ContactStats {
     withCompany: number;
 }
 
-export function ContactsSummaryWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
+export function ContactsSummaryWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
     const [stats, setStats] = useState<ContactStats>({ total: 0, newThisWeek: 0, withCompany: 0 });
     const [isLoading, setIsLoading] = useState(true);
 
@@ -44,7 +44,7 @@ export function ContactsSummaryWidget({ config, onRemove, onResize, onSettings, 
     }, []);
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} isDragging={isDragging}>
             {isLoading ? (
                 <div className="h-[120px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

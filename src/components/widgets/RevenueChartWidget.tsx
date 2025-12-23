@@ -11,7 +11,7 @@ interface DealData {
     count: number;
 }
 
-export function RevenueChartWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
+export function RevenueChartWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
     const [data, setData] = useState<DealData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -52,7 +52,7 @@ export function RevenueChartWidget({ config, onRemove, onResize, onSettings, onD
     }, []);
 
     return (
-        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} isDragging={isDragging} isDropTarget={isDropTarget}>
+        <WidgetWrapper config={config} onRemove={onRemove} onResize={onResize} onSettings={onSettings} onDragStart={onDragStart} isDragging={isDragging}>
             {isLoading ? (
                 <div className="h-[200px] flex items-center justify-center">
                     <div className="animate-pulse text-muted-foreground">Loading...</div>

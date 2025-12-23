@@ -28,7 +28,7 @@ const RANGES = [
     { value: '1y', label: '1Y' },
 ];
 
-export function StockChartWidget({ config, onRemove, onResize, onSettings, onDragStart, onDragOver, onDrop, isDragging, isDropTarget }: WidgetProps) {
+export function StockChartWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
     const [selectedSymbol, setSelectedSymbol] = useState(config.settings?.symbol || 'AAPL');
     const [selectedRange, setSelectedRange] = useState(config.settings?.range || '1mo');
     const [data, setData] = useState<ChartPoint[]>([]);
@@ -104,10 +104,7 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
             onResize={onResize} 
             onSettings={onSettings}
             onDragStart={onDragStart}
-            onDragOver={onDragOver}
-            onDrop={onDrop}
             isDragging={isDragging}
-            isDropTarget={isDropTarget}
         >
             <div className="space-y-4">
                 {/* Symbol and Range Selectors */}
