@@ -24,7 +24,8 @@ export default function Dashboard() {
     
     // Drag and drop state
     const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
-    const [dropIndex, setDropIndex] = useState<number | null>(null);
+    const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+    const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
     const gridRef = useRef<HTMLDivElement>(null);
 
     // Load widgets from localStorage
@@ -80,7 +81,8 @@ export default function Dashboard() {
     const handleDragStart = useCallback((e: React.DragEvent, id: string) => {
         if (!id) {
             setDraggedWidgetId(null);
-            setDropIndex(null);
+            setDropTargetId(null);
+            setDropPosition(null);
             return;
         }
         setDraggedWidgetId(id);
@@ -95,101 +97,50 @@ export default function Dashboard() {
 
     const handleDragEnd = useCallback(() => {
         setDraggedWidgetId(null);
-        setDropIndex(null);
+        setDropTargetId(null);
+        setDropPosition(null);
     }, []);
 
-    // Calculate drop position based on mouse position
-    const handleGridDragOver = useCallback((e: React.DragEvent) => {
+    // Handle drag over a specific widget
+    const handleWidgetDragOver = useCallback((e: React.DragEvent, widgetId: string) => {
         e.preventDefault();
-        if (!draggedWidgetId || !gridRef.current) return;
-
-        // Get all widget containers (not drop zones)
-        const widgetContainers = Array.from(gridRef.current.querySelectorAll('[data-widget-id]')) as HTMLElement[];
+        e.stopPropagation();
         
-        if (widgetContainers.length === 0) {
-            setDropIndex(0);
+        if (!draggedWidgetId || draggedWidgetId === widgetId) {
+            setDropTargetId(null);
+            setDropPosition(null);
             return;
         }
 
-        const draggedIndex = widgets.findIndex(w => w.id === draggedWidgetId);
-        let bestIndex = widgets.length; // Default to end
-        let bestScore = Infinity;
-
-        widgetContainers.forEach((container) => {
-            const widgetId = container.dataset.widgetId;
-            const widgetIndex = widgets.findIndex(w => w.id === widgetId);
-            if (widgetIndex === -1) return;
-
-            const rect = container.getBoundingClientRect();
-            const midX = rect.left + rect.width / 2;
-            const midY = rect.top + rect.height / 2;
-
-            // Check if mouse is in the left half (insert before) or right half (insert after)
-            const isLeftHalf = e.clientX < midX;
-            const isTopHalf = e.clientY < midY;
-            
-            // Calculate vertical distance to determine row
-            const verticalDist = Math.abs(e.clientY - midY);
-            const horizontalDist = Math.abs(e.clientX - midX);
-            
-            // Prioritize same row, then horizontal position
-            const score = verticalDist * 2 + horizontalDist;
-
-            // Determine target index based on position
-            let targetIndex: number;
-            if (isLeftHalf || isTopHalf) {
-                targetIndex = widgetIndex;
-            } else {
-                targetIndex = widgetIndex + 1;
-            }
-
-            if (score < bestScore) {
-                bestScore = score;
-                bestIndex = targetIndex;
-            }
-        });
-
-        // Don't show drop indicator at or adjacent to dragged widget's position
-        if (bestIndex === draggedIndex || bestIndex === draggedIndex + 1) {
-            setDropIndex(null);
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const threshold = rect.width * 0.3; // 30% from each edge
+        
+        // Determine if dropping before or after based on mouse position
+        if (mouseX < threshold) {
+            setDropTargetId(widgetId);
+            setDropPosition('before');
+        } else if (mouseX > rect.width - threshold) {
+            setDropTargetId(widgetId);
+            setDropPosition('after');
         } else {
-            setDropIndex(bestIndex);
+            // In the middle - swap positions
+            setDropTargetId(widgetId);
+            setDropPosition('before');
         }
-    }, [draggedWidgetId, widgets]);
+    }, [draggedWidgetId]);
 
-    const handleGridDrop = useCallback((e: React.DragEvent) => {
-        e.preventDefault();
+    const handleWidgetDragLeave = useCallback((e: React.DragEvent) => {
+        // Only clear if leaving to outside the widget
+        const relatedTarget = e.relatedTarget as HTMLElement;
+        const currentTarget = e.currentTarget as HTMLElement;
         
-        if (!draggedWidgetId || dropIndex === null) {
-            setDraggedWidgetId(null);
-            setDropIndex(null);
-            return;
+        if (!currentTarget.contains(relatedTarget)) {
+            setDropTargetId(null);
+            setDropPosition(null);
         }
-
-        setWidgets(prev => {
-            const newWidgets = [...prev];
-            const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
-            
-            if (draggedIndex === -1) return prev;
-            
-            // Remove dragged widget
-            const [draggedWidget] = newWidgets.splice(draggedIndex, 1);
-            
-            // Calculate new index (account for removal shifting indices)
-            let insertIndex = dropIndex;
-            if (draggedIndex < dropIndex) {
-                insertIndex--;
-            }
-            
-            // Insert at new position
-            newWidgets.splice(insertIndex, 0, draggedWidget);
-            
-            return newWidgets;
-        });
-
-        setDraggedWidgetId(null);
-        setDropIndex(null);
-    }, [draggedWidgetId, dropIndex]);
+    }, []);
 
     const handleWidgetDrop = useCallback((e: React.DragEvent, targetId: string) => {
         e.preventDefault();
@@ -197,7 +148,8 @@ export default function Dashboard() {
         
         if (!draggedWidgetId || draggedWidgetId === targetId) {
             setDraggedWidgetId(null);
-            setDropIndex(null);
+            setDropTargetId(null);
+            setDropPosition(null);
             return;
         }
 
@@ -208,17 +160,55 @@ export default function Dashboard() {
             
             if (draggedIndex === -1 || targetIndex === -1) return prev;
             
-            // Remove dragged widget and insert at target position
+            // Remove dragged widget
             const [draggedWidget] = newWidgets.splice(draggedIndex, 1);
-            const insertIndex = draggedIndex < targetIndex ? targetIndex : targetIndex;
+            
+            // Calculate insert position
+            let insertIndex = targetIndex;
+            if (draggedIndex < targetIndex) {
+                insertIndex--; // Account for removal
+            }
+            if (dropPosition === 'after') {
+                insertIndex++;
+            }
+            
+            // Clamp to valid range
+            insertIndex = Math.max(0, Math.min(insertIndex, newWidgets.length));
+            
             newWidgets.splice(insertIndex, 0, draggedWidget);
             
             return newWidgets;
         });
 
         setDraggedWidgetId(null);
-        setDropIndex(null);
-    }, [draggedWidgetId]);
+        setDropTargetId(null);
+        setDropPosition(null);
+    }, [draggedWidgetId, dropPosition]);
+
+    const handleGridDrop = useCallback((e: React.DragEvent) => {
+        e.preventDefault();
+        
+        if (!draggedWidgetId) {
+            return;
+        }
+
+        // If dropped on grid but not on a widget, move to end
+        if (!dropTargetId) {
+            setWidgets(prev => {
+                const newWidgets = [...prev];
+                const draggedIndex = newWidgets.findIndex(w => w.id === draggedWidgetId);
+                if (draggedIndex === -1) return prev;
+                
+                const [draggedWidget] = newWidgets.splice(draggedIndex, 1);
+                newWidgets.push(draggedWidget);
+                return newWidgets;
+            });
+        }
+
+        setDraggedWidgetId(null);
+        setDropTargetId(null);
+        setDropPosition(null);
+    }, [draggedWidgetId, dropTargetId]);
 
     if (!isLoaded) {
         return (
@@ -273,49 +263,51 @@ export default function Dashboard() {
                 <div 
                     ref={gridRef}
                     className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-2 min-h-[200px]"
-                    onDragOver={handleGridDragOver}
+                    onDragOver={handleDragOver}
                     onDrop={handleGridDrop}
-                    onDragLeave={() => setDropIndex(null)}
+                    onDragEnd={handleDragEnd}
                 >
-                    {widgets.map((widget, index) => (
-                        <React.Fragment key={widget.id}>
-                            {/* Drop indicator before this widget */}
-                            {dropIndex === index && draggedWidgetId && (
-                                <div 
-                                    className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center pointer-events-none"
-                                    data-dropzone="true"
-                                >
-                                    <span className="text-purple-500 font-medium text-sm">Drop here</span>
-                                </div>
-                            )}
+                    {widgets.map((widget) => {
+                        const isDropTarget = dropTargetId === widget.id;
+                        const showBeforeIndicator = isDropTarget && dropPosition === 'before';
+                        const showAfterIndicator = isDropTarget && dropPosition === 'after';
+                        
+                        return (
                             <div
+                                key={widget.id}
                                 data-widget-id={widget.id}
                                 className={`relative ${WIDGET_SIZE_CLASSES[widget.size]} transition-all duration-200 ${
                                     draggedWidgetId === widget.id ? 'opacity-50 scale-95' : ''
                                 }`}
+                                onDragOver={(e) => handleWidgetDragOver(e, widget.id)}
+                                onDragLeave={handleWidgetDragLeave}
+                                onDrop={(e) => handleWidgetDrop(e, widget.id)}
                             >
-                                <WidgetRenderer
-                                    config={widget}
-                                    onRemove={handleRemoveWidget}
-                                    onResize={handleResizeWidget}
-                                    onDragStart={handleDragStart}
-                                    onDragOver={handleDragOver}
-                                    onDrop={handleWidgetDrop}
-                                    isDragging={draggedWidgetId === widget.id}
-                                    isDropTarget={false}
-                                />
+                                {/* Drop indicator - left edge */}
+                                {showBeforeIndicator && (
+                                    <div className="absolute -left-3 top-0 bottom-0 w-1.5 bg-purple-500 rounded-full z-10 pointer-events-none" />
+                                )}
+                                
+                                {/* Drop indicator - right edge */}
+                                {showAfterIndicator && (
+                                    <div className="absolute -right-3 top-0 bottom-0 w-1.5 bg-purple-500 rounded-full z-10 pointer-events-none" />
+                                )}
+                                
+                                {/* Highlight border when drop target */}
+                                <div className={`h-full transition-all duration-150 rounded-xl ${
+                                    isDropTarget ? 'ring-2 ring-purple-500 ring-offset-2 ring-offset-background' : ''
+                                }`}>
+                                    <WidgetRenderer
+                                        config={widget}
+                                        onRemove={handleRemoveWidget}
+                                        onResize={handleResizeWidget}
+                                        onDragStart={handleDragStart}
+                                        isDragging={draggedWidgetId === widget.id}
+                                    />
+                                </div>
                             </div>
-                        </React.Fragment>
-                    ))}
-                    {/* Drop indicator at the end */}
-                    {dropIndex === widgets.length && draggedWidgetId && (
-                        <div 
-                            className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center pointer-events-none"
-                            data-dropzone="true"
-                        >
-                            <span className="text-purple-500 font-medium text-sm">Drop here</span>
-                        </div>
-                    )}
+                        );
+                    })}
                 </div>
             )}
 

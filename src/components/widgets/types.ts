@@ -36,10 +36,7 @@ export interface WidgetProps {
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
     onDragStart?: (e: React.DragEvent, id: string) => void;
-    onDragOver?: (e: React.DragEvent) => void;
-    onDrop?: (e: React.DragEvent, id: string) => void;
     isDragging?: boolean;
-    isDropTarget?: boolean;
 }
 
 // Minimum sizes for each widget type based on content requirements

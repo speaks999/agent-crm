@@ -11,10 +11,7 @@ interface WidgetWrapperProps {
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
     onDragStart?: (e: React.DragEvent, id: string) => void;
-    onDragOver?: (e: React.DragEvent) => void;
-    onDrop?: (e: React.DragEvent, id: string) => void;
     isDragging?: boolean;
-    isDropTarget?: boolean;
 }
 
 
@@ -31,10 +28,7 @@ export function WidgetWrapper({
     onResize, 
     onSettings,
     onDragStart,
-    onDragOver,
-    onDrop,
     isDragging,
-    isDropTarget,
 }: WidgetWrapperProps) {
     const allowedSizes = getAllowedSizes(config.type);
     const canResize = allowedSizes.length > 1;
@@ -44,17 +38,6 @@ export function WidgetWrapper({
         onDragStart?.(e, config.id);
     };
 
-    const handleDragOver = (e: React.DragEvent) => {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        onDragOver?.(e);
-    };
-
-    const handleDrop = (e: React.DragEvent) => {
-        e.preventDefault();
-        onDrop?.(e, config.id);
-    };
-
     return (
         <div 
             className={`relative bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 h-full ${
@@ -62,9 +45,6 @@ export function WidgetWrapper({
             }`}
             draggable
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onDragEnd={() => onDragStart?.(null as any, '')}
         >
             {/* Widget Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">

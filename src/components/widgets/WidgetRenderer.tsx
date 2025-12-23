@@ -18,10 +18,7 @@ interface WidgetRendererProps {
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
     onDragStart?: (e: React.DragEvent, id: string) => void;
-    onDragOver?: (e: React.DragEvent) => void;
-    onDrop?: (e: React.DragEvent, id: string) => void;
     isDragging?: boolean;
-    isDropTarget?: boolean;
 }
 
 export function WidgetRenderer({ 
@@ -30,10 +27,7 @@ export function WidgetRenderer({
     onResize, 
     onSettings,
     onDragStart,
-    onDragOver,
-    onDrop,
     isDragging,
-    isDropTarget,
 }: WidgetRendererProps) {
     const props: WidgetProps = { 
         config, 
@@ -41,10 +35,7 @@ export function WidgetRenderer({
         onResize, 
         onSettings,
         onDragStart,
-        onDragOver,
-        onDrop,
         isDragging,
-        isDropTarget,
     };
 
     switch (config.type) {
