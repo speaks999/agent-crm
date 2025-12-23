@@ -57,8 +57,8 @@ export function WidgetWrapper({
 
     return (
         <div 
-            className={`relative bg-card rounded-xl border shadow-sm overflow-visible group transition-all duration-200 ${
-                isDragging ? 'opacity-60 scale-95 border-purple-500 border-2 z-50 ring-4 ring-purple-500/30' : 'border-border'
+            className={`relative bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 h-full ${
+                isDragging ? 'ring-2 ring-purple-500 cursor-grabbing' : 'border-border cursor-grab'
             }`}
             draggable
             onDragStart={handleDragStart}
@@ -66,15 +66,6 @@ export function WidgetWrapper({
             onDrop={handleDrop}
             onDragEnd={() => onDragStart?.(null as any, '')}
         >
-            {/* Large drop zone indicator showing new location */}
-            {isDropTarget && (
-                <div className="absolute -inset-4 rounded-2xl border-3 border-dashed border-purple-500 bg-purple-500/15 animate-pulse pointer-events-none z-10">
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-purple-500 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">
-                        Drop here to swap
-                    </div>
-                </div>
-            )}
-            <div className={`relative bg-card rounded-xl overflow-hidden ${isDropTarget ? 'ring-2 ring-purple-500 shadow-lg shadow-purple-500/20' : ''}`}>
             {/* Widget Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
                 <div className="flex items-center gap-2">
@@ -132,7 +123,6 @@ export function WidgetWrapper({
             {/* Widget Content */}
             <div className="p-4">
                 {children}
-            </div>
             </div>
         </div>
     );
