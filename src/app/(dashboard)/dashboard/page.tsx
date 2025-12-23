@@ -103,42 +103,57 @@ export default function Dashboard() {
         e.preventDefault();
         if (!draggedWidgetId || !gridRef.current) return;
 
-        const gridRect = gridRef.current.getBoundingClientRect();
-        const children = Array.from(gridRef.current.children) as HTMLElement[];
+        // Get all widget containers (not drop zones)
+        const widgetContainers = Array.from(gridRef.current.querySelectorAll('[data-widget-id]')) as HTMLElement[];
         
-        // Find the closest drop position
-        let closestIndex = widgets.length;
-        let closestDistance = Infinity;
+        if (widgetContainers.length === 0) {
+            setDropIndex(0);
+            return;
+        }
 
-        children.forEach((child, index) => {
-            if (child.dataset.dropzone) return; // Skip drop zone placeholders
+        const draggedIndex = widgets.findIndex(w => w.id === draggedWidgetId);
+        let bestIndex = widgets.length; // Default to end
+        let bestScore = Infinity;
+
+        widgetContainers.forEach((container) => {
+            const widgetId = container.dataset.widgetId;
+            const widgetIndex = widgets.findIndex(w => w.id === widgetId);
+            if (widgetIndex === -1) return;
+
+            const rect = container.getBoundingClientRect();
+            const midX = rect.left + rect.width / 2;
+            const midY = rect.top + rect.height / 2;
+
+            // Check if mouse is in the left half (insert before) or right half (insert after)
+            const isLeftHalf = e.clientX < midX;
+            const isTopHalf = e.clientY < midY;
             
-            const rect = child.getBoundingClientRect();
-            const centerX = rect.left + rect.width / 2;
-            const centerY = rect.top + rect.height / 2;
+            // Calculate vertical distance to determine row
+            const verticalDist = Math.abs(e.clientY - midY);
+            const horizontalDist = Math.abs(e.clientX - midX);
             
-            // Calculate distance from mouse to widget center
-            const distance = Math.sqrt(
-                Math.pow(e.clientX - centerX, 2) + 
-                Math.pow(e.clientY - centerY, 2)
-            );
+            // Prioritize same row, then horizontal position
+            const score = verticalDist * 2 + horizontalDist;
 
-            // Determine if we should insert before or after based on position
-            const insertBefore = e.clientX < centerX || e.clientY < rect.top;
-            const targetIndex = insertBefore ? index : index + 1;
+            // Determine target index based on position
+            let targetIndex: number;
+            if (isLeftHalf || isTopHalf) {
+                targetIndex = widgetIndex;
+            } else {
+                targetIndex = widgetIndex + 1;
+            }
 
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestIndex = targetIndex;
+            if (score < bestScore) {
+                bestScore = score;
+                bestIndex = targetIndex;
             }
         });
 
-        // Don't show drop indicator at the dragged widget's current position
-        const draggedIndex = widgets.findIndex(w => w.id === draggedWidgetId);
-        if (closestIndex === draggedIndex || closestIndex === draggedIndex + 1) {
+        // Don't show drop indicator at or adjacent to dragged widget's position
+        if (bestIndex === draggedIndex || bestIndex === draggedIndex + 1) {
             setDropIndex(null);
         } else {
-            setDropIndex(closestIndex);
+            setDropIndex(bestIndex);
         }
     }, [draggedWidgetId, widgets]);
 
@@ -267,13 +282,14 @@ export default function Dashboard() {
                             {/* Drop indicator before this widget */}
                             {dropIndex === index && draggedWidgetId && (
                                 <div 
-                                    className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center animate-pulse"
+                                    className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center pointer-events-none"
                                     data-dropzone="true"
                                 >
                                     <span className="text-purple-500 font-medium text-sm">Drop here</span>
                                 </div>
                             )}
                             <div
+                                data-widget-id={widget.id}
                                 className={`relative ${WIDGET_SIZE_CLASSES[widget.size]} transition-all duration-200 ${
                                     draggedWidgetId === widget.id ? 'opacity-50 scale-95' : ''
                                 }`}
@@ -294,7 +310,7 @@ export default function Dashboard() {
                     {/* Drop indicator at the end */}
                     {dropIndex === widgets.length && draggedWidgetId && (
                         <div 
-                            className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center animate-pulse"
+                            className="col-span-1 h-24 rounded-xl border-2 border-dashed border-purple-500 bg-purple-500/10 flex items-center justify-center pointer-events-none"
                             data-dropzone="true"
                         >
                             <span className="text-purple-500 font-medium text-sm">Drop here</span>
