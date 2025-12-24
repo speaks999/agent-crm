@@ -7,7 +7,6 @@ import {
   Building2,
   Target,
   CheckSquare,
-  FolderKanban,
   ExternalLink,
   Loader2,
   ChevronDown,
@@ -15,11 +14,37 @@ import {
   Search,
 } from 'lucide-react';
 
-type Contact = { id: string; first_name?: string; last_name?: string; email?: string };
-type Organization = { id: string; name?: string };
-type Opportunity = { id: string; opportunity_name?: string; bid_amount?: number; bid_currency?: string };
-type Task = { id: string; title?: string; completed?: boolean; due_date?: string };
-type Project = { id: string; project_name?: string; completed?: boolean };
+type Contact = {
+  id: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+};
+
+type Account = {
+  id: string;
+  name?: string;
+  industry?: string;
+  website?: string;
+};
+
+type Deal = {
+  id: string;
+  name?: string;
+  amount?: number;
+  stage?: string;
+  status?: string;
+};
+
+type Task = {
+  id: string;
+  title?: string;
+  due_date?: string;
+  completed?: boolean;
+  priority?: number;
+};
 
 type Section<T> = {
   title: string;
@@ -29,53 +54,107 @@ type Section<T> = {
   isLoading: boolean;
 };
 
+async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
+  const response = await fetch('/api/mcp/call-tool', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: toolName, arguments: args }),
+  });
+  
+  if (!response.ok) {
+    throw new Error(`MCP request failed: ${response.status}`);
+  }
+  
+  const json = await response.json();
+  return json.result?.structuredContent || {};
+}
+
 export default function DataHubPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState({
     contacts: true,
-    organizations: true,
-    opportunities: true,
+    accounts: true,
+    deals: true,
     tasks: true,
-    projects: true,
   });
 
   useEffect(() => {
-    const fetchData = async <T,>(key: keyof typeof loading, endpoint: string, setter: (data: T[]) => void) => {
+    const fetchAll = async () => {
+      // Helper to sort by created_at descending (newest first)
+      const sortByNewest = <T extends { created_at?: string }>(items: T[]): T[] => {
+        return [...items].sort((a, b) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return dateB - dateA;
+        });
+      };
+
+      // Fetch contacts
       try {
-        const res = await fetch(endpoint);
-        if (!res.ok) {
-          throw new Error(`${endpoint} responded ${res.status}`);
-        }
-        const json = await res.json();
-        setter(Array.isArray(json) ? json : []);
+        const data = await fetchMCPData('list_contacts');
+        setContacts(sortByNewest(data.contacts || []));
       } catch (err) {
-        console.error(`Failed to fetch ${key}`, err);
-        setter([]);
+        console.error('Failed to fetch contacts', err);
+        setContacts([]);
       } finally {
-        setLoading(prev => ({ ...prev, [key]: false }));
+        setLoading(prev => ({ ...prev, contacts: false }));
+      }
+
+      // Fetch accounts
+      try {
+        const data = await fetchMCPData('list_accounts');
+        setAccounts(sortByNewest(data.accounts || []));
+      } catch (err) {
+        console.error('Failed to fetch accounts', err);
+        setAccounts([]);
+      } finally {
+        setLoading(prev => ({ ...prev, accounts: false }));
+      }
+
+      // Fetch deals
+      try {
+        const data = await fetchMCPData('list_deals');
+        setDeals(sortByNewest(data.deals || []));
+      } catch (err) {
+        console.error('Failed to fetch deals', err);
+        setDeals([]);
+      } finally {
+        setLoading(prev => ({ ...prev, deals: false }));
+      }
+
+      // Fetch tasks
+      try {
+        const response = await fetch('/api/insightly/tasks');
+        const data = await response.json();
+        // Sort by due date (earliest first)
+        const sorted = [...(data || [])].sort((a: Task, b: Task) => {
+          const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+          const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+          return dateA - dateB;
+        });
+        setTasks(sorted);
+      } catch (err) {
+        console.error('Failed to fetch tasks', err);
+        setTasks([]);
+      } finally {
+        setLoading(prev => ({ ...prev, tasks: false }));
       }
     };
 
-    fetchData<Contact>('contacts', '/api/insightly/contacts', setContacts);
-    fetchData<Organization>('organizations', '/api/insightly/organizations', setOrganizations);
-    fetchData<Opportunity>('opportunities', '/api/insightly/opportunities', setOpportunities);
-    fetchData<Task>('tasks', '/api/insightly/tasks', setTasks);
-    fetchData<Project>('projects', '/api/insightly/projects', setProjects);
+    fetchAll();
   }, []);
 
   type SearchExtractors = Record<string, (item: any) => Array<string | number | boolean | null | undefined>>;
 
   const searchExtractors: SearchExtractors = {
-    Contacts: (item: Contact) => [item.first_name, item.last_name, item.email],
-    Organizations: (item: Organization) => [item.name],
-    Opportunities: (item: Opportunity) => [item.opportunity_name, item.bid_currency, item.bid_amount],
-    Tasks: (item: Task) => [item.title, item.completed ? 'completed' : 'open', item.due_date],
-    Projects: (item: Project) => [item.project_name, item.completed ? 'completed' : 'in progress'],
+    Contacts: (item: Contact) => [item.first_name, item.last_name, item.email, item.role],
+    Accounts: (item: Account) => [item.name, item.industry, item.website],
+    Deals: (item: Deal) => [item.name, item.stage, item.status, item.amount],
+    Tasks: (item: Task) => [item.title, item.due_date],
   };
 
   const sections: Section<any>[] = [
@@ -87,18 +166,18 @@ export default function DataHubPage() {
       isLoading: loading.contacts,
     },
     {
-      title: 'Organizations',
+      title: 'Accounts',
       href: '/organizations',
       icon: <Building2 size={18} />,
-      data: organizations,
-      isLoading: loading.organizations,
+      data: accounts,
+      isLoading: loading.accounts,
     },
     {
-      title: 'Opportunities',
+      title: 'Deals',
       href: '/opportunities',
       icon: <Target size={18} />,
-      data: opportunities,
-      isLoading: loading.opportunities,
+      data: deals,
+      isLoading: loading.deals,
     },
     {
       title: 'Tasks',
@@ -107,40 +186,64 @@ export default function DataHubPage() {
       data: tasks,
       isLoading: loading.tasks,
     },
-    {
-      title: 'Projects',
-      href: '/projects',
-      icon: <FolderKanban size={18} />,
-      data: projects,
-      isLoading: loading.projects,
-    },
   ];
 
   const renderItem = (sectionTitle: string, item: any) => {
     switch (sectionTitle) {
       case 'Contacts':
         return `${item.first_name || ''} ${item.last_name || ''}`.trim() || item.email || 'Unnamed contact';
-      case 'Organizations':
-        return item.name || 'Unnamed organization';
-      case 'Opportunities':
-        return item.opportunity_name || 'Unnamed opportunity';
+      case 'Accounts':
+        return item.name || 'Unnamed account';
+      case 'Deals':
+        return item.name || 'Unnamed deal';
       case 'Tasks':
         return item.title || 'Untitled task';
-      case 'Projects':
-        return item.project_name || 'Untitled project';
       default:
         return 'Item';
     }
   };
 
   const renderMeta = (sectionTitle: string, item: any) => {
-    if (sectionTitle === 'Tasks' && item.due_date) {
-      return new Date(item.due_date).toLocaleDateString();
+    if (sectionTitle === 'Contacts' && item.role) {
+      return item.role;
     }
-    if (sectionTitle === 'Opportunities' && item.bid_amount) {
-      return `${item.bid_currency || 'USD'} ${item.bid_amount}`;
+    if (sectionTitle === 'Accounts' && item.industry) {
+      return item.industry;
+    }
+    if (sectionTitle === 'Deals') {
+      const parts = [];
+      if (item.stage) parts.push(item.stage);
+      if (item.amount) parts.push(`$${item.amount.toLocaleString()}`);
+      return parts.join(' • ') || null;
+    }
+    if (sectionTitle === 'Tasks') {
+      if (item.completed) return '✓ Completed';
+      if (item.due_date) {
+        const date = new Date(item.due_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const dueDate = new Date(date);
+        dueDate.setHours(0, 0, 0, 0);
+        if (dueDate.getTime() === today.getTime()) return 'Due Today';
+        if (dueDate < today) return 'Overdue';
+        return `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      }
+      return null;
     }
     return null;
+  };
+
+  const getItemHref = (sectionTitle: string, item: any): string | null => {
+    switch (sectionTitle) {
+      case 'Contacts':
+        return `/contacts/${item.id}`;
+      case 'Accounts':
+        return `/organizations/${item.id}`;
+      case 'Deals':
+        return `/opportunities/${item.id}`;
+      default:
+        return null;
+    }
   };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -166,7 +269,7 @@ export default function DataHubPage() {
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Data Hub</h1>
-          <p className="text-sm text-muted-foreground">Contacts, organizations, opportunities, tasks, and projects in one place.</p>
+          <p className="text-sm text-muted-foreground">Contacts, accounts, deals, and interactions from your CRM.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative flex-1 md:w-72">
@@ -175,7 +278,7 @@ export default function DataHubPage() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search contacts, orgs, tasks..."
+              placeholder="Search contacts, accounts, deals..."
               aria-label="Search data"
               className="w-full pl-9 pr-3 py-2 rounded-lg bg-background border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -197,6 +300,7 @@ export default function DataHubPage() {
             section={section}
             renderItem={renderItem}
             renderMeta={renderMeta}
+            getItemHref={getItemHref}
             isSearching={isSearching}
             searchQuery={searchQuery.trim()}
             defaultOpen
@@ -211,12 +315,13 @@ type CollapsibleProps = {
   section: Section<any>;
   renderItem: (sectionTitle: string, item: any) => string;
   renderMeta: (sectionTitle: string, item: any) => string | null;
+  getItemHref: (sectionTitle: string, item: any) => string | null;
   defaultOpen?: boolean;
   isSearching: boolean;
   searchQuery: string;
 };
 
-function CollapsibleSection({ section, renderItem, renderMeta, defaultOpen = true, isSearching, searchQuery }: CollapsibleProps) {
+function CollapsibleSection({ section, renderItem, renderMeta, getItemHref, defaultOpen = true, isSearching, searchQuery }: CollapsibleProps) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -230,6 +335,7 @@ function CollapsibleSection({ section, renderItem, renderMeta, defaultOpen = tru
           {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
           {section.icon}
           <h2 className="text-lg font-semibold text-foreground">{section.title}</h2>
+          <span className="text-sm text-muted-foreground ml-2">({section.data.length})</span>
         </button>
         <Link
           href={section.href}
@@ -250,21 +356,45 @@ function CollapsibleSection({ section, renderItem, renderMeta, defaultOpen = tru
           {isSearching ? (searchQuery ? `No matches for "${searchQuery}".` : 'No matches found.') : 'No records found.'}
         </div>
       ) : (
-        <div className="space-y-2">
-          {section.data.slice(0, 5).map((item: any) => (
-            <div
-              key={item.id}
-              className="p-3 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
+        <div className="space-y-2 max-h-80 overflow-y-auto">
+          {section.data.slice(0, 10).map((item: any) => {
+            const itemHref = getItemHref(section.title, item);
+            const content = (
+              <>
+                <div className="text-sm font-medium text-foreground">{renderItem(section.title, item)}</div>
+                {renderMeta(section.title, item) && (
+                  <div className="text-xs text-muted-foreground mt-1">{renderMeta(section.title, item)}</div>
+                )}
+              </>
+            );
+
+            return itemHref ? (
+              <Link
+                key={item.id}
+                href={itemHref}
+                className="block p-3 rounded-lg border border-border bg-background hover:bg-muted hover:border-primary transition-colors cursor-pointer"
+              >
+                {content}
+              </Link>
+            ) : (
+              <div
+                key={item.id}
+                className="p-3 rounded-lg border border-border bg-background"
+              >
+                {content}
+              </div>
+            );
+          })}
+          {section.data.length > 10 && (
+            <Link
+              href={section.href}
+              className="block text-xs text-primary text-center py-2 hover:text-primary-glow transition-colors"
             >
-              <div className="text-sm font-medium text-foreground">{renderItem(section.title, item)}</div>
-              {renderMeta(section.title, item) && (
-                <div className="text-xs text-muted-foreground mt-1">{renderMeta(section.title, item)}</div>
-              )}
-            </div>
-          ))}
+              +{section.data.length - 10} more items →
+            </Link>
+          )}
         </div>
       )}
     </div>
   );
 }
-

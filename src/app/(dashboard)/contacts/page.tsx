@@ -1,50 +1,81 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { Users, Loader2, RefreshCw, Mail, Phone, Briefcase, Plus, Search, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 
 interface Contact {
     id: string;
     first_name?: string;
     last_name?: string;
     email?: string;
+    phone?: string;
     role?: string;
-    accounts?: { name: string };
+    account_id?: string;
+    created_at?: string;
+}
+
+async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
+    const response = await fetch('/api/mcp/call-tool', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: toolName, arguments: args }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`MCP request failed: ${response.status}`);
+    }
+
+    const json = await response.json();
+    return json.result?.structuredContent || {};
 }
 
 export default function ContactsPage() {
-    const router = useRouter();
     const [contacts, setContacts] = useState<Contact[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        async function fetchContacts() {
-            try {
-                const response = await fetch('/api/contacts');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch contacts');
-                }
-                const data = await response.json();
-                if (Array.isArray(data)) {
-                    setContacts(data);
-                } else if (data.error) {
-                    setError(data.error);
-                }
-            } catch (err: any) {
-                console.error('Error fetching contacts:', err);
-                setError(err.message);
-            } finally {
-                setIsLoading(false);
-            }
-        }
         fetchContacts();
     }, []);
 
-    const handleRowClick = (contactId: string) => {
-        router.push(`/contacts/${contactId}`);
-    };
+    async function fetchContacts() {
+        try {
+            setError(null);
+            const data = await fetchMCPData('list_contacts');
+            const contactsList = data.contacts || [];
+            // Sort by newest first
+            const sorted = [...contactsList].sort((a: Contact, b: Contact) => {
+                const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+                const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+                return dateB - dateA;
+            });
+            setContacts(sorted);
+        } catch (err: any) {
+            console.error('Error fetching contacts:', err);
+            setError(err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+    async function refreshContacts() {
+        setIsRefreshing(true);
+        await fetchContacts();
+        setIsRefreshing(false);
+    }
+
+    const filteredContacts = contacts.filter(contact => {
+        const query = searchQuery.toLowerCase();
+        const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.toLowerCase();
+        return (
+            fullName.includes(query) ||
+            contact.email?.toLowerCase().includes(query) ||
+            contact.role?.toLowerCase().includes(query)
+        );
+    });
 
     if (isLoading) {
         return (
@@ -60,6 +91,12 @@ export default function ContactsPage() {
                 <div className="text-center">
                     <p className="text-destructive mb-2">Error loading contacts</p>
                     <p className="text-muted-foreground text-sm">{error}</p>
+                    <button
+                        onClick={fetchContacts}
+                        className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
+                    >
+                        Try Again
+                    </button>
                 </div>
             </div>
         );
@@ -67,49 +104,107 @@ export default function ContactsPage() {
 
     return (
         <div className="flex-1 overflow-auto p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-foreground">Contacts</h2>
-                <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors">
-                    Add Contact
-                </button>
+            <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
+                <div className="flex items-center gap-4">
+                    <Link 
+                        href="/data" 
+                        className="p-2 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
+                    >
+                        <ArrowLeft size={24} />
+                    </Link>
+                    <div>
+                        <h2 className="text-2xl font-bold text-foreground">Contacts</h2>
+                        <p className="text-muted-foreground mt-1">{filteredContacts.length} contacts</p>
+                    </div>
+                </div>
+                <div className="flex gap-3">
+                    <button
+                        onClick={refreshContacts}
+                        disabled={isRefreshing}
+                        className="flex items-center gap-2 px-4 py-2 bg-card border border-border text-foreground rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                    >
+                        <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+                        Refresh
+                    </button>
+                    <a
+                        href="/chat"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
+                    >
+                        <Plus size={18} />
+                        Add Contact
+                    </a>
+                </div>
             </div>
 
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                <table className="w-full text-left text-sm text-foreground">
-                    <thead className="bg-muted border-b border-border">
-                        <tr>
-                            <th className="px-6 py-4 font-semibold text-foreground">Name</th>
-                            <th className="px-6 py-4 font-semibold text-foreground">Email</th>
-                            <th className="px-6 py-4 font-semibold text-foreground">Role</th>
-                            <th className="px-6 py-4 font-semibold text-foreground">Company</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                        {contacts.length > 0 ? (
-                            contacts.map((contact) => (
-                                <tr 
-                                    key={contact.id} 
-                                    className="hover:bg-muted cursor-pointer transition-colors"
-                                    onClick={() => handleRowClick(contact.id)}
-                                >
-                                    <td className="px-6 py-4 font-medium text-foreground">
-                                        {contact.first_name} {contact.last_name}
-                                    </td>
-                                    <td className="px-6 py-4 text-foreground">{contact.email || '-'}</td>
-                                    <td className="px-6 py-4 text-foreground">{contact.role || '-'}</td>
-                                    <td className="px-6 py-4 text-foreground">{contact.accounts?.name || '-'}</td>
-                                </tr>
-                            ))
-                        ) : (
-                            <tr>
-                                <td colSpan={4} className="px-6 py-8 text-center text-muted-foreground">
-                                    No contacts found.
-                                </td>
-                            </tr>
-                        )}
-                    </tbody>
-                </table>
+            <div className="mb-6">
+                <div className="relative max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search contacts..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredContacts.map((contact) => (
+                    <div
+                        key={contact.id}
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary"
+                    >
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-full bg-primary-muted flex items-center justify-center text-primary text-lg font-semibold">
+                                {(contact.first_name?.[0] || '') + (contact.last_name?.[0] || '') || '?'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-foreground truncate">
+                                    {contact.first_name || ''} {contact.last_name || ''}
+                                    {!contact.first_name && !contact.last_name && 'Unnamed Contact'}
+                                </h3>
+                                
+                                {contact.role && (
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                                        <Briefcase size={14} />
+                                        <span className="truncate">{contact.role}</span>
+                                    </div>
+                                )}
+                                
+                                {contact.email && (
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                                        <Mail size={14} />
+                                        <span className="truncate">{contact.email}</span>
+                                    </div>
+                                )}
+                                
+                                {contact.phone && (
+                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                                        <Phone size={14} />
+                                        <span>{contact.phone}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+
+            {filteredContacts.length === 0 && (
+                <div className="text-center py-12">
+                    <Users className="mx-auto text-muted-foreground" size={64} />
+                    <p className="text-muted-foreground mt-4">
+                        {searchQuery ? `No contacts found matching "${searchQuery}"` : 'No contacts found'}
+                    </p>
+                    <a
+                        href="/chat"
+                        className="inline-block mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
+                    >
+                        Create your first contact
+                    </a>
+                </div>
+            )}
         </div>
     );
 }

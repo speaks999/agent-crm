@@ -1,7 +1,7 @@
 // MCP Client for browser-side communication with MCP server
 
 const DEFAULT_MCP_SERVER_URL =
-  process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp';
+  process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3002/mcp';
 
 function resolveUrl(override?: string) {
   return override?.trim() || DEFAULT_MCP_SERVER_URL;

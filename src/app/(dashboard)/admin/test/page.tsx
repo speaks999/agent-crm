@@ -25,8 +25,8 @@ export default function MCPTestPage() {
     const testDataRef = useRef<Record<string, any>>({}); // Store IDs for placeholders (ref for synchronous access)
     const testCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const defaultUrl = typeof window !== 'undefined'
-        ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp')
-        : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3001/mcp');
+        ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3002/mcp')
+        : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3002/mcp');
     const [mcpUrl, setMcpUrl] = useState<string>(defaultUrl);
 
     useEffect(() => {

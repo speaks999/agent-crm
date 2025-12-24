@@ -95,7 +95,7 @@ export const CreateDealSchema = z.object({
     account_id: z.string().uuid().optional().describe('Associated account ID'),
     pipeline_id: z.string().uuid().optional().describe('Pipeline ID'),
     amount: z.number().optional().describe('Deal value'),
-    stage: z.string().min(1).describe('Current stage'),
+    stage: z.string().min(1).default('New').describe('Current stage (defaults to "New")'),
     close_date: z.string().optional().describe('Expected close date (YYYY-MM-DD)'),
     status: z.enum(['open', 'won', 'lost']).default('open').describe('Deal status'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),

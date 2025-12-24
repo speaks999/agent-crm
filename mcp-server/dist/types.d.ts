@@ -83,7 +83,7 @@ export declare const CreateDealSchema: z.ZodObject<{
     account_id: z.ZodOptional<z.ZodString>;
     pipeline_id: z.ZodOptional<z.ZodString>;
     amount: z.ZodOptional<z.ZodNumber>;
-    stage: z.ZodString;
+    stage: z.ZodDefault<z.ZodString>;
     close_date: z.ZodOptional<z.ZodString>;
     status: z.ZodDefault<z.ZodEnum<{
         open: "open";
