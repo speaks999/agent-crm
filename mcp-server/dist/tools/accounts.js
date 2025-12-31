@@ -13,6 +13,10 @@ export async function handleAccountTool(request, supabase) {
         if (hasTags) {
             insertData.tags = args.tags || [];
         }
+        // Only include assigned_to if explicitly provided
+        if ('assigned_to' in args && args.assigned_to !== undefined) {
+            insertData.assigned_to = args.assigned_to;
+        }
         const { data, error } = await supabase
             .from('accounts')
             .insert(insertData)
@@ -85,10 +89,13 @@ export async function handleAccountTool(request, supabase) {
     }
     // List Accounts
     if (request.params.name === 'list_accounts') {
-        const { industry } = request.params.arguments || {};
+        const { industry, assigned_to } = request.params.arguments || {};
         let query = supabase.from('accounts').select('*');
         if (industry) {
             query = query.eq('industry', industry);
+        }
+        if (assigned_to) {
+            query = query.eq('assigned_to', assigned_to);
         }
         const { data, error } = await query;
         if (error) {
@@ -120,6 +127,11 @@ export async function handleAccountTool(request, supabase) {
         else {
             // Remove tags from updateData if not provided to avoid schema errors
             delete updateData.tags;
+        }
+        // Handle assigned_to - allow null to unassign
+        const hasAssignedTo = 'assigned_to' in updates;
+        if (!hasAssignedTo) {
+            delete updateData.assigned_to;
         }
         const { data, error } = await supabase
             .from('accounts')
@@ -303,6 +315,7 @@ export const accountToolDefinitions = [
                 name: { type: 'string', description: 'Company name' },
                 industry: { type: 'string', description: 'Industry sector' },
                 website: { type: 'string', description: 'Company website URL' },
+                assigned_to: { type: 'string', description: 'Team member UUID to assign this account to' },
             },
             required: ['name'],
         },
@@ -325,6 +338,7 @@ export const accountToolDefinitions = [
             type: 'object',
             properties: {
                 industry: { type: 'string', description: 'Filter by industry' },
+                assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
             },
         },
     },
@@ -338,6 +352,7 @@ export const accountToolDefinitions = [
                 name: { type: 'string', description: 'Company name' },
                 industry: { type: 'string', description: 'Industry sector' },
                 website: { type: 'string', description: 'Company website URL' },
+                assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this account to (null to unassign)' },
             },
             required: ['id'],
         },

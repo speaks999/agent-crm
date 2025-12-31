@@ -1104,6 +1104,219 @@ export const MCP_TESTS: MCPTest[] = [
         expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
         cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
     },
+
+    // ========================================
+    // TEAM ASSIGNMENT TESTS (Phases 2-3)
+    // ========================================
+
+    // Deal Assignment Tests
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'create_deal',
+        name: 'Create deal with assigned_to',
+        description: 'Create a deal assigned to a team member',
+        query: 'Create deal "Assigned Deal {timestamp}" and assign it to {team_member_id}',
+        args: { 
+            name: 'Assigned Deal {timestamp}',
+            stage: 'Discovery',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_deal', getIdFromResult: (r) => r.structuredContent?.deals?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'update_deal',
+        name: 'Update deal assigned_to',
+        description: 'Change deal assignment to different team member',
+        query: 'Reassign deal {deal_id} to {team_member_id}',
+        args: { 
+            id: '{deal_id}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_deals',
+        name: 'List deals by assigned_to',
+        description: 'Filter deals by team member assignment',
+        query: 'Show me all deals assigned to {team_member_id}',
+        args: { 
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+
+    // Contact Assignment Tests
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'create_contact',
+        name: 'Create contact with assigned_to',
+        description: 'Create a contact assigned to a team member',
+        query: 'Create contact "Assigned {timestamp}" and assign to {team_member_id}',
+        args: { 
+            first_name: 'Assigned',
+            last_name: '{timestamp}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_contact', getIdFromResult: (r) => r.structuredContent?.contacts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'update_contact',
+        name: 'Update contact assigned_to',
+        description: 'Change contact assignment to different team member',
+        query: 'Reassign contact {contact_id} to {team_member_id}',
+        args: { 
+            id: '{contact_id}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_contacts',
+        name: 'List contacts by assigned_to',
+        description: 'Filter contacts by team member assignment',
+        query: 'Show me all contacts assigned to {team_member_id}',
+        args: { 
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+
+    // Account Assignment Tests
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'create_account',
+        name: 'Create account with assigned_to',
+        description: 'Create an account assigned to a team member',
+        query: 'Create account "Assigned Corp {timestamp}" and assign to {team_member_id}',
+        args: { 
+            name: 'Assigned Corp {timestamp}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_account', getIdFromResult: (r) => r.structuredContent?.accounts?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'update_account',
+        name: 'Update account assigned_to',
+        description: 'Change account assignment to different team member',
+        query: 'Reassign account {account_id} to {team_member_id}',
+        args: { 
+            id: '{account_id}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_accounts',
+        name: 'List accounts by assigned_to',
+        description: 'Filter accounts by team member assignment',
+        query: 'Show me all accounts assigned to {team_member_id}',
+        args: { 
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+
+    // Interaction/Task Assignment Tests
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'create_interaction',
+        name: 'Create interaction with assigned_to',
+        description: 'Create an interaction/task assigned to a team member',
+        query: 'Create a call task assigned to {team_member_id}',
+        args: { 
+            type: 'call',
+            summary: 'Assigned task {timestamp}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['created successfully'] },
+        cleanup: { tool: 'delete_interaction', getIdFromResult: (r) => r.structuredContent?.interactions?.[0]?.id || null }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'update_interaction',
+        name: 'Update interaction assigned_to',
+        description: 'Change task assignment to different team member',
+        query: 'Reassign task {interaction_id} to {team_member_id}',
+        args: { 
+            id: '{interaction_id}',
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_interactions',
+        name: 'List interactions by assigned_to',
+        description: 'Filter tasks/interactions by team member assignment',
+        query: 'Show me all tasks assigned to {team_member_id}',
+        args: { 
+            assigned_to: '{team_member_id}'
+        },
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+
+    // Unassigned/All Items Tests
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_deals',
+        name: 'List all deals (no filter)',
+        description: 'List all deals without assignment filter',
+        query: 'Show me all deals',
+        args: {},
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_contacts',
+        name: 'List all contacts (no filter)',
+        description: 'List all contacts without assignment filter',
+        query: 'Show me all contacts',
+        args: {},
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_accounts',
+        name: 'List all accounts (no filter)',
+        description: 'List all accounts without assignment filter',
+        query: 'Show me all accounts',
+        args: {},
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
+    {
+        id: generateTestId('team'),
+        category: 'Team Assignment',
+        tool: 'list_interactions',
+        name: 'List all tasks (no filter)',
+        description: 'List all tasks without assignment filter',
+        query: 'Show me all tasks',
+        args: {},
+        expectedResult: { hasContent: true, hasStructuredContent: true, containsText: ['Found'] }
+    },
 ];
 
 // Group tests by category
@@ -1117,6 +1330,7 @@ export const TESTS_BY_CATEGORY: Record<string, MCPTest[]> = {
     'Tags': MCP_TESTS.filter(t => t.category === 'Tags'),
     'Charts': MCP_TESTS.filter(t => t.category === 'Charts'),
     'Deduplication': MCP_TESTS.filter(t => t.category === 'Deduplication'),
+    'Team Assignment': MCP_TESTS.filter(t => t.category === 'Team Assignment'),
 };
 
 // Get all unique tool names

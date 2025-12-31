@@ -1,9 +1,16 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { MCP_TESTS, TESTS_BY_CATEGORY, ALL_CATEGORIES, type MCPTest } from '@/lib/mcp-tests';
 import { callTool, listTools } from '@/lib/mcp-client';
+
+interface CreatedTestData {
+    type: 'account' | 'contact' | 'deal' | 'pipeline' | 'interaction';
+    id: string;
+    name?: string;
+    createdAt: Date;
+}
 
 interface TestResult {
     test: MCPTest;
@@ -22,11 +29,14 @@ export default function MCPTestPage() {
     const [showFailedOnly, setShowFailedOnly] = useState(false);
     const [currentFailedIndex, setCurrentFailedIndex] = useState(0);
     const [mcpAvailable, setMcpAvailable] = useState<boolean | null>(null);
+    const [createdTestData, setCreatedTestData] = useState<CreatedTestData[]>([]);
+    const [isCleaningUp, setIsCleaningUp] = useState(false);
+    const [cleanupStatus, setCleanupStatus] = useState<string | null>(null);
     const testDataRef = useRef<Record<string, any>>({}); // Store IDs for placeholders (ref for synchronous access)
     const testCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const defaultUrl = typeof window !== 'undefined'
-        ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3002/mcp')
-        : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3002/mcp');
+        ? (localStorage.getItem('mcpUrl') || process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3004/mcp')
+        : (process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:3004/mcp');
     const [mcpUrl, setMcpUrl] = useState<string>(defaultUrl);
 
     useEffect(() => {
@@ -49,6 +59,67 @@ export default function MCPTestPage() {
             setMcpAvailable(false);
             console.error('MCP server not available:', error);
         }
+    }
+
+    // Track created test data for cleanup
+    function trackCreatedData(type: CreatedTestData['type'], id: string, name?: string) {
+        setCreatedTestData(prev => {
+            // Avoid duplicates
+            if (prev.some(item => item.id === id)) return prev;
+            return [...prev, { type, id, name, createdAt: new Date() }];
+        });
+    }
+
+    // Clean up all test data
+    async function cleanupTestData() {
+        if (createdTestData.length === 0) {
+            setCleanupStatus('No test data to clean up');
+            setTimeout(() => setCleanupStatus(null), 3000);
+            return;
+        }
+
+        setIsCleaningUp(true);
+        setCleanupStatus('Cleaning up test data...');
+
+        const deleteTools: Record<CreatedTestData['type'], string> = {
+            interaction: 'delete_interaction',
+            deal: 'delete_deal',
+            contact: 'delete_contact',
+            account: 'delete_account',
+            pipeline: 'delete_pipeline',
+        };
+
+        // Delete in reverse order of dependencies: interactions -> deals -> contacts -> accounts -> pipelines
+        const deleteOrder: CreatedTestData['type'][] = ['interaction', 'deal', 'contact', 'account', 'pipeline'];
+        
+        let deletedCount = 0;
+        let errorCount = 0;
+
+        for (const entityType of deleteOrder) {
+            const itemsToDelete = createdTestData.filter(item => item.type === entityType);
+            
+            for (const item of itemsToDelete) {
+                try {
+                    await callTool(deleteTools[entityType], { id: item.id }, mcpUrl);
+                    deletedCount++;
+                } catch (error) {
+                    console.warn(`Failed to delete ${entityType} ${item.id}:`, error);
+                    errorCount++;
+                }
+            }
+        }
+
+        // Clear the tracked data
+        setCreatedTestData([]);
+        testDataRef.current = {};
+
+        setIsCleaningUp(false);
+        setCleanupStatus(
+            errorCount > 0
+                ? `Cleaned up ${deletedCount} items (${errorCount} errors)`
+                : `Successfully cleaned up ${deletedCount} test items`
+        );
+        setTimeout(() => setCleanupStatus(null), 5000);
     }
 
     // Replace placeholders in args with actual IDs from testDataRef
@@ -84,6 +155,7 @@ export default function MCPTestPage() {
                             if (accountResult?.structuredContent?.accounts?.[0]?.id) {
                                 resolvedValue = accountResult.structuredContent.accounts[0].id;
                                 testDataRef.current.account_id = resolvedValue;
+                                trackCreatedData('account', resolvedValue, 'Test Account');
                             }
                         } catch (error) {
                             // If we can't create an account, skip the optional field
@@ -111,6 +183,7 @@ export default function MCPTestPage() {
                         if (contactResult?.structuredContent?.contacts?.[0]?.id) {
                             resolvedValue = contactResult.structuredContent.contacts[0].id;
                             testDataRef.current.contact_id = resolvedValue;
+                            trackCreatedData('contact', resolvedValue, 'Test Contact');
                         }
                     } catch (error) {
                         console.warn(`Could not create test contact for ${placeholder}, skipping optional field`);
@@ -136,6 +209,7 @@ export default function MCPTestPage() {
                         if (dealResult?.structuredContent?.deals?.[0]?.id) {
                             resolvedValue = dealResult.structuredContent.deals[0].id;
                             testDataRef.current.deal_id = resolvedValue;
+                            trackCreatedData('deal', resolvedValue, 'Test Deal');
                         }
                     } catch (error) {
                         console.warn(`Could not create test deal for ${placeholder}, skipping optional field`);
@@ -153,16 +227,55 @@ export default function MCPTestPage() {
                         if (pipelineResult?.structuredContent?.pipelines?.[0]?.id) {
                             resolvedValue = pipelineResult.structuredContent.pipelines[0].id;
                             testDataRef.current.pipeline_id = resolvedValue;
+                            trackCreatedData('pipeline', resolvedValue, 'Test Pipeline');
                         }
                     } catch (error) {
                         console.warn(`Could not create test pipeline for ${placeholder}, skipping optional field`);
                         continue; // Skip this field
                     }
                 }
+
+                // If interaction_id is needed but not available, create a test interaction
+                if (!resolvedValue && placeholder === 'interaction_id') {
+                    try {
+                        const interactionResult = await callTool('create_interaction', { 
+                            type: 'call',
+                            title: 'Test Interaction',
+                            summary: 'Auto-created test interaction'
+                        }, mcpUrl);
+                        if (interactionResult?.structuredContent?.interactions?.[0]?.id) {
+                            resolvedValue = interactionResult.structuredContent.interactions[0].id;
+                            testDataRef.current.interaction_id = resolvedValue;
+                            trackCreatedData('interaction', resolvedValue, 'Test Interaction');
+                        }
+                    } catch (error) {
+                        console.warn(`Could not create test interaction for ${placeholder}, skipping optional field`);
+                        continue; // Skip this field
+                    }
+                }
+
+                // If team_member_id is needed but not available, fetch first team member
+                if (!resolvedValue && placeholder === 'team_member_id') {
+                    try {
+                        const teamResponse = await fetch('/api/team');
+                        const teamData = await teamResponse.json();
+                        const teamMembers = Array.isArray(teamData) ? teamData : [];
+                        if (teamMembers.length > 0) {
+                            resolvedValue = teamMembers[0].id;
+                            testDataRef.current.team_member_id = resolvedValue;
+                        } else {
+                            console.warn('No team members found, skipping team_member_id field');
+                            continue;
+                        }
+                    } catch (error) {
+                        console.warn(`Could not fetch team members for ${placeholder}, skipping optional field`);
+                        continue; // Skip this field
+                    }
+                }
                 
                 if (!resolvedValue) {
                     // For optional fields, skip them rather than throwing
-                    if (placeholder === 'account_id' || placeholder === 'contact_id' || placeholder === 'deal_id' || placeholder === 'pipeline_id') {
+                    if (placeholder === 'account_id' || placeholder === 'contact_id' || placeholder === 'deal_id' || placeholder === 'pipeline_id' || placeholder === 'team_member_id' || placeholder === 'interaction_id') {
                         continue; // Skip optional fields
                     }
                     throw new Error(`Placeholder ${value} not resolved. Required ID not available from previous tests.`);
@@ -302,41 +415,61 @@ export default function MCPTestPage() {
 
             // Extract account_id from account operations for subsequent tests
             if (result.structuredContent?.accounts && result.structuredContent.accounts.length > 0) {
-                const accountId = result.structuredContent.accounts[0].id;
-                if (accountId) {
-                    testDataRef.current.account_id = accountId;
+                const account = result.structuredContent.accounts[0];
+                if (account.id) {
+                    testDataRef.current.account_id = account.id;
+                    // Track if this was a create operation
+                    if (test.tool === 'create_account') {
+                        trackCreatedData('account', account.id, account.name);
+                    }
                 }
             }
 
             // Extract contact_id from contact operations for subsequent tests
             if (result.structuredContent?.contacts && result.structuredContent.contacts.length > 0) {
-                const contactId = result.structuredContent.contacts[0].id;
-                if (contactId) {
-                    testDataRef.current.contact_id = contactId;
+                const contact = result.structuredContent.contacts[0];
+                if (contact.id) {
+                    testDataRef.current.contact_id = contact.id;
+                    // Track if this was a create operation
+                    if (test.tool === 'create_contact') {
+                        trackCreatedData('contact', contact.id, `${contact.first_name} ${contact.last_name}`);
+                    }
                 }
             }
 
             // Extract deal_id from deal operations for subsequent tests
             if (result.structuredContent?.deals && result.structuredContent.deals.length > 0) {
-                const dealId = result.structuredContent.deals[0].id;
-                if (dealId) {
-                    testDataRef.current.deal_id = dealId;
+                const deal = result.structuredContent.deals[0];
+                if (deal.id) {
+                    testDataRef.current.deal_id = deal.id;
+                    // Track if this was a create operation
+                    if (test.tool === 'create_deal') {
+                        trackCreatedData('deal', deal.id, deal.name);
+                    }
                 }
             }
 
             // Extract pipeline_id from pipeline operations for subsequent tests
             if (result.structuredContent?.pipelines && result.structuredContent.pipelines.length > 0) {
-                const pipelineId = result.structuredContent.pipelines[0].id;
-                if (pipelineId) {
-                    testDataRef.current.pipeline_id = pipelineId;
+                const pipeline = result.structuredContent.pipelines[0];
+                if (pipeline.id) {
+                    testDataRef.current.pipeline_id = pipeline.id;
+                    // Track if this was a create operation
+                    if (test.tool === 'create_pipeline') {
+                        trackCreatedData('pipeline', pipeline.id, pipeline.name);
+                    }
                 }
             }
 
             // Extract interaction_id from interaction operations for subsequent tests
             if (result.structuredContent?.interactions && result.structuredContent.interactions.length > 0) {
-                const interactionId = result.structuredContent.interactions[0].id;
-                if (interactionId) {
-                    testDataRef.current.interaction_id = interactionId;
+                const interaction = result.structuredContent.interactions[0];
+                if (interaction.id) {
+                    testDataRef.current.interaction_id = interaction.id;
+                    // Track if this was a create operation
+                    if (test.tool === 'create_interaction') {
+                        trackCreatedData('interaction', interaction.id, interaction.summary || interaction.title);
+                    }
                 }
             }
 
@@ -541,7 +674,7 @@ export default function MCPTestPage() {
                             value={mcpUrl}
                             onChange={(e) => handleUrlChange(e.target.value)}
                             className="w-72 max-w-full px-3 py-2 border border-border rounded-lg text-sm bg-background text-foreground"
-                            placeholder="http://localhost:3001/mcp"
+                            placeholder="http://localhost:3004/mcp"
                         />
                         <button
                             onClick={checkMCPAvailability}
@@ -576,6 +709,52 @@ export default function MCPTestPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Cleanup Status */}
+                {(cleanupStatus || createdTestData.length > 0) && (
+                    <div className={`mb-6 p-4 rounded-lg border ${
+                        cleanupStatus?.includes('error') 
+                            ? 'bg-destructive/10 border-destructive/30' 
+                            : cleanupStatus?.includes('Successfully')
+                            ? 'bg-success/10 border-success/30'
+                            : 'bg-muted border-border'
+                    }`}>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <Trash2 size={20} className={
+                                    cleanupStatus?.includes('error') 
+                                        ? 'text-destructive' 
+                                        : cleanupStatus?.includes('Successfully')
+                                        ? 'text-success'
+                                        : 'text-muted-foreground'
+                                } />
+                                <div>
+                                    {cleanupStatus ? (
+                                        <p className="font-medium">{cleanupStatus}</p>
+                                    ) : (
+                                        <>
+                                            <p className="font-medium text-foreground">
+                                                {createdTestData.length} test item{createdTestData.length !== 1 ? 's' : ''} tracked
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                Click "Clean Up Test Data" to remove these items after testing
+                                            </p>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                            {createdTestData.length > 0 && !cleanupStatus && (
+                                <div className="text-xs text-muted-foreground">
+                                    {createdTestData.filter(d => d.type === 'account').length} accounts,{' '}
+                                    {createdTestData.filter(d => d.type === 'contact').length} contacts,{' '}
+                                    {createdTestData.filter(d => d.type === 'deal').length} deals,{' '}
+                                    {createdTestData.filter(d => d.type === 'pipeline').length} pipelines,{' '}
+                                    {createdTestData.filter(d => d.type === 'interaction').length} interactions
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
 
                 {/* Stats Bar */}
                 <div className="grid grid-cols-5 gap-4 mb-6">
@@ -696,6 +875,20 @@ export default function MCPTestPage() {
                         >
                             <Play size={18} />
                             Run All Tests ({MCP_TESTS.length})
+                        </button>
+
+                        <button
+                            onClick={cleanupTestData}
+                            disabled={isRunning || isCleaningUp || mcpAvailable === false || createdTestData.length === 0}
+                            className="flex items-center gap-2 px-4 py-2 bg-destructive/10 border-2 border-destructive text-destructive rounded-lg hover:bg-destructive/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                            title={createdTestData.length > 0 ? `Remove ${createdTestData.length} test items` : 'No test data to clean up'}
+                        >
+                            {isCleaningUp ? (
+                                <Loader2 size={18} className="animate-spin" />
+                            ) : (
+                                <Trash2 size={18} />
+                            )}
+                            Clean Up Test Data ({createdTestData.length})
                         </button>
 
                         <div className="flex items-center gap-2">

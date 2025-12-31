@@ -11,6 +11,7 @@ import { RecentActivityWidget } from './RecentActivityWidget';
 import { DealsPipelineWidget } from './DealsPipelineWidget';
 import { ContactsSummaryWidget } from './ContactsSummaryWidget';
 import { CalendarWidget } from './CalendarWidget';
+import { MyWorkWidget } from './MyWorkWidget';
 
 interface WidgetRendererProps {
     config: WidgetConfig;
@@ -57,6 +58,8 @@ export function WidgetRenderer({
             return <ContactsSummaryWidget {...props} />;
         case 'calendar':
             return <CalendarWidget {...props} />;
+        case 'my-work':
+            return <MyWorkWidget {...props} />;
         default:
             return (
                 <div className="bg-card rounded-xl border border-border p-6 text-center text-muted-foreground">

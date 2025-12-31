@@ -12,6 +12,12 @@ import {
   ChevronDown,
   ChevronRight,
   Search,
+  Tag,
+  Plus,
+  Pencil,
+  Trash2,
+  X,
+  Save,
 } from 'lucide-react';
 
 type Contact = {
@@ -21,6 +27,7 @@ type Contact = {
   email?: string;
   phone?: string;
   role?: string;
+  created_at?: string;
 };
 
 type Account = {
@@ -28,6 +35,7 @@ type Account = {
   name?: string;
   industry?: string;
   website?: string;
+  created_at?: string;
 };
 
 type Deal = {
@@ -36,14 +44,26 @@ type Deal = {
   amount?: number;
   stage?: string;
   status?: string;
+  created_at?: string;
 };
 
 type Task = {
   id: string;
-  title?: string;
-  due_date?: string;
-  completed?: boolean;
-  priority?: number;
+  type?: string;
+  summary?: string;
+  transcript?: string;
+  contact_id?: string;
+  deal_id?: string;
+  created_at?: string;
+};
+
+type TagItem = {
+  id: string;
+  tag_name: string;
+  color: string;
+  entity_type?: string;
+  usage_count?: number;
+  created_at?: string;
 };
 
 type Section<T> = {
@@ -74,12 +94,14 @@ export default function DataHubPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [tags, setTags] = useState<TagItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState({
     contacts: true,
     accounts: true,
     deals: true,
     tasks: true,
+    tags: true,
   });
 
   useEffect(() => {
@@ -126,27 +148,43 @@ export default function DataHubPage() {
         setLoading(prev => ({ ...prev, deals: false }));
       }
 
-      // Fetch tasks
+      // Fetch tasks (interactions)
       try {
-        const response = await fetch('/api/insightly/tasks');
-        const data = await response.json();
-        // Sort by due date (earliest first)
-        const sorted = [...(data || [])].sort((a: Task, b: Task) => {
-          const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
-          const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
-          return dateA - dateB;
-        });
-        setTasks(sorted);
+        const data = await fetchMCPData('list_interactions');
+        setTasks(sortByNewest(data.interactions || []));
       } catch (err) {
         console.error('Failed to fetch tasks', err);
         setTasks([]);
       } finally {
         setLoading(prev => ({ ...prev, tasks: false }));
       }
+
+      // Fetch tags
+      try {
+        const data = await fetchMCPData('list_tags');
+        setTags(data.tags || []);
+      } catch (err) {
+        console.error('Failed to fetch tags', err);
+        setTags([]);
+      } finally {
+        setLoading(prev => ({ ...prev, tags: false }));
+      }
     };
 
     fetchAll();
   }, []);
+
+  const refreshTags = async () => {
+    setLoading(prev => ({ ...prev, tags: true }));
+    try {
+      const data = await fetchMCPData('list_tags');
+      setTags(data.tags || []);
+    } catch (err) {
+      console.error('Failed to fetch tags', err);
+    } finally {
+      setLoading(prev => ({ ...prev, tags: false }));
+    }
+  };
 
   type SearchExtractors = Record<string, (item: any) => Array<string | number | boolean | null | undefined>>;
 
@@ -154,7 +192,8 @@ export default function DataHubPage() {
     Contacts: (item: Contact) => [item.first_name, item.last_name, item.email, item.role],
     Accounts: (item: Account) => [item.name, item.industry, item.website],
     Deals: (item: Deal) => [item.name, item.stage, item.status, item.amount],
-    Tasks: (item: Task) => [item.title, item.due_date],
+    Tasks: (item: Task) => [item.summary, item.transcript, item.type],
+    Tags: (item: TagItem) => [item.tag_name, item.entity_type],
   };
 
   const sections: Section<any>[] = [
@@ -197,7 +236,7 @@ export default function DataHubPage() {
       case 'Deals':
         return item.name || 'Unnamed deal';
       case 'Tasks':
-        return item.title || 'Untitled task';
+        return item.summary || item.transcript || `${item.type?.charAt(0).toUpperCase()}${item.type?.slice(1) || 'Note'}`;
       default:
         return 'Item';
     }
@@ -217,18 +256,13 @@ export default function DataHubPage() {
       return parts.join(' • ') || null;
     }
     if (sectionTitle === 'Tasks') {
-      if (item.completed) return '✓ Completed';
-      if (item.due_date) {
-        const date = new Date(item.due_date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const dueDate = new Date(date);
-        dueDate.setHours(0, 0, 0, 0);
-        if (dueDate.getTime() === today.getTime()) return 'Due Today';
-        if (dueDate < today) return 'Overdue';
-        return `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+      const parts = [];
+      if (item.type) parts.push(item.type.charAt(0).toUpperCase() + item.type.slice(1));
+      if (item.created_at) {
+        const date = new Date(item.created_at);
+        parts.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
       }
-      return null;
+      return parts.join(' • ') || null;
     }
     return null;
   };
@@ -241,6 +275,8 @@ export default function DataHubPage() {
         return `/organizations/${item.id}`;
       case 'Deals':
         return `/opportunities/${item.id}`;
+      case 'Tasks':
+        return `/tasks/${item.id}`;
       default:
         return null;
     }
@@ -288,7 +324,6 @@ export default function DataHubPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary-glow transition-colors text-sm whitespace-nowrap"
           >
             Go to Chat
-            <ExternalLink size={16} />
           </Link>
         </div>
       </div>
@@ -306,6 +341,16 @@ export default function DataHubPage() {
             defaultOpen
           />
         ))}
+      </div>
+
+      {/* Tags Section */}
+      <div className="mt-6">
+        <TagsSection 
+          tags={tags} 
+          isLoading={loading.tags} 
+          onRefresh={refreshTags}
+          searchQuery={normalizedQuery}
+        />
       </div>
     </div>
   );
@@ -394,6 +439,318 @@ function CollapsibleSection({ section, renderItem, renderMeta, getItemHref, defa
             </Link>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Tag Modal for Create/Edit
+function TagModal({
+  tag,
+  onClose,
+  onSave,
+}: {
+  tag: TagItem | null;
+  onClose: () => void;
+  onSave: () => void;
+}) {
+  const [tagName, setTagName] = useState(tag?.tag_name || '');
+  const [color, setColor] = useState(tag?.color || '#3B82F6');
+  const [entityType, setEntityType] = useState(tag?.entity_type || 'all');
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const isEditing = Boolean(tag);
+
+  const presetColors = [
+    '#3B82F6', '#8B5CF6', '#06B6D4', '#10B981', '#F59E0B',
+    '#F97316', '#EF4444', '#EC4899', '#6366F1', '#14B8A6',
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tagName.trim()) {
+      setError('Tag name is required');
+      return;
+    }
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      if (isEditing && tag) {
+        // For editing, we need to delete and recreate since there's no update_tag
+        await fetchMCPData('delete_tag', { id: tag.id });
+        await fetchMCPData('create_tag', {
+          tag_name: tagName.trim(),
+          color,
+          entity_type: entityType,
+        });
+      } else {
+        await fetchMCPData('create_tag', {
+          tag_name: tagName.trim(),
+          color,
+          entity_type: entityType,
+        });
+      }
+      onSave();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save tag');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-xl shadow-xl max-w-md w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <Tag size={18} className="text-primary" />
+            {isEditing ? 'Edit Tag' : 'Create Tag'}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+            <X size={20} className="text-muted-foreground" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {error && (
+            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Tag Name *</label>
+            <input
+              type="text"
+              value={tagName}
+              onChange={(e) => setTagName(e.target.value)}
+              placeholder="e.g., Priority, VIP, Hot Lead"
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Color</label>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {presetColors.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`w-8 h-8 rounded-lg transition-transform ${color === c ? 'ring-2 ring-offset-2 ring-primary scale-110' : 'hover:scale-105'}`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="w-10 h-10 rounded cursor-pointer"
+              />
+              <input
+                type="text"
+                value={color}
+                onChange={(e) => setColor(e.target.value)}
+                className="flex-1 px-3 py-2 bg-background border border-border rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">Entity Type</label>
+            <select
+              value={entityType}
+              onChange={(e) => setEntityType(e.target.value)}
+              className="w-full px-3 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+            >
+              <option value="all">All (Universal)</option>
+              <option value="account">Account</option>
+              <option value="contact">Contact</option>
+              <option value="deal">Deal</option>
+              <option value="pipeline">Pipeline</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">Controls where this tag can be used</p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  {isEditing ? 'Update Tag' : 'Create Tag'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Tags Section Component
+function TagsSection({
+  tags,
+  isLoading,
+  onRefresh,
+  searchQuery,
+}: {
+  tags: TagItem[];
+  isLoading: boolean;
+  onRefresh: () => void;
+  searchQuery: string;
+}) {
+  const [open, setOpen] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingTag, setEditingTag] = useState<TagItem | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const filteredTags = searchQuery
+    ? tags.filter(tag => 
+        tag.tag_name.toLowerCase().includes(searchQuery) ||
+        (tag.entity_type && tag.entity_type.toLowerCase().includes(searchQuery))
+      )
+    : tags;
+
+  const handleDelete = async (tag: TagItem) => {
+    if (!confirm(`Delete tag "${tag.tag_name}"? This cannot be undone.`)) return;
+    
+    setDeletingId(tag.id);
+    try {
+      await fetchMCPData('delete_tag', { id: tag.id });
+      onRefresh();
+    } catch (err) {
+      console.error('Failed to delete tag:', err);
+      alert('Failed to delete tag');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleSave = () => {
+    setShowModal(false);
+    setEditingTag(null);
+    onRefresh();
+  };
+
+  const handleEdit = (tag: TagItem) => {
+    setEditingTag(tag);
+    setShowModal(true);
+  };
+
+  const handleCreate = () => {
+    setEditingTag(null);
+    setShowModal(true);
+  };
+
+  return (
+    <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-2 text-left"
+        >
+          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          <Tag size={18} />
+          <h2 className="text-lg font-semibold text-foreground">Tags</h2>
+          <span className="text-sm text-muted-foreground ml-2">({filteredTags.length})</span>
+        </button>
+        <button
+          onClick={handleCreate}
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+        >
+          <Plus size={14} />
+          New Tag
+        </button>
+      </div>
+
+      {!open ? null : isLoading ? (
+        <div className="flex items-center justify-center py-6 text-muted-foreground text-sm gap-2">
+          <Loader2 className="animate-spin" size={18} />
+          Loading...
+        </div>
+      ) : filteredTags.length === 0 ? (
+        <div className="text-sm text-muted-foreground py-4">
+          {searchQuery ? `No tags matching "${searchQuery}".` : 'No tags found. Create one to get started!'}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {filteredTags.map((tag) => (
+            <div
+              key={tag.id}
+              className="group inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-background hover:bg-muted transition-colors"
+            >
+              <div
+                className="w-3 h-3 rounded-full shrink-0"
+                style={{ backgroundColor: tag.color }}
+              />
+              <span className="text-sm font-medium text-foreground">{tag.tag_name}</span>
+              {tag.entity_type && tag.entity_type !== 'all' && (
+                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                  {tag.entity_type}
+                </span>
+              )}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={() => handleEdit(tag)}
+                  className="p-1 hover:bg-primary/10 rounded text-muted-foreground hover:text-primary transition-colors"
+                  title="Edit tag"
+                >
+                  <Pencil size={12} />
+                </button>
+                <button
+                  onClick={() => handleDelete(tag)}
+                  disabled={deletingId === tag.id}
+                  className="p-1 hover:bg-destructive/10 rounded text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                  title="Delete tag"
+                >
+                  {deletingId === tag.id ? (
+                    <Loader2 size={12} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={12} />
+                  )}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <TagModal
+          tag={editingTag}
+          onClose={() => {
+            setShowModal(false);
+            setEditingTag(null);
+          }}
+          onSave={handleSave}
+        />
       )}
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Target, Loader2, RefreshCw, DollarSign, Calendar, TrendingUp, Plus, ArrowLeft } from 'lucide-react';
+import { Target, Loader2, RefreshCw, DollarSign, Calendar, TrendingUp, Plus, ArrowLeft, Filter, UserCircle, Users } from 'lucide-react';
 import Link from 'next/link';
 
 interface Deal {
@@ -11,7 +11,15 @@ interface Deal {
     stage?: string;
     status?: string;
     close_date?: string;
+    assigned_to?: string;
     created_at?: string;
+}
+
+interface TeamMember {
+    id: string;
+    first_name: string;
+    last_name: string;
+    email: string;
 }
 
 async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
@@ -31,12 +39,37 @@ async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}
 
 export default function DealsPage() {
     const [deals, setDeals] = useState<Deal[]>([]);
+    const [allDeals, setAllDeals] = useState<Deal[]>([]);
+    const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+    const [selectedAssignee, setSelectedAssignee] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
+        fetchTeamMembers();
         fetchDeals();
     }, []);
+
+    useEffect(() => {
+        // Filter deals when selectedAssignee changes
+        if (selectedAssignee === '') {
+            setDeals(allDeals);
+        } else if (selectedAssignee === 'unassigned') {
+            setDeals(allDeals.filter(d => !d.assigned_to));
+        } else {
+            setDeals(allDeals.filter(d => d.assigned_to === selectedAssignee));
+        }
+    }, [selectedAssignee, allDeals]);
+
+    async function fetchTeamMembers() {
+        try {
+            const response = await fetch('/api/team');
+            const data = await response.json();
+            setTeamMembers(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error('Failed to fetch team members:', error);
+        }
+    }
 
     async function fetchDeals() {
         try {
@@ -48,6 +81,7 @@ export default function DealsPage() {
                 const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
                 return dateB - dateA;
             });
+            setAllDeals(sorted);
             setDeals(sorted);
         } catch (error) {
             console.error('Failed to fetch deals:', error);
@@ -60,6 +94,12 @@ export default function DealsPage() {
         setIsRefreshing(true);
         await fetchDeals();
         setIsRefreshing(false);
+    }
+
+    function getAssigneeName(assigneeId?: string) {
+        if (!assigneeId) return null;
+        const member = teamMembers.find(m => m.id === assigneeId);
+        return member ? `${member.first_name} ${member.last_name}` : null;
     }
 
     const formatCurrency = (amount?: number) => {
@@ -127,11 +167,31 @@ export default function DealsPage() {
                     <div>
                         <h2 className="text-2xl font-bold text-foreground">Deals</h2>
                         <p className="text-muted-foreground mt-1">
-                            {deals.length} deals • {openDeals.length} open • {wonDeals.length} won
+                            {deals.length} {selectedAssignee ? 'filtered' : ''} deals • {openDeals.length} open • {wonDeals.length} won
                         </p>
                     </div>
                 </div>
                 <div className="flex gap-3">
+                    {/* Assignee Filter */}
+                    <div className="relative">
+                        <select
+                            value={selectedAssignee}
+                            onChange={(e) => setSelectedAssignee(e.target.value)}
+                            className="appearance-none pl-10 pr-8 py-2 bg-card border border-border text-foreground rounded-lg hover:bg-muted transition-colors cursor-pointer focus:ring-2 focus:ring-primary focus:border-transparent text-sm"
+                        >
+                            <option value="">All Team Members</option>
+                            <option value="unassigned">Unassigned</option>
+                            {teamMembers.map((member) => (
+                                <option key={member.id} value={member.id}>
+                                    {member.first_name} {member.last_name}
+                                </option>
+                            ))}
+                        </select>
+                        <UserCircle size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                     <button
                         onClick={refreshDeals}
                         disabled={isRefreshing}
@@ -205,6 +265,12 @@ export default function DealsPage() {
                                         <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(deal.status)}`}>
                                             {deal.status.toUpperCase()}
                                         </span>
+                                    </div>
+                                )}
+                                {deal.assigned_to && getAssigneeName(deal.assigned_to) && (
+                                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-2 pt-2 border-t border-border">
+                                        <UserCircle size={14} />
+                                        <span>{getAssigneeName(deal.assigned_to)}</span>
                                     </div>
                                 )}
                             </div>

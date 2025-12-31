@@ -40,14 +40,14 @@ export function WidgetWrapper({
 
     return (
         <div 
-            className={`relative bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 h-full ${
+            className={`relative bg-card rounded-xl border shadow-sm overflow-hidden group transition-all duration-200 h-full flex flex-col ${
                 isDragging ? 'ring-2 ring-purple-500 cursor-grabbing' : 'border-border cursor-grab'
             }`}
             draggable
             onDragStart={handleDragStart}
         >
             {/* Widget Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30 flex-shrink-0">
                 <div className="flex items-center gap-2">
                     <GripVertical 
                         size={16} 
@@ -101,7 +101,7 @@ export function WidgetWrapper({
                 </div>
             </div>
             {/* Widget Content */}
-            <div className="p-4">
+            <div className="p-4 flex-1 flex flex-col min-h-0">
                 {children}
             </div>
         </div>

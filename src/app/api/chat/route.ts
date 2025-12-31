@@ -76,8 +76,37 @@ If it's just a question or conversation, respond with this exact JSON format:
 
 Examples:
 - "list all accounts" -> {"needsTool": true, "toolName": "list_accounts", "args": {}}
-- "create an account for Acme Corp" -> {"needsTool": true, "toolName": "create_account", "args":  {"name": "Acme Corp"}}
-- "what can you do?" -> {"needsTool": false, "response": "I can help you manage..."}`,
+- "create an account for Acme Corp" -> {"needsTool": true, "toolName": "create_account", "args": {"name": "Acme Corp"}}
+- "what can you do?" -> {"needsTool": false, "response": "I can help you manage..."}
+
+TASK/INTERACTION CREATION - CRITICAL:
+ANY request to create, add, schedule, or log a task, call, meeting, email, note, or reminder MUST use "create_interaction".
+DO NOT say you cannot complete the task - YOU CAN by using create_interaction.
+
+Rules:
+- type: "call" for phone calls, "meeting" for meetings, "email" for emails, "note" for notes/reminders/general tasks
+- title: The task description
+- due_date: Convert any mentioned date/time to ISO format. Today is ${new Date().toISOString().split('T')[0]}.
+
+ALWAYS use create_interaction for these patterns:
+- "add a task to..." -> create_interaction
+- "call [person]" -> create_interaction with type: "call"
+- "remind me to..." -> create_interaction with type: "note"
+- "schedule..." -> create_interaction with type: "meeting"
+- "follow up with..." -> create_interaction
+
+Example: "Add a task to call Kale Smith tomorrow at 5pm"
+Response: {"needsTool": true, "toolName": "create_interaction", "args": {"type": "call", "title": "Call Kale Smith", "due_date": "${(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()}T17:00:00"}}
+
+UPDATE OPERATIONS - CRITICAL:
+- update_contact, update_account, update_deal, update_interaction ALL REQUIRE the record's UUID "id" field.
+- If the user wants to update a record but you don't have the ID, you MUST first search for it using list_contacts, list_accounts, search_contacts, etc.
+- NEVER call update_* without a valid UUID string for the "id" field.
+- If you cannot determine the ID, respond with needsTool: false and ask the user to specify which record to update or use the search first.
+
+Example: "Update John Smith's role to CEO"
+WRONG: {"needsTool": true, "toolName": "update_contact", "args": {"first_name": "John", "role": "CEO"}}
+CORRECT APPROACH: First use search_contacts to find John Smith's ID, then use update_contact with the ID.`,
                 },
             ],
         });

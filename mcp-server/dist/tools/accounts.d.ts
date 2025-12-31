@@ -34,6 +34,10 @@ export declare const accountToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            assigned_to: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
         };
         required: string[];
@@ -51,6 +55,7 @@ export declare const accountToolDefinitions: ({
             name?: undefined;
             industry?: undefined;
             website?: undefined;
+            assigned_to?: undefined;
         };
         required: string[];
     };
@@ -61,6 +66,10 @@ export declare const accountToolDefinitions: ({
         type: string;
         properties: {
             industry: {
+                type: string;
+                description: string;
+            };
+            assigned_to: {
                 type: string;
                 description: string;
             };
@@ -90,6 +99,10 @@ export declare const accountToolDefinitions: ({
             };
             website: {
                 type: string;
+                description: string;
+            };
+            assigned_to: {
+                type: string[];
                 description: string;
             };
         };

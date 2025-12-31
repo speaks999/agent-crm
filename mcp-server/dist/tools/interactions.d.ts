@@ -27,6 +27,26 @@ export declare const interactionToolDefinitions: ({
                 enum: string[];
                 description: string;
             };
+            title: {
+                type: string;
+                description: string;
+            };
+            due_date: {
+                type: string;
+                description: string;
+            };
+            summary: {
+                type: string;
+                description: string;
+            };
+            description: {
+                type: string;
+                description: string;
+            };
+            transcript: {
+                type: string;
+                description: string;
+            };
             contact_id: {
                 type: string;
                 description: string;
@@ -35,19 +55,15 @@ export declare const interactionToolDefinitions: ({
                 type: string;
                 description: string;
             };
-            summary: {
-                type: string;
-                description: string;
-            };
-            transcript: {
-                type: string;
-                description: string;
-            };
             audio_url: {
                 type: string;
                 description: string;
             };
             sentiment: {
+                type: string;
+                description: string;
+            };
+            assigned_to: {
                 type: string;
                 description: string;
             };
@@ -66,12 +82,16 @@ export declare const interactionToolDefinitions: ({
                 description: string;
             };
             type?: undefined;
+            title?: undefined;
+            due_date?: undefined;
+            summary?: undefined;
+            description?: undefined;
+            transcript?: undefined;
             contact_id?: undefined;
             deal_id?: undefined;
-            summary?: undefined;
-            transcript?: undefined;
             audio_url?: undefined;
             sentiment?: undefined;
+            assigned_to?: undefined;
         };
         required: string[];
     };
@@ -94,7 +114,14 @@ export declare const interactionToolDefinitions: ({
                 enum: string[];
                 description: string;
             };
+            assigned_to: {
+                type: string;
+                description: string;
+            };
+            title?: undefined;
+            due_date?: undefined;
             summary?: undefined;
+            description?: undefined;
             transcript?: undefined;
             audio_url?: undefined;
             sentiment?: undefined;
@@ -141,6 +168,13 @@ export declare const interactionToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            assigned_to: {
+                type: string[];
+                description: string;
+            };
+            title?: undefined;
+            due_date?: undefined;
+            description?: undefined;
         };
         required: string[];
     };

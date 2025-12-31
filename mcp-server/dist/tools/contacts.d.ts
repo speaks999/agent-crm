@@ -121,6 +121,10 @@ export declare const contactToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            assigned_to: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
             dry_run?: undefined;
         };
@@ -142,6 +146,7 @@ export declare const contactToolDefinitions: ({
             email?: undefined;
             phone?: undefined;
             role?: undefined;
+            assigned_to?: undefined;
             dry_run?: undefined;
         };
         required: string[];
@@ -153,6 +158,10 @@ export declare const contactToolDefinitions: ({
         type: string;
         properties: {
             account_id: {
+                type: string;
+                description: string;
+            };
+            assigned_to: {
                 type: string;
                 description: string;
             };
@@ -200,6 +209,10 @@ export declare const contactToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            assigned_to: {
+                type: string[];
+                description: string;
+            };
             dry_run?: undefined;
         };
         required: string[];
@@ -216,6 +229,7 @@ export declare const contactToolDefinitions: ({
             email?: undefined;
             phone?: undefined;
             role?: undefined;
+            assigned_to?: undefined;
             id?: undefined;
             dry_run?: undefined;
         };
@@ -238,6 +252,7 @@ export declare const contactToolDefinitions: ({
             email?: undefined;
             phone?: undefined;
             role?: undefined;
+            assigned_to?: undefined;
             id?: undefined;
         };
         required?: undefined;

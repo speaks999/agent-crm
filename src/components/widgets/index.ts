@@ -9,4 +9,5 @@ export * from './RecentActivityWidget';
 export * from './DealsPipelineWidget';
 export * from './ContactsSummaryWidget';
 export * from './CalendarWidget';
+export * from './MyWorkWidget';
 

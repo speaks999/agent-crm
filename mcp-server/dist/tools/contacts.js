@@ -137,6 +137,10 @@ export async function handleContactTool(request, supabase) {
         if ('tags' in args && args.tags !== undefined) {
             insertData.tags = args.tags || [];
         }
+        // Only include assigned_to if explicitly provided
+        if ('assigned_to' in args && args.assigned_to !== undefined) {
+            insertData.assigned_to = args.assigned_to;
+        }
         const { data, error } = await supabase
             .from('contacts')
             .insert(insertData)
@@ -261,10 +265,13 @@ export async function handleContactTool(request, supabase) {
     }
     // List Contacts
     if (request.params.name === 'list_contacts') {
-        const { account_id, tags } = request.params.arguments || {};
+        const { account_id, tags, assigned_to } = request.params.arguments || {};
         let query = supabase.from('contacts').select('*');
         if (account_id) {
             query = query.eq('account_id', account_id);
+        }
+        if (assigned_to) {
+            query = query.eq('assigned_to', assigned_to);
         }
         // Apply tags filter if provided (will fail gracefully if tags column doesn't exist)
         if (tags && Array.isArray(tags) && tags.length > 0) {
@@ -302,7 +309,22 @@ export async function handleContactTool(request, supabase) {
     }
     // Update Contact
     if (request.params.name === 'update_contact') {
-        const args = UpdateContactSchema.parse(request.params.arguments);
+        // Check if ID is provided and valid before parsing
+        const rawArgs = request.params.arguments || {};
+        if (!rawArgs.id) {
+            return {
+                content: [{
+                        type: 'text',
+                        text: `Error: Contact ID is required. To update a contact, you need to provide the contact's UUID. You can find the contact ID by using 'list_contacts' or 'search_contacts' first.`,
+                    }],
+                isError: true,
+            };
+        }
+        // Convert id to string if needed
+        if (typeof rawArgs.id !== 'string') {
+            rawArgs.id = String(rawArgs.id);
+        }
+        const args = UpdateContactSchema.parse(rawArgs);
         const { id, ...updates } = args;
         const updateData = { ...updates, updated_at: new Date().toISOString() };
         // Only include tags if explicitly provided (tags column may not exist if migration not applied)
@@ -313,6 +335,11 @@ export async function handleContactTool(request, supabase) {
         else {
             // Remove tags from updateData if not provided to avoid schema errors
             delete updateData.tags;
+        }
+        // Handle assigned_to - allow null to unassign
+        const hasAssignedTo = 'assigned_to' in updates;
+        if (!hasAssignedTo) {
+            delete updateData.assigned_to;
         }
         const { data, error } = await supabase
             .from('contacts')
@@ -591,6 +618,7 @@ export const contactToolDefinitions = [
                 email: { type: 'string', description: 'Email address' },
                 phone: { type: 'string', description: 'Phone number' },
                 role: { type: 'string', description: 'Job title or role' },
+                assigned_to: { type: 'string', description: 'Team member UUID to assign this contact to' },
             },
             required: ['first_name', 'last_name'],
         },
@@ -613,6 +641,7 @@ export const contactToolDefinitions = [
             type: 'object',
             properties: {
                 account_id: { type: 'string', description: 'Filter by account UUID' },
+                assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
             },
         },
     },
@@ -629,6 +658,7 @@ export const contactToolDefinitions = [
                 email: { type: 'string', description: 'Email address' },
                 phone: { type: 'string', description: 'Phone number' },
                 role: { type: 'string', description: 'Job title or role' },
+                assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this contact to (null to unassign)' },
             },
             required: ['id'],
         },

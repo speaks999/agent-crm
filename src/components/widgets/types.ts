@@ -8,7 +8,8 @@ export type WidgetType =
     | 'open-tasks'
     | 'recent-activity'
     | 'contacts-summary'
-    | 'calendar';
+    | 'calendar'
+    | 'my-work';
 
 export type WidgetSize = 'small' | 'medium' | 'large';
 
@@ -51,6 +52,7 @@ export const WIDGET_MIN_SIZES: Record<WidgetType, WidgetSize> = {
     'recent-activity': 'small',     // List can be compact
     'contacts-summary': 'small',    // Stats grid works at small
     'calendar': 'small',            // Calendar grid works at small
+    'my-work': 'medium',            // Needs space for tabs and list items
 };
 
 export interface WidgetCatalogItem {
@@ -63,6 +65,7 @@ export interface WidgetCatalogItem {
 }
 
 export const WIDGET_CATALOG: WidgetCatalogItem[] = [
+    { type: 'my-work', name: 'My Work', description: 'View all items assigned to you', icon: '👤', defaultSize: 'medium', minSize: 'medium' },
     { type: 'revenue-chart', name: 'Revenue Chart', description: 'Visualize revenue by stage or time', icon: '📊', defaultSize: 'large', minSize: 'medium' },
     { type: 'deals-pipeline', name: 'Deals Pipeline', description: 'View your deal pipeline stages', icon: '🎯', defaultSize: 'large', minSize: 'medium' },
     { type: 'open-deals', name: 'Open Deals', description: 'Track your active deals', icon: '💰', defaultSize: 'medium', minSize: 'small' },

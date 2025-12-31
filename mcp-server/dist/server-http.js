@@ -22,6 +22,7 @@ import { dealToolDefinitions, handleDealTool } from './tools/deals.js';
 import { pipelineToolDefinitions, handlePipelineTool } from './tools/pipelines.js';
 import { interactionToolDefinitions, handleInteractionTool } from './tools/interactions.js';
 import { searchToolDefinitions, handleSearchTool } from './tools/search.js';
+import { tagToolDefinitions, handleTagTool } from './tools/tags.js';
 // Environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
@@ -44,6 +45,7 @@ const allToolDefinitions = [
     ...pipelineToolDefinitions,
     ...interactionToolDefinitions,
     ...searchToolDefinitions,
+    ...tagToolDefinitions,
 ];
 // Unified tool handler list (same as stdio server)
 const toolHandlers = [
@@ -53,6 +55,7 @@ const toolHandlers = [
     handlePipelineTool,
     handleInteractionTool,
     handleSearchTool,
+    handleTagTool,
 ];
 async function dispatchToolCall(name, args) {
     const mockRequest = {
@@ -175,6 +178,7 @@ function createCrmServer() {
         handlePipelineTool,
         handleInteractionTool,
         handleSearchTool,
+        handleTagTool,
     ];
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const mockRequest = {

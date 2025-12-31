@@ -15,6 +15,7 @@ import { handleDealTool, dealToolDefinitions } from './tools/deals.js';
 import { handlePipelineTool, pipelineToolDefinitions } from './tools/pipelines.js';
 import { handleInteractionTool, interactionToolDefinitions } from './tools/interactions.js';
 import { handleSearchTool, searchToolDefinitions } from './tools/search.js';
+import { handleTagTool, tagToolDefinitions } from './tools/tags.js';
 
 // Environment variable validation
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -49,6 +50,7 @@ const allToolDefinitions = [
     ...pipelineToolDefinitions,
     ...interactionToolDefinitions,
     ...searchToolDefinitions,
+    ...tagToolDefinitions,
 ];
 
 // Handle tool listing
@@ -66,6 +68,7 @@ const toolHandlers = [
     handlePipelineTool,
     handleInteractionTool,
     handleSearchTool,
+    handleTagTool,
 ];
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {

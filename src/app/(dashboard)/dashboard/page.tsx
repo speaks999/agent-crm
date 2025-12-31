@@ -1,10 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Plus, LayoutGrid } from 'lucide-react';
+import { Plus, LayoutGrid, Cloud, CloudOff } from 'lucide-react';
 import { WidgetConfig, WidgetType, WidgetSize, WIDGET_CATALOG, WIDGET_SIZE_CLASSES } from '@/components/widgets/types';
 import { WidgetRenderer } from '@/components/widgets/WidgetRenderer';
 import { AddWidgetModal } from '@/components/widgets/AddWidgetModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STORAGE_KEY = 'dashboard-widgets';
 
@@ -18,37 +19,179 @@ const DEFAULT_WIDGETS: WidgetConfig[] = [
 ];
 
 export default function Dashboard() {
+    const { session } = useAuth();
     const [widgets, setWidgets] = useState<WidgetConfig[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error' | 'offline'>('synced');
     
     // Drag and drop state
     const [draggedWidgetId, setDraggedWidgetId] = useState<string | null>(null);
     const [dropTargetId, setDropTargetId] = useState<string | null>(null);
     const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
     const gridRef = useRef<HTMLDivElement>(null);
+    const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastSavedRef = useRef<string>('');
 
-    // Load widgets from localStorage
-    useEffect(() => {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
+    // Fetch preferences from database
+    const fetchPreferences = useCallback(async () => {
+        if (!session?.access_token) return null;
+        
+        try {
+            const response = await fetch('/api/user/preferences', {
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+            });
+            
+            if (!response.ok) {
+                // Non-critical failure - just use localStorage
+                console.warn('Could not fetch preferences from server, using local storage');
+                setSyncStatus('offline');
+                return null;
+            }
+            
+            const data = await response.json();
+            
+            // Check if there's a warning (table doesn't exist)
+            if (data._warning) {
+                console.warn(data._warning);
+                setSyncStatus('offline');
+            }
+            
+            return data.widget_layout;
+        } catch (error) {
+            // Network error or other issue - fall back to localStorage
+            console.warn('Error fetching preferences, using local storage:', error);
+            setSyncStatus('offline');
+            return null;
+        }
+    }, [session?.access_token]);
+
+    // Save preferences to database (debounced)
+    const savePreferences = useCallback(async (widgetsToSave: WidgetConfig[]) => {
+        if (!session?.access_token) {
+            setSyncStatus('offline');
+            return;
+        }
+        
+        const widgetsJson = JSON.stringify(widgetsToSave);
+        
+        // Skip if nothing changed
+        if (widgetsJson === lastSavedRef.current) {
+            return;
+        }
+        
+        setSyncStatus('syncing');
+        
+        try {
+            const response = await fetch('/api/user/preferences', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                body: JSON.stringify({ widget_layout: widgetsToSave }),
+            });
+            
+            // Try to parse response
+            let data;
             try {
-                setWidgets(JSON.parse(saved));
+                data = await response.json();
             } catch {
+                // Response wasn't JSON
+                console.warn('Could not parse preferences response');
+                setSyncStatus('offline');
+                return;
+            }
+            
+            if (!response.ok) {
+                console.warn('Could not save preferences:', data.error || response.statusText);
+                setSyncStatus('offline');
+                return;
+            }
+            
+            // Check if there's a warning (table doesn't exist)
+            if (data._warning) {
+                console.warn(data._warning);
+                setSyncStatus('offline');
+                return;
+            }
+            
+            lastSavedRef.current = widgetsJson;
+            setSyncStatus('synced');
+        } catch (error) {
+            console.warn('Could not save preferences to server:', error);
+            setSyncStatus('offline');
+        }
+    }, [session?.access_token]);
+
+    // Load widgets on mount
+    useEffect(() => {
+        const loadWidgets = async () => {
+            // First, try localStorage for instant display
+            const saved = localStorage.getItem(STORAGE_KEY);
+            let localWidgets: WidgetConfig[] | null = null;
+            
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (Array.isArray(parsed)) {
+                        localWidgets = parsed;
+                        setWidgets(parsed);
+                    }
+                } catch {
+                    // Invalid JSON, ignore
+                }
+            }
+            
+            // Then fetch from database (source of truth)
+            if (session?.access_token) {
+                const dbWidgets = await fetchPreferences();
+                
+                if (dbWidgets && Array.isArray(dbWidgets) && dbWidgets.length > 0) {
+                    setWidgets(dbWidgets);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(dbWidgets));
+                    lastSavedRef.current = JSON.stringify(dbWidgets);
+                    setSyncStatus('synced');
+                } else if (!localWidgets || localWidgets.length === 0) {
+                    // No saved widgets anywhere, use defaults
+                    setWidgets(DEFAULT_WIDGETS);
+                    // Save defaults to database
+                    savePreferences(DEFAULT_WIDGETS);
+                }
+            } else if (!localWidgets || localWidgets.length === 0) {
                 setWidgets(DEFAULT_WIDGETS);
             }
-        } else {
-            setWidgets(DEFAULT_WIDGETS);
-        }
-        setIsLoaded(true);
-    }, []);
+            
+            setIsLoaded(true);
+        };
+        
+        loadWidgets();
+    }, [session?.access_token, fetchPreferences, savePreferences]);
 
-    // Save widgets to localStorage
+    // Save widgets when they change (debounced)
     useEffect(() => {
-        if (isLoaded) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
+        if (!isLoaded) return;
+        
+        // Save to localStorage immediately
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(widgets));
+        
+        // Debounce database save
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
         }
-    }, [widgets, isLoaded]);
+        
+        saveTimeoutRef.current = setTimeout(() => {
+            savePreferences(widgets);
+        }, 1000); // Save after 1 second of inactivity
+        
+        return () => {
+            if (saveTimeoutRef.current) {
+                clearTimeout(saveTimeoutRef.current);
+            }
+        };
+    }, [widgets, isLoaded, savePreferences]);
 
     const handleAddWidget = useCallback((type: WidgetType) => {
         const catalogItem = WIDGET_CATALOG.find(w => w.type === type);
@@ -222,9 +365,23 @@ export default function Dashboard() {
         <div className="flex-1 overflow-auto p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Customize your workspace with widgets</p>
+                <div className="flex items-center gap-3">
+                    <div>
+                        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+                        <p className="text-sm text-muted-foreground mt-1">Customize your workspace with widgets</p>
+                    </div>
+                    {/* Sync status indicator */}
+                    <div className="ml-2" title={
+                        syncStatus === 'synced' ? 'Layout saved' :
+                        syncStatus === 'syncing' ? 'Saving...' :
+                        syncStatus === 'error' ? 'Sync error - changes saved locally' :
+                        'Offline - changes saved locally'
+                    }>
+                        {syncStatus === 'synced' && <Cloud size={16} className="text-green-500" />}
+                        {syncStatus === 'syncing' && <Cloud size={16} className="text-yellow-500 animate-pulse" />}
+                        {syncStatus === 'error' && <CloudOff size={16} className="text-red-500" />}
+                        {syncStatus === 'offline' && <CloudOff size={16} className="text-muted-foreground" />}
+                    </div>
                 </div>
                 <div className="flex items-center gap-3">
                     <button

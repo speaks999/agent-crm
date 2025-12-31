@@ -51,6 +51,7 @@ export declare const CreateAccountSchema: z.ZodObject<{
     industry: z.ZodOptional<z.ZodString>;
     website: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const UpdateAccountSchema: z.ZodObject<{
     id: z.ZodString;
@@ -58,6 +59,7 @@ export declare const UpdateAccountSchema: z.ZodObject<{
     industry: z.ZodOptional<z.ZodString>;
     website: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreateContactSchema: z.ZodObject<{
     first_name: z.ZodString;
@@ -67,6 +69,7 @@ export declare const CreateContactSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     role: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const UpdateContactSchema: z.ZodObject<{
     id: z.ZodString;
@@ -77,6 +80,7 @@ export declare const UpdateContactSchema: z.ZodObject<{
     phone: z.ZodOptional<z.ZodString>;
     role: z.ZodOptional<z.ZodString>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreateDealSchema: z.ZodObject<{
     name: z.ZodString;
@@ -91,6 +95,7 @@ export declare const CreateDealSchema: z.ZodObject<{
         lost: "lost";
     }>>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const UpdateDealSchema: z.ZodObject<{
     id: z.ZodString;
@@ -106,6 +111,7 @@ export declare const UpdateDealSchema: z.ZodObject<{
         lost: "lost";
     }>>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
+    assigned_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreatePipelineSchema: z.ZodObject<{
     name: z.ZodString;
@@ -117,18 +123,22 @@ export declare const UpdatePipelineSchema: z.ZodObject<{
     stages: z.ZodOptional<z.ZodArray<z.ZodString>>;
 }, z.core.$strip>;
 export declare const CreateInteractionSchema: z.ZodObject<{
-    type: z.ZodEnum<{
+    type: z.ZodPipe<z.ZodTransform<"call" | "meeting" | "email" | "note", unknown>, z.ZodEnum<{
         call: "call";
         meeting: "meeting";
         email: "email";
         note: "note";
-    }>;
+    }>>;
     contact_id: z.ZodOptional<z.ZodString>;
     deal_id: z.ZodOptional<z.ZodString>;
     summary: z.ZodOptional<z.ZodString>;
     transcript: z.ZodOptional<z.ZodString>;
     audio_url: z.ZodOptional<z.ZodString>;
     sentiment: z.ZodOptional<z.ZodString>;
+    title: z.ZodOptional<z.ZodString>;
+    description: z.ZodOptional<z.ZodString>;
+    due_date: z.ZodOptional<z.ZodString>;
+    assigned_to: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const UpdateInteractionSchema: z.ZodObject<{
     id: z.ZodString;
@@ -144,5 +154,6 @@ export declare const UpdateInteractionSchema: z.ZodObject<{
     transcript: z.ZodOptional<z.ZodString>;
     audio_url: z.ZodOptional<z.ZodString>;
     sentiment: z.ZodOptional<z.ZodString>;
+    assigned_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
 }, z.core.$strip>;
 //# sourceMappingURL=types.d.ts.map

@@ -29,6 +29,32 @@ export async function POST(req: Request) {
             );
         }
 
+        // Check if a team member with this email already exists (including inactive)
+        const { data: existing } = await supabase
+            .from('team_members')
+            .select('*')
+            .eq('email', email)
+            .single();
+
+        if (existing) {
+            // Reactivate and update the existing member
+            const { data, error } = await supabase
+                .from('team_members')
+                .update({
+                    first_name,
+                    last_name,
+                    role,
+                    active: true,
+                })
+                .eq('id', existing.id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return Response.json(data);
+        }
+
+        // Create new team member
         const { data, error } = await supabase
             .from('team_members')
             .insert([
