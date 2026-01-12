@@ -77,8 +77,8 @@ export default function ProjectsPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
-            <div className="flex justify-between items-center mb-6">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-foreground">Projects</h2>
                     <p className="text-muted-foreground mt-1">{filteredProjects.length} projects</p>
@@ -86,14 +86,14 @@ export default function ProjectsPage() {
                 <button
                     onClick={syncProjects}
                     disabled={isSyncing}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50 w-full sm:w-auto"
                 >
                     <RefreshCw size={20} className={isSyncing ? 'animate-spin' : ''} />
                     {isSyncing ? 'Syncing...' : 'Sync from Insightly'}
                 </button>
             </div>
 
-            <div className="flex gap-2 mb-6">
+            <div className="flex flex-wrap gap-2 mb-6">
                 <button
                     onClick={() => setFilter('all')}
                     className={`px-4 py-2 rounded-lg transition-colors ${filter === 'all' ? 'bg-primary-muted text-primary' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}

@@ -301,7 +301,7 @@ export default function DataHubPage() {
   });
 
   return (
-    <div className="flex-1 overflow-auto p-8">
+    <div className="flex-1 overflow-auto p-4 sm:p-8">
       <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Data Hub</h1>

@@ -439,20 +439,20 @@ export function ChatInterface() {
     return (
         <div className="flex h-full flex-col bg-background">
             {/* Chat Header with History Dropdown */}
-            <div className="border-b border-border px-8 py-3 flex items-center justify-between bg-background">
+            <div className="border-b border-border px-4 sm:px-8 py-3 flex items-center justify-between bg-background">
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={() => setShowHistory(!showHistory)}
                         className="flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary transition-colors"
                     >
                         <MessageSquare size={16} />
-                        <span className="max-w-[200px] truncate">{currentTitle}</span>
+                        <span className="max-w-[140px] sm:max-w-[200px] truncate">{currentTitle}</span>
                         <ChevronDown size={16} className={`transition-transform ${showHistory ? 'rotate-180' : ''}`} />
                     </button>
                     
                     {/* Dropdown */}
                     {showHistory && (
-                        <div className="absolute top-full left-0 mt-2 w-72 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
+                        <div className="absolute top-full left-0 mt-2 w-[min(18rem,calc(100vw-2rem))] bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
                             {/* New Chat Button */}
                             <button
                                 onClick={handleNewChat}
@@ -509,7 +509,7 @@ export function ChatInterface() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-8 py-6 space-y-4">
+            <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-4 sm:py-6 space-y-4">
                 {messages.map(message => (
                     <div key={message.id}>
                         <MessageBubble message={message} onAction={handleAction} isLoading={isLoading} />
@@ -531,7 +531,7 @@ export function ChatInterface() {
             </div>
 
             {/* Input */}
-            <div className="border-t border-border px-8 py-4 bg-background">
+            <div className="border-t border-border px-4 sm:px-8 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background">
                 <div className="flex items-end gap-3">
                     <div className="flex-1 relative">
                         <textarea

@@ -460,7 +460,7 @@ export default function AccountDetailPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <Link href="/organizations" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -534,7 +534,7 @@ export default function AccountDetailPage() {
 
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="p-8 border-b border-border">
+                <div className="p-4 sm:p-8 border-b border-border">
                     <div className="flex items-start gap-6">
                         <div className="w-24 h-24 rounded-xl bg-primary-muted flex items-center justify-center text-primary shrink-0">
                             <Building2 size={48} />
@@ -566,7 +566,7 @@ export default function AccountDetailPage() {
                 </div>
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8 p-4 sm:p-8">
                     {/* Account Details */}
                     <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">

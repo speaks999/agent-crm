@@ -528,7 +528,7 @@ export default function ContactDetailPage() {
     const initials = [contact.first_name?.[0], contact.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <Link href="/contacts" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
@@ -610,7 +610,7 @@ export default function ContactDetailPage() {
 
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 {/* Header */}
-                <div className="p-8 border-b border-border">
+                <div className="p-4 sm:p-8 border-b border-border">
                     <div className="flex items-start gap-6">
                         <div className="w-24 h-24 rounded-full bg-primary-muted flex items-center justify-center text-primary text-2xl font-bold shrink-0">
                             {initials}
@@ -652,7 +652,7 @@ export default function ContactDetailPage() {
                 </div>
 
                 {/* Content Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-8 p-4 sm:p-8">
                     {/* Contact Details */}
                     <div>
                         <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">

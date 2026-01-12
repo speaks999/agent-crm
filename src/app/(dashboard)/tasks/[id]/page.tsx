@@ -201,7 +201,7 @@ export default function TaskDetailPage() {
 
     if (error || !interaction) {
         return (
-            <div className="flex-1 overflow-auto p-8">
+            <div className="flex-1 overflow-auto p-4 sm:p-8">
                 <Link
                     href="/tasks"
                     className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
@@ -219,7 +219,7 @@ export default function TaskDetailPage() {
     const title = interaction.summary || interaction.transcript || `${interaction.type.charAt(0).toUpperCase() + interaction.type.slice(1)} interaction`;
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             <div className="flex items-center justify-between mb-6">
                 <Link
                     href="/tasks"

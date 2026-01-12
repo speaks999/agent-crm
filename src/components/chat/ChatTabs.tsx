@@ -28,7 +28,7 @@ export function ChatTabs() {
 
   return (
     <div className="border-b border-border bg-background">
-      <div className="flex items-center gap-2 px-8 py-3 overflow-x-auto">
+      <div className="flex items-center gap-1 sm:gap-2 px-4 sm:px-8 py-3 overflow-x-auto">
         {tabs.map((tab) => {
           const isActive = 
             pathname === tab.href || 
@@ -47,7 +47,7 @@ export function ChatTabs() {
               key={tab.id}
               href={tab.href}
               className={`
-                flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap
+                flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors whitespace-nowrap
                 ${
                   isActive
                     ? 'bg-primary text-primary-foreground'

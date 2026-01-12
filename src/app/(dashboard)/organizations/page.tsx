@@ -126,7 +126,7 @@ export default function AccountsPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
                 <div className="flex items-center gap-4">
                     <Link 

@@ -656,7 +656,7 @@ export default function MCPTestPage() {
     const allTools = Array.from(new Set(MCP_TESTS.map(t => t.tool)));
 
     return (
-        <div className="flex-1 overflow-auto p-8 bg-background">
+        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-background">
             <div className="max-w-7xl mx-auto">
                 <div className="mb-6">
                     <h1 className="text-3xl font-bold text-foreground mb-2">MCP Server Test Suite</h1>

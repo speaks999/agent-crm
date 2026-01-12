@@ -119,7 +119,7 @@ export default function TasksPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center gap-4">
                     <Link
