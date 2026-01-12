@@ -36,9 +36,9 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen supports-[height:100dvh]:min-h-dvh flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        <div className="bg-card rounded-xl border border-border p-8 shadow-lg">
+        <div className="bg-card rounded-xl border border-border p-6 sm:p-8 shadow-lg">
           {/* Header */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-xl mb-4">

@@ -362,7 +362,7 @@ export default function TeamMemberDetailPage() {
 
     if (error || !member) {
         return (
-            <div className="flex-1 overflow-auto p-8 bg-background">
+            <div className="flex-1 overflow-auto p-4 sm:p-8 bg-background">
                 <button
                     onClick={() => router.push('/team')}
                     className="flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 transition-colors"
@@ -382,7 +382,7 @@ export default function TeamMemberDetailPage() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8 bg-background">
+        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-background">
             {/* Back button */}
             <button
                 onClick={() => router.push('/team')}

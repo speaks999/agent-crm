@@ -99,7 +99,7 @@ export default function Header() {
 
     return (
         <header className="bg-card border-b border-border">
-            <div className="h-16 flex items-center justify-between px-8">
+            <div className="h-16 flex items-center justify-between px-4 sm:px-8">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         {/* Show white logo on dark backgrounds, black logo on light backgrounds */}
@@ -108,7 +108,7 @@ export default function Header() {
                                 key="logo-white"
                                 src="/Logo White.png"
                                 alt="Whitespace logo"
-                                className="h-10 w-auto"
+                                className="h-8 sm:h-10 w-auto"
                                 loading="eager"
                             />
                         ) : (
@@ -116,7 +116,7 @@ export default function Header() {
                                 key="logo-black"
                                 src="/Logo Black.png"
                                 alt="Whitespace logo"
-                                className="h-10 w-auto"
+                                className="h-8 sm:h-10 w-auto"
                                 loading="eager"
                             />
                         )}
@@ -125,7 +125,7 @@ export default function Header() {
                 <div className="flex items-center gap-4">
                     {user && (
                         <>
-                            <div className="flex items-center gap-3 text-sm">
+                            <div className="flex items-center gap-3 text-sm min-w-0">
                                 <div className="w-8 h-8 rounded-full bg-primary overflow-hidden flex items-center justify-center text-primary-foreground text-xs font-semibold">
                                     {avatarUrl ? (
                                         <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
@@ -138,17 +138,17 @@ export default function Header() {
                                         })()
                                     )}
                                 </div>
-                                <span className="text-foreground">{user.email}</span>
+                                <span className="hidden sm:inline text-foreground truncate max-w-[260px]">{user.email}</span>
                             </div>
                             <button
                                 onClick={async () => {
                                     await signOut();
                                 }}
-                                className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+                                className="flex items-center gap-2 px-2 sm:px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
                                 title="Sign out"
                             >
                                 <LogOut size={16} />
-                                <span>Sign Out</span>
+                                <span className="hidden sm:inline">Sign Out</span>
                             </button>
                         </>
                     )}

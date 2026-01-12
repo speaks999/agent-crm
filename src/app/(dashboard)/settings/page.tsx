@@ -460,7 +460,7 @@ export default function SettingsPage() {
         : 'Not available';
 
     return (
-        <div className="flex flex-col h-full p-8 overflow-y-auto bg-background">
+        <div className="flex flex-col h-full p-4 sm:p-8 overflow-y-auto bg-background">
             <div className="mb-6">
                 <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
                 <p className="text-muted-foreground">Manage your account preferences and settings</p>

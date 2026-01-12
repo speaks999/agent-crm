@@ -362,9 +362,9 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-auto p-4 sm:p-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
@@ -383,16 +383,16 @@ export default function Dashboard() {
                         {syncStatus === 'offline' && <CloudOff size={16} className="text-muted-foreground" />}
                     </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
                     <button
                         onClick={handleResetWidgets}
-                        className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full sm:w-auto text-center"
                     >
                         Reset Layout
                     </button>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors font-medium"
+                        className="flex items-center justify-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors font-medium w-full sm:w-auto"
                     >
                         <Plus size={18} />
                         Add Widget

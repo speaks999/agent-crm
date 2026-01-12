@@ -410,7 +410,7 @@ export default function TeamPage() {
     const safeMembers = Array.isArray(members) ? members : [];
 
     return (
-        <div className="flex-1 overflow-auto p-8 bg-background">
+        <div className="flex-1 overflow-auto p-4 sm:p-8 bg-background">
             <div className="flex justify-between items-center mb-6">
                 <div>
                     <h2 className="text-2xl font-bold text-foreground">Team</h2>
