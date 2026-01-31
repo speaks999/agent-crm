@@ -16,6 +16,7 @@ import {
     UserCheck,
     UserX,
 } from 'lucide-react';
+import { getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface TeamMember {
     id: string;
@@ -55,9 +56,11 @@ function EditMemberModal({
         setError(null);
 
         try {
+            const headers = await getAuthHeaders();
             const response = await fetch('/api/team', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
+                credentials: 'include',
                 body: JSON.stringify({ id: member.id, ...formData }),
             });
 
@@ -201,8 +204,11 @@ function DeleteConfirmModal({
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
+            const headers = await getAuthHeaders();
             const response = await fetch(`/api/team?id=${member.id}`, {
                 method: 'DELETE',
+                headers,
+                credentials: 'include',
             });
 
             if (!response.ok) {
@@ -280,9 +286,10 @@ export default function TeamMemberDetailPage() {
     async function fetchMember() {
         try {
             setError(null);
+            const headers = await getAuthHeaders();
             // Fetch all members and find the one we need
             // (In production, you'd want a dedicated GET /api/team/:id endpoint)
-            const response = await fetch('/api/team');
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             const foundMember = Array.isArray(data) 
                 ? data.find((m: TeamMember) => m.id === memberId)
@@ -306,9 +313,11 @@ export default function TeamMemberDetailPage() {
         setIsTogglingStatus(true);
 
         try {
+            const headers = await getAuthHeaders();
             const response = await fetch('/api/team', {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
+                credentials: 'include',
                 body: JSON.stringify({ id: member.id, active: !member.active }),
             });
 

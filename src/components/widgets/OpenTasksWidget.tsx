@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { CheckCircle2, Phone, Mail, Calendar, FileText, AlertCircle, X, User, Briefcase, Clock, Pencil, Save, Loader2 } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Interaction {
     id: string;
@@ -74,22 +75,12 @@ function EditInteractionModal({
     useEffect(() => {
         async function fetchOptions() {
             try {
-                const [contactsRes, dealsRes] = await Promise.all([
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: 'list_contacts', arguments: {} }),
-                    }),
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name: 'list_deals', arguments: {} }),
-                    }),
+                const [contactsData, dealsData] = await Promise.all([
+                    fetchMCPData('list_contacts'),
+                    fetchMCPData('list_deals'),
                 ]);
-                const contactsData = await contactsRes.json();
-                const dealsData = await dealsRes.json();
-                setContacts(contactsData.result?.structuredContent?.contacts || []);
-                setDeals(dealsData.result?.structuredContent?.deals || []);
+                setContacts(contactsData.contacts || []);
+                setDeals(dealsData.deals || []);
             } catch (err) {
                 console.error('Failed to fetch options:', err);
             } finally {
@@ -124,19 +115,7 @@ function EditInteractionModal({
             if (formData.deal_id) args.deal_id = formData.deal_id;
             if (formData.sentiment) args.sentiment = formData.sentiment;
 
-            const response = await fetch('/api/mcp/call-tool', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: 'update_interaction',
-                    arguments: args,
-                }),
-            });
-
-            const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error.message || 'Failed to update');
-            }
+            await fetchMCPData('update_interaction', args);
 
             onSave({
                 ...interaction,
@@ -489,13 +468,8 @@ export function OpenTasksWidget({ config, onRemove, onResize, onSettings, onDrag
     useEffect(() => {
         async function fetchInteractions() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_interactions', arguments: {} }),
-                });
-                const result = await response.json();
-                const allInteractions = result.result?.structuredContent?.interactions || [];
+                const result = await fetchMCPData('list_interactions');
+                const allInteractions = result.interactions || [];
                 
                 // Sort by due_date (most urgent first), then by created_at (most recent first)
                 const sortedInteractions = allInteractions

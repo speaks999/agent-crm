@@ -68,6 +68,10 @@ export declare const dealToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
         };
         required: string[];
@@ -90,6 +94,7 @@ export declare const dealToolDefinitions: ({
             close_date?: undefined;
             status?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
         };
         required: string[];
     };
@@ -117,6 +122,10 @@ export declare const dealToolDefinitions: ({
                 description: string;
             };
             assigned_to: {
+                type: string;
+                description: string;
+            };
+            team_id: {
                 type: string;
                 description: string;
             };
@@ -170,6 +179,10 @@ export declare const dealToolDefinitions: ({
                 type: string[];
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
         };
         required: string[];
     };
@@ -194,6 +207,7 @@ export declare const dealToolDefinitions: ({
             close_date?: undefined;
             status?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
         };
         required: string[];
     };
@@ -219,6 +233,7 @@ export declare const dealToolDefinitions: ({
             stage?: undefined;
             close_date?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
         };
         required: string[];
     };

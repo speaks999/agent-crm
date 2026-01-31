@@ -19,6 +19,7 @@ import {
   X,
   Save,
 } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 type Contact = {
   id: string;
@@ -73,21 +74,6 @@ type Section<T> = {
   data: T[];
   isLoading: boolean;
 };
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-  const response = await fetch('/api/mcp/call-tool', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name: toolName, arguments: args }),
-  });
-  
-  if (!response.ok) {
-    throw new Error(`MCP request failed: ${response.status}`);
-  }
-  
-  const json = await response.json();
-  return json.result?.structuredContent || {};
-}
 
 export default function DataHubPage() {
   const [contacts, setContacts] = useState<Contact[]>([]);

@@ -6,6 +6,7 @@ export const CreateAccountSchema = z.object({
     website: z.string().url().optional().describe('Company website URL'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().optional().describe('Team member UUID to assign this account to'),
+    team_id: z.string().uuid().optional().describe('Team ID this account belongs to'),
 });
 export const UpdateAccountSchema = z.object({
     id: z.string().uuid().describe('Account ID'),
@@ -14,6 +15,7 @@ export const UpdateAccountSchema = z.object({
     website: z.string().url().optional().describe('Company website URL'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().nullable().optional().describe('Team member UUID to assign this account to'),
+    team_id: z.string().uuid().optional().describe('Team ID this account belongs to'),
 });
 export const CreateContactSchema = z.object({
     first_name: z.string().min(1).describe('First name'),
@@ -24,6 +26,7 @@ export const CreateContactSchema = z.object({
     role: z.string().optional().describe('Job title or role'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().optional().describe('Team member UUID to assign this contact to'),
+    team_id: z.string().uuid().optional().describe('Team ID this contact belongs to'),
 });
 export const UpdateContactSchema = z.object({
     id: z.string().uuid().describe('Contact ID'),
@@ -35,6 +38,7 @@ export const UpdateContactSchema = z.object({
     role: z.string().optional().describe('Job title or role'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().nullable().optional().describe('Team member UUID to assign this contact to'),
+    team_id: z.string().uuid().optional().describe('Team ID this contact belongs to'),
 });
 export const CreateDealSchema = z.object({
     name: z.string().min(1).describe('Deal name'),
@@ -46,6 +50,7 @@ export const CreateDealSchema = z.object({
     status: z.enum(['open', 'won', 'lost']).default('open').describe('Deal status'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().optional().describe('Team member UUID to assign this deal to'),
+    team_id: z.string().uuid().optional().describe('Team ID this deal belongs to'),
 });
 export const UpdateDealSchema = z.object({
     id: z.string().uuid().describe('Deal ID'),
@@ -58,15 +63,18 @@ export const UpdateDealSchema = z.object({
     status: z.enum(['open', 'won', 'lost']).optional().describe('Deal status'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().nullable().optional().describe('Team member UUID to assign this deal to'),
+    team_id: z.string().uuid().optional().describe('Team ID this deal belongs to'),
 });
 export const CreatePipelineSchema = z.object({
     name: z.string().min(1).describe('Pipeline name'),
     stages: z.array(z.string()).min(1).describe('List of pipeline stages'),
+    team_id: z.string().uuid().optional().describe('Team ID this pipeline belongs to'),
 });
 export const UpdatePipelineSchema = z.object({
     id: z.string().uuid().describe('Pipeline ID'),
     name: z.string().min(1).optional().describe('Pipeline name'),
     stages: z.array(z.string()).min(1).optional().describe('List of pipeline stages'),
+    team_id: z.string().uuid().optional().describe('Team ID this pipeline belongs to'),
 });
 const interactionTypes = ['call', 'meeting', 'email', 'note'];
 // Map common variations to standard types
@@ -105,6 +113,7 @@ export const CreateInteractionSchema = z.object({
     description: z.string().optional().describe('Task description - will be used as transcript if transcript not provided'),
     due_date: z.string().optional().describe('Due date for the task in ISO format (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)'),
     assigned_to: z.string().uuid().optional().describe('Team member UUID to assign this interaction/task to'),
+    team_id: z.string().uuid().optional().describe('Team ID this interaction belongs to'),
 });
 export const UpdateInteractionSchema = z.object({
     id: z.string().uuid().describe('Interaction ID'),
@@ -116,5 +125,6 @@ export const UpdateInteractionSchema = z.object({
     audio_url: z.string().url().optional().describe('URL to audio recording'),
     sentiment: z.string().optional().describe('Sentiment analysis result'),
     assigned_to: z.string().uuid().nullable().optional().describe('Team member UUID to assign this interaction/task to'),
+    team_id: z.string().uuid().optional().describe('Team ID this interaction belongs to'),
 });
 //# sourceMappingURL=types.js.map

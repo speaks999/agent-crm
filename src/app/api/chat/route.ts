@@ -1,8 +1,40 @@
 import { openai } from '@/lib/ai';
 import { generateText } from 'ai';
-import { callTool, listTools } from '@/lib/mcp-client';
+import { listTools } from '@/lib/mcp-client';
 
 export const maxDuration = 60;
+
+/**
+ * Call a tool via the internal /api/mcp/call-tool endpoint
+ * This ensures proper authentication and team_id injection
+ */
+async function callToolViaAPI(toolName: string, args: any, accessToken: string, requestUrl: string): Promise<any> {
+    // Use the same origin as the incoming request
+    const url = new URL(requestUrl);
+    const baseUrl = `${url.protocol}//${url.host}`;
+    
+    console.log(`[Chat] Internal API call with token: ${accessToken ? 'present' : 'none'}`);
+    
+    const response = await fetch(`${baseUrl}/api/mcp/call-tool`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: toolName,
+            arguments: args,
+            _accessToken: accessToken,
+        }),
+    });
+    
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`Tool call failed: ${response.status} - ${text}`);
+    }
+    
+    const data = await response.json();
+    return data.result;
+}
 
 /**
  * Safely extract and parse JSON from AI response text
@@ -42,7 +74,12 @@ function extractJSON(text: string): any {
 }
 
 export async function POST(req: Request) {
-    const { messages } = await req.json();
+    const body = await req.json();
+    const { messages, _accessToken } = body;
+    
+    // Use access token from body if available
+    const authToken = _accessToken || '';
+    console.log(`[Chat] Access token present: ${authToken ? 'yes' : 'no'}`);
 
     try {
         // Get available MCP tools
@@ -127,9 +164,15 @@ CORRECT APPROACH: First use search_contacts to find John Smith's ID, then use up
             userMessage.includes('distribution');
 
         if (intent.needsTool && intent.toolName) {
-            // Execute the tool
+            // Execute the tool via internal API (handles auth and team_id injection)
             try {
-                const toolResult = await callTool(intent.toolName, intent.args || {});
+                console.log(`[Chat] Calling tool ${intent.toolName} via internal API`);
+                const toolResult = await callToolViaAPI(
+                    intent.toolName, 
+                    intent.args || {}, 
+                    authToken,
+                    req.url
+                );
                 const resultText = toolResult.content[0]?.text || '';
                 structuredContent = toolResult.structuredContent;
 

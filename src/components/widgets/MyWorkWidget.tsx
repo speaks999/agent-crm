@@ -15,6 +15,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import Link from 'next/link';
+import { fetchTeamMembers, fetchMCPData } from '@/lib/fetchMCPData';
 
 interface TeamMember {
     id: string;
@@ -81,10 +82,7 @@ export function MyWorkWidget({ config, onRemove, onResize, onSettings, onDragSta
         async function fetchData() {
             try {
                 // First, get the current user (first team member for now, or could be from session)
-                const teamRes = await fetch('/api/team');
-                const teamData = await teamRes.json();
-                // API returns array directly, or error object
-                const teamMembers = Array.isArray(teamData) ? teamData : [];
+                const teamMembers = await fetchTeamMembers();
                 
                 if (teamMembers.length === 0) {
                     setIsLoading(false);
@@ -101,52 +99,17 @@ export function MyWorkWidget({ config, onRemove, onResize, onSettings, onDragSta
                 setCurrentUser(user);
 
                 // Fetch all entities assigned to this user in parallel
-                const [dealsRes, tasksRes, contactsRes, accountsRes] = await Promise.all([
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            name: 'list_deals', 
-                            arguments: { assigned_to: user.id } 
-                        }),
-                    }),
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            name: 'list_interactions', 
-                            arguments: { assigned_to: user.id } 
-                        }),
-                    }),
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            name: 'list_contacts', 
-                            arguments: { assigned_to: user.id } 
-                        }),
-                    }),
-                    fetch('/api/mcp/call-tool', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            name: 'list_accounts', 
-                            arguments: { assigned_to: user.id } 
-                        }),
-                    }),
-                ]);
-
                 const [dealsData, tasksData, contactsData, accountsData] = await Promise.all([
-                    dealsRes.json(),
-                    tasksRes.json(),
-                    contactsRes.json(),
-                    accountsRes.json(),
+                    fetchMCPData('list_deals', { assigned_to: user.id }),
+                    fetchMCPData('list_interactions', { assigned_to: user.id }),
+                    fetchMCPData('list_contacts', { assigned_to: user.id }),
+                    fetchMCPData('list_accounts', { assigned_to: user.id }),
                 ]);
 
-                setDeals(dealsData.result?.structuredContent?.deals || []);
-                setTasks(tasksData.result?.structuredContent?.interactions || []);
-                setContacts(contactsData.result?.structuredContent?.contacts || []);
-                setAccounts(accountsData.result?.structuredContent?.accounts || []);
+                setDeals(dealsData.deals || []);
+                setTasks(tasksData.interactions || []);
+                setContacts(contactsData.contacts || []);
+                setAccounts(accountsData.accounts || []);
             } catch (error) {
                 console.error('Failed to fetch my work data:', error);
             } finally {

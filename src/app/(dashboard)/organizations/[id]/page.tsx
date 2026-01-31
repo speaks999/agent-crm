@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Building2, Loader2, ArrowLeft, Globe, Briefcase, Calendar, Trash2, Pencil, X, Save, User, Mail, Phone, Users, Plus, Tag, UserCircle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Account {
     id: string;
@@ -84,19 +85,7 @@ function EditAccountModal({
                 args.assigned_to = null; // Explicitly unassign
             }
 
-            const response = await fetch('/api/mcp/call-tool', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: 'update_account',
-                    arguments: args,
-                }),
-            });
-
-            const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error.message || 'Failed to update');
-            }
+            await fetchMCPData('update_account', args);
 
             onSave({
                 ...account,
@@ -225,21 +214,6 @@ function EditAccountModal({
     );
 }
 
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.result?.structuredContent || {};
-}
-
 export default function AccountDetailPage() {
     const params = useParams();
     const router = useRouter();
@@ -351,7 +325,8 @@ export default function AccountDetailPage() {
                 // Fetch assigned team member if exists
                 if (accountData.assigned_to) {
                     try {
-                        const response = await fetch('/api/team');
+                        const headers = await getAuthHeaders();
+                        const response = await fetch('/api/team', { headers, credentials: 'include' });
                         const members = await response.json();
                         if (Array.isArray(members)) {
                             const member = members.find((m: TeamMember) => m.id === accountData.assigned_to);
@@ -383,7 +358,8 @@ export default function AccountDetailPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             const members = Array.isArray(data) ? data : [];
             setTeamMembers(members);

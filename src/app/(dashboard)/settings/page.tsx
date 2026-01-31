@@ -212,7 +212,7 @@ export default function SettingsPage() {
         }
     }, []);
 
-    // Hydrate account details from the authenticated user (Supabase).
+    // Hydrate account details from the authenticated user (Supabase) and localStorage.
     // Avoid overwriting in-progress edits by skipping hydration while editing.
     useEffect(() => {
         if (!user) return;
@@ -238,18 +238,30 @@ export default function SettingsPage() {
             memberSince: memberSince || prev.memberSince,
         }));
 
-        if (!avatarPreview && metadata.avatar_url) {
-            setAvatarPreview(metadata.avatar_url);
+        // Load avatar from user-specific localStorage key first, then fall back to Supabase metadata
+        const storageKey = `profileAvatar_${user.id}`;
+        const localAvatar = localStorage.getItem(storageKey);
+        
+        if (!avatarPreview) {
+            if (localAvatar) {
+                setAvatarPreview(localAvatar);
+            } else if (metadata.avatar_url) {
+                setAvatarPreview(metadata.avatar_url);
+            }
         }
 
-        if (!savedAvatar && metadata.avatar_url) {
-            setSavedAvatar(metadata.avatar_url);
+        if (!savedAvatar) {
+            if (localAvatar) {
+                setSavedAvatar(localAvatar);
+            } else if (metadata.avatar_url) {
+                setSavedAvatar(metadata.avatar_url);
+            }
         }
 
         setHasHydratedAccount(true);
     }, [user, avatarPreview, savedAvatar, isEditingAccount]);
 
-    // Save avatar only (for quick avatar changes outside of full profile edit)
+    // Save avatar only (uses user-specific localStorage key)
     const handleAvatarSave = async () => {
         if (!user) {
             setAccountMessage({ type: 'error', text: 'You must be signed in to update your profile picture.' });
@@ -259,40 +271,20 @@ export default function SettingsPage() {
         setIsSavingAvatar(true);
         setAccountMessage(null);
 
+        // Save to localStorage with user-specific key
+        const storageKey = `profileAvatar_${user.id}`;
         try {
-            const { data: sessionCheck, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !sessionCheck.session) {
-                const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
-                if (refreshError || !refreshed.session) {
-                    setAccountMessage({ type: 'error', text: 'Session expired. Please sign in again.' });
-                    return;
-                }
-            }
-
-            const { error } = await supabase.auth.updateUser({
-                data: {
-                    avatar_url: avatarPreview || undefined,
-                },
-            });
-
-            if (error) {
-                setAccountMessage({ type: 'error', text: error.message || 'Failed to update profile picture.' });
+            if (avatarPreview) {
+                localStorage.setItem(storageKey, avatarPreview);
             } else {
-                setAccountMessage({ type: 'success', text: 'Profile picture updated!' });
-                setSavedAvatar(avatarPreview || null);
-                setAvatarPendingSave(false);
-                try {
-                    if (avatarPreview) {
-                        localStorage.setItem('profileAvatar', avatarPreview);
-                    } else {
-                        localStorage.removeItem('profileAvatar');
-                    }
-                } catch (err) {
-                    console.error('Failed to persist avatar locally', err);
-                }
+                localStorage.removeItem(storageKey);
             }
-        } catch (err: any) {
-            setAccountMessage({ type: 'error', text: err?.message || 'Unexpected error while updating profile picture.' });
+            setSavedAvatar(avatarPreview || null);
+            setAvatarPendingSave(false);
+            setAccountMessage({ type: 'success', text: 'Profile picture updated!' });
+        } catch (err) {
+            console.error('Failed to persist avatar locally', err);
+            setAccountMessage({ type: 'error', text: 'Failed to save profile picture.' });
         } finally {
             setIsSavingAvatar(false);
         }
@@ -375,11 +367,13 @@ export default function SettingsPage() {
                 setIsEditingAccount(false);
                 setSavedAvatar(avatarPreview || null);
                 setAvatarPendingSave(false);
+                // Save avatar with user-specific key
+                const storageKey = `profileAvatar_${user.id}`;
                 try {
                     if (avatarPreview) {
-                        localStorage.setItem('profileAvatar', avatarPreview);
+                        localStorage.setItem(storageKey, avatarPreview);
                     } else {
-                        localStorage.removeItem('profileAvatar');
+                        localStorage.removeItem(storageKey);
                     }
                 } catch (err) {
                     console.error('Failed to persist avatar locally', err);

@@ -33,6 +33,10 @@ export declare const pipelineToolDefinitions: ({
                 };
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
         };
         required: string[];
@@ -49,6 +53,7 @@ export declare const pipelineToolDefinitions: ({
             };
             name?: undefined;
             stages?: undefined;
+            team_id?: undefined;
         };
         required: string[];
     };
@@ -58,6 +63,10 @@ export declare const pipelineToolDefinitions: ({
     inputSchema: {
         type: string;
         properties: {
+            team_id: {
+                type: string;
+                description: string;
+            };
             name?: undefined;
             stages?: undefined;
             id?: undefined;
@@ -85,6 +94,7 @@ export declare const pipelineToolDefinitions: ({
                 };
                 description: string;
             };
+            team_id?: undefined;
         };
         required: string[];
     };

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { ToolResultCard } from './ToolResultCard';
 import { ChevronDown, Plus, Trash2, MessageSquare } from 'lucide-react';
+import { getAuthHeaders, getAccessToken } from '@/lib/fetchMCPData';
 
 export interface MessageAction {
     label: string;
@@ -281,9 +282,11 @@ export function ChatInterface() {
 
         try {
             // Call MCP tool through our API (avoids CORS issues)
+            const headers = await getAuthHeaders();
             const response = await fetch('/api/mcp/call-tool', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
+                credentials: 'include',
                 body: JSON.stringify({
                     name: action.toolName,
                     arguments: action.args,
@@ -362,6 +365,9 @@ export function ChatInterface() {
         setMessages(prev => [...prev, assistantMessage]);
 
         try {
+            // Get access token and send in body (avoids header size limits)
+            const accessToken = await getAccessToken();
+            
             // Call chat API endpoint
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -371,6 +377,7 @@ export function ChatInterface() {
                         role: m.role,
                         content: m.content,
                     })),
+                    _accessToken: accessToken,
                 }),
             });
 

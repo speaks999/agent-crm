@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Deal {
     id: string;
@@ -42,13 +43,8 @@ export function DealsPipelineWidget({ config, onRemove, onResize, onSettings, on
     useEffect(() => {
         async function fetchDeals() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_deals', arguments: {} }),
-                });
-                const result = await response.json();
-                const deals = result.result?.structuredContent?.deals || [];
+                const result = await fetchMCPData('list_deals');
+                const deals = result.deals || [];
                 
                 // Group by stage
                 const stageMap: Record<string, { count: number; value: number; deals: Deal[] }> = {};

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Phone, MessageSquare, Mail, FileText, Calendar, User, Briefcase, Trash2, Clock, UserCircle } from 'lucide-react';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Interaction {
     id: string;
@@ -38,21 +39,6 @@ interface TeamMember {
     last_name: string;
     email: string;
     role: string;
-}
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-    
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-    
-    const json = await response.json();
-    return json.result?.structuredContent || {};
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -102,7 +88,8 @@ export default function TaskDetailPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             const members = Array.isArray(data) ? data : [];
             setTeamMembers(members);
@@ -138,7 +125,8 @@ export default function TaskDetailPage() {
         async function fetchData() {
             try {
                 // First fetch team members
-                const teamResponse = await fetch('/api/team');
+                const headers = await getAuthHeaders();
+                const teamResponse = await fetch('/api/team', { headers, credentials: 'include' });
                 const teamData = await teamResponse.json();
                 const members = Array.isArray(teamData) ? teamData : [];
                 setTeamMembers(members);

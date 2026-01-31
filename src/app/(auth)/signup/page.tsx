@@ -4,11 +4,14 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, Send } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, CheckCircle2, AlertCircle, ArrowRight, Send, User, Building2 } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
   const { signUp, resendConfirmationEmail } = useAuth();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,6 +47,16 @@ export default function SignupPage() {
     setError(null);
     setSuccess(false);
 
+    // Validate required fields
+    if (!firstName.trim()) {
+      setError('First name is required');
+      return;
+    }
+    if (!lastName.trim()) {
+      setError('Last name is required');
+      return;
+    }
+
     // Validate passwords match
     if (password !== confirmPassword) {
       setError('Passwords do not match');
@@ -60,7 +73,13 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const { error, needsConfirmation } = await signUp(email, password);
+      const { error, needsConfirmation } = await signUp({
+        email,
+        password,
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        companyName: companyName.trim() || undefined,
+      });
 
       if (error) {
         setError(error.message);
@@ -172,9 +191,71 @@ export default function SignupPage() {
           {/* Signup Form */}
           {!needsConfirmation && (
             <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Fields - Side by Side */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-foreground mb-2">
+                  First Name <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    id="firstName"
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                    placeholder="John"
+                    disabled={loading || success}
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-foreground mb-2">
+                  Last Name <span className="text-destructive">*</span>
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    id="lastName"
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                    placeholder="Doe"
+                    disabled={loading || success}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Company Name - Optional */}
+            <div>
+              <label htmlFor="companyName" className="block text-sm font-medium text-foreground mb-2">
+                Company Name <span className="text-muted-foreground text-xs">(optional)</span>
+              </label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input
+                  id="companyName"
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
+                  placeholder="Acme Inc."
+                  disabled={loading || success}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                This will be used as your team name
+              </p>
+            </div>
+
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                Email Address
+                Email Address <span className="text-destructive">*</span>
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />

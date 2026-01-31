@@ -149,6 +149,10 @@ export async function handleDealTool(request: any, supabase: SupabaseClient) {
         if ('assigned_to' in args && args.assigned_to !== undefined) {
             insertData.assigned_to = args.assigned_to;
         }
+        // Include team_id if provided
+        if ('team_id' in args && args.team_id !== undefined) {
+            insertData.team_id = args.team_id;
+        }
         const { data, error } = await supabase
             .from('deals')
             .insert(insertData)
@@ -278,10 +282,11 @@ export async function handleDealTool(request: any, supabase: SupabaseClient) {
 
     // List Deals
     if (request.params.name === 'list_deals') {
-        const { account_id, pipeline_id, status, stage, assigned_to } = request.params.arguments || {};
+        const { account_id, pipeline_id, status, stage, assigned_to, team_id } = request.params.arguments || {};
 
         let query = supabase.from('deals').select('*');
 
+        if (team_id) query = query.eq('team_id', team_id);
         if (account_id) query = query.eq('account_id', account_id);
         if (pipeline_id) query = query.eq('pipeline_id', pipeline_id);
         if (status) query = query.eq('status', status);
@@ -527,6 +532,7 @@ export const dealToolDefinitions = [
                 close_date: { type: 'string', description: 'Expected close date (YYYY-MM-DD)' },
                 status: { type: 'string', enum: ['open', 'won', 'lost'], description: 'Deal status' },
                 assigned_to: { type: 'string', description: 'Team member UUID to assign this deal to' },
+                team_id: { type: 'string', description: 'Team ID this deal belongs to' },
             },
             required: ['name', 'stage'],
         },
@@ -553,6 +559,7 @@ export const dealToolDefinitions = [
                 status: { type: 'string', enum: ['open', 'won', 'lost'], description: 'Filter by status' },
                 stage: { type: 'string', description: 'Filter by stage' },
                 assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
+                team_id: { type: 'string', description: 'Filter by team ID' },
             },
         },
     },
@@ -571,6 +578,7 @@ export const dealToolDefinitions = [
                 close_date: { type: 'string', description: 'Expected close date (YYYY-MM-DD)' },
                 status: { type: 'string', enum: ['open', 'won', 'lost'], description: 'Deal status' },
                 assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this deal to (null to unassign)' },
+                team_id: { type: 'string', description: 'Team ID this deal belongs to' },
             },
             required: ['id'],
         },

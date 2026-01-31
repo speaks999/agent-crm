@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { Users, UserPlus, Building2 } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface ContactStats {
     total: number;
@@ -18,13 +19,8 @@ export function ContactsSummaryWidget({ config, onRemove, onResize, onSettings, 
     useEffect(() => {
         async function fetchStats() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_contacts', arguments: {} }),
-                });
-                const result = await response.json();
-                const contacts = result.result?.structuredContent?.contacts || [];
+                const result = await fetchMCPData('list_contacts');
+                const contacts = result.contacts || [];
                 
                 const weekAgo = new Date();
                 weekAgo.setDate(weekAgo.getDate() - 7);

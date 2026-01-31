@@ -3,7 +3,44 @@ import { checkDuplicateContact } from '../utils/deduplication.js';
 export async function handleContactTool(request, supabase) {
     // Create Contact
     if (request.params.name === 'create_contact') {
-        const args = CreateContactSchema.parse(request.params.arguments);
+        // Pre-process arguments to handle common AI variations
+        let rawArgs = { ...request.params.arguments };
+        // Handle case where AI sends "name" instead of "first_name"/"last_name"
+        if (rawArgs.name && (!rawArgs.first_name || !rawArgs.last_name)) {
+            const nameParts = String(rawArgs.name).trim().split(/\s+/);
+            if (nameParts.length >= 2) {
+                rawArgs.first_name = rawArgs.first_name || nameParts[0];
+                rawArgs.last_name = rawArgs.last_name || nameParts.slice(1).join(' ');
+            }
+            else if (nameParts.length === 1) {
+                rawArgs.first_name = rawArgs.first_name || nameParts[0];
+                rawArgs.last_name = rawArgs.last_name || '';
+            }
+            delete rawArgs.name;
+        }
+        // Ensure first_name and last_name are strings (handle undefined/null)
+        rawArgs.first_name = rawArgs.first_name ? String(rawArgs.first_name) : '';
+        rawArgs.last_name = rawArgs.last_name ? String(rawArgs.last_name) : '';
+        // If still missing required fields, return helpful error
+        if (!rawArgs.first_name.trim()) {
+            return {
+                content: [{
+                        type: 'text',
+                        text: `Error: first_name is required. Please provide the contact's first name.`,
+                    }],
+                isError: true,
+            };
+        }
+        if (!rawArgs.last_name.trim()) {
+            return {
+                content: [{
+                        type: 'text',
+                        text: `Error: last_name is required. Please provide the contact's last name.`,
+                    }],
+                isError: true,
+            };
+        }
+        const args = CreateContactSchema.parse(rawArgs);
         // Check for duplicates before creating
         const duplicateCheck = await checkDuplicateContact(supabase, {
             first_name: args.first_name,
@@ -141,6 +178,10 @@ export async function handleContactTool(request, supabase) {
         if ('assigned_to' in args && args.assigned_to !== undefined) {
             insertData.assigned_to = args.assigned_to;
         }
+        // Include team_id if provided
+        if ('team_id' in args && args.team_id !== undefined) {
+            insertData.team_id = args.team_id;
+        }
         const { data, error } = await supabase
             .from('contacts')
             .insert(insertData)
@@ -265,8 +306,11 @@ export async function handleContactTool(request, supabase) {
     }
     // List Contacts
     if (request.params.name === 'list_contacts') {
-        const { account_id, tags, assigned_to } = request.params.arguments || {};
+        const { account_id, tags, assigned_to, team_id } = request.params.arguments || {};
         let query = supabase.from('contacts').select('*');
+        if (team_id) {
+            query = query.eq('team_id', team_id);
+        }
         if (account_id) {
             query = query.eq('account_id', account_id);
         }
@@ -619,6 +663,7 @@ export const contactToolDefinitions = [
                 phone: { type: 'string', description: 'Phone number' },
                 role: { type: 'string', description: 'Job title or role' },
                 assigned_to: { type: 'string', description: 'Team member UUID to assign this contact to' },
+                team_id: { type: 'string', description: 'Team ID this contact belongs to' },
             },
             required: ['first_name', 'last_name'],
         },
@@ -642,6 +687,7 @@ export const contactToolDefinitions = [
             properties: {
                 account_id: { type: 'string', description: 'Filter by account UUID' },
                 assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
+                team_id: { type: 'string', description: 'Filter by team ID' },
             },
         },
     },
@@ -659,6 +705,7 @@ export const contactToolDefinitions = [
                 phone: { type: 'string', description: 'Phone number' },
                 role: { type: 'string', description: 'Job title or role' },
                 assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this contact to (null to unassign)' },
+                team_id: { type: 'string', description: 'Team ID this contact belongs to' },
             },
             required: ['id'],
         },

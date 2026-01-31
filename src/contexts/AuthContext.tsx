@@ -5,11 +5,19 @@ import { User, Session, AuthError } from '@supabase/supabase-js';
 import { createBrowserClient } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 
+interface SignUpData {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  companyName?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string) => Promise<{ error: AuthError | null; needsConfirmation?: boolean }>;
+  signUp: (data: SignUpData) => Promise<{ error: AuthError | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
@@ -54,13 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, [supabase.auth]);
 
-  const signUp = async (email: string, password: string) => {
+  const signUp = async ({ email, password, firstName, lastName, companyName }: SignUpData) => {
     // Email confirmations are enabled - users must confirm their email
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          company_name: companyName || undefined,
+        },
       },
     });
 

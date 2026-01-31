@@ -21,6 +21,7 @@ import {
     Pencil,
     UserCircle,
 } from 'lucide-react';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Deal {
     id: string;
@@ -61,21 +62,6 @@ const STAGE_COLORS = [
     'bg-blue-500', 'bg-purple-500', 'bg-cyan-500', 'bg-emerald-500',
     'bg-amber-500', 'bg-orange-500', 'bg-rose-500', 'bg-pink-500',
 ];
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.result?.structuredContent || {};
-}
 
 function EditDealModal({
     deal,
@@ -129,19 +115,7 @@ function EditDealModal({
                 args.assigned_to = null; // Explicitly unassign
             }
 
-            const response = await fetch('/api/mcp/call-tool', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: 'update_deal',
-                    arguments: args,
-                }),
-            });
-
-            const result = await response.json();
-            if (result.error) {
-                throw new Error(result.error.message || 'Failed to update');
-            }
+            await fetchMCPData('update_deal', args);
 
             onSave({
                 ...deal,
@@ -364,7 +338,8 @@ export default function DealDetailPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             const members = Array.isArray(data) ? data : [];
             setTeamMembers(members);
@@ -600,7 +575,8 @@ export default function DealDetailPage() {
                 // Fetch assigned team member if exists
                 if (dealData.assigned_to) {
                     try {
-                        const response = await fetch('/api/team');
+                        const headers = await getAuthHeaders();
+                        const response = await fetch('/api/team', { headers, credentials: 'include' });
                         const members = await response.json();
                         if (Array.isArray(members)) {
                             const member = members.find((m: TeamMember) => m.id === dealData.assigned_to);

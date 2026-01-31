@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface DealData {
     stage: string;
@@ -18,13 +19,8 @@ export function RevenueChartWidget({ config, onRemove, onResize, onSettings, onD
     useEffect(() => {
         async function fetchData() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_deals', arguments: {} }),
-                });
-                const result = await response.json();
-                const deals = result.result?.structuredContent?.deals || [];
+                const result = await fetchMCPData('list_deals');
+                const deals = result.deals || [];
                 
                 // Group by stage
                 const stageData: Record<string, { amount: number; count: number }> = {};

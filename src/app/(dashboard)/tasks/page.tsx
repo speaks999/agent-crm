@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, CheckSquare, Loader2, Plus, Calendar, MessageSquare, Phone, Mail, FileText, Clock, UserCircle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Interaction {
     id: string;
@@ -21,21 +22,6 @@ interface TeamMember {
     first_name: string;
     last_name: string;
     email: string;
-}
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-    
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-    
-    const json = await response.json();
-    return json.result?.structuredContent || {};
 }
 
 const typeIcons: Record<string, React.ReactNode> = {
@@ -78,7 +64,8 @@ export default function TasksPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             setTeamMembers(Array.isArray(data) ? data : []);
         } catch (error) {

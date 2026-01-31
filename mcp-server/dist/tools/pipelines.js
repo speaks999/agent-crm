@@ -34,12 +34,16 @@ export async function handlePipelineTool(request, supabase) {
     // Create Pipeline
     if (request.params.name === 'create_pipeline') {
         const args = CreatePipelineSchema.parse(request.params.arguments);
-        const { data, error } = await supabase
-            .from('pipelines')
-            .insert({
+        const insertData = {
             name: args.name,
             stages: args.stages,
-        })
+        };
+        if (args.team_id) {
+            insertData.team_id = args.team_id;
+        }
+        const { data, error } = await supabase
+            .from('pipelines')
+            .insert(insertData)
             .select()
             .single();
         if (error) {
@@ -86,9 +90,12 @@ export async function handlePipelineTool(request, supabase) {
     }
     // List Pipelines
     if (request.params.name === 'list_pipelines') {
-        const { data, error } = await supabase
-            .from('pipelines')
-            .select('*');
+        const { team_id } = request.params.arguments || {};
+        let query = supabase.from('pipelines').select('*');
+        if (team_id) {
+            query = query.eq('team_id', team_id);
+        }
+        const { data, error } = await query;
         if (error) {
             return {
                 content: [{ type: 'text', text: `Error: ${error.message}` }],
@@ -257,6 +264,7 @@ export const pipelineToolDefinitions = [
                     items: { type: 'string' },
                     description: 'List of pipeline stages (e.g., ["Lead", "Discovery", "Proposal", "Closed"])'
                 },
+                team_id: { type: 'string', description: 'Team ID this pipeline belongs to' },
             },
             required: ['name', 'stages'],
         },
@@ -277,7 +285,9 @@ export const pipelineToolDefinitions = [
         description: 'List all pipelines',
         inputSchema: {
             type: 'object',
-            properties: {},
+            properties: {
+                team_id: { type: 'string', description: 'Filter by team ID' },
+            },
         },
     },
     {

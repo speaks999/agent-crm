@@ -67,6 +67,10 @@ export declare const interactionToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
         };
         required: string[];
@@ -92,6 +96,7 @@ export declare const interactionToolDefinitions: ({
             audio_url?: undefined;
             sentiment?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
         };
         required: string[];
     };
@@ -115,6 +120,10 @@ export declare const interactionToolDefinitions: ({
                 description: string;
             };
             assigned_to: {
+                type: string;
+                description: string;
+            };
+            team_id: {
                 type: string;
                 description: string;
             };
@@ -170,6 +179,10 @@ export declare const interactionToolDefinitions: ({
             };
             assigned_to: {
                 type: string[];
+                description: string;
+            };
+            team_id: {
+                type: string;
                 description: string;
             };
             title?: undefined;

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Mail, Shield, User, Loader2, Pencil, Trash2, X, MoreVertical } from 'lucide-react';
+import { getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface TeamMember {
     id: string;
@@ -40,9 +41,11 @@ function TeamMemberModal({
         setError(null);
 
         try {
+            const headers = await getAuthHeaders();
             const response = await fetch('/api/team', {
                 method: isEditing ? 'PUT' : 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
+                credentials: 'include',
                 body: JSON.stringify(isEditing ? { id: member.id, ...formData } : formData),
             });
 
@@ -186,8 +189,11 @@ function DeleteConfirmModal({
     const handleDelete = async () => {
         setIsDeleting(true);
         try {
+            const headers = await getAuthHeaders();
             const response = await fetch(`/api/team?id=${member.id}`, {
                 method: 'DELETE',
+                headers,
+                credentials: 'include',
             });
 
             if (!response.ok) {
@@ -371,7 +377,8 @@ export default function TeamPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             setMembers(Array.isArray(data) ? data : []);
         } catch (error) {

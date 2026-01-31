@@ -7,6 +7,7 @@ import {
     MoreVertical, Building2
 } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Deal {
     id: string;
@@ -29,16 +30,6 @@ interface Pipeline {
 interface Account {
     id: string;
     name: string;
-}
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-    const json = await response.json();
-    return json.result?.structuredContent || {};
 }
 
 // Stage colors (hex values for inline styles - ensures they always work)

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { MessageSquare, Phone, Mail, Calendar, User, FileText } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Activity {
     id: string;
@@ -20,13 +21,8 @@ export function RecentActivityWidget({ config, onRemove, onResize, onSettings, o
     useEffect(() => {
         async function fetchActivities() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_interactions', arguments: { limit: 10 } }),
-                });
-                const result = await response.json();
-                const interactions = result.result?.structuredContent?.interactions || [];
+                const result = await fetchMCPData('list_interactions', { limit: 10 });
+                const interactions = result.interactions || [];
                 
                 setActivities(interactions.slice(0, 6).map((i: any) => ({
                     id: i.id,

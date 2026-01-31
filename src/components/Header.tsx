@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogOut } from 'lucide-react';
+import TeamSwitcher from './TeamSwitcher';
 
 export default function Header() {
     const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -17,14 +18,45 @@ export default function Header() {
     const pathname = usePathname();
     const { user, signOut } = useAuth();
 
+    // Load avatar and keep it in sync with localStorage changes (user-specific)
+    const userId = user?.id;
     useEffect(() => {
-        try {
-            const saved = localStorage.getItem('profileAvatar');
-            if (saved) setAvatarUrl(saved);
-        } catch (err) {
-            console.error('Failed to load avatar', err);
+        if (!userId) {
+            setAvatarUrl(null);
+            return;
         }
-    }, []);
+
+        const storageKey = `profileAvatar_${userId}`;
+
+        const loadAvatar = () => {
+            try {
+                const saved = localStorage.getItem(storageKey);
+                setAvatarUrl(saved);
+            } catch (err) {
+                console.error('Failed to load avatar', err);
+            }
+        };
+
+        // Initial load
+        loadAvatar();
+
+        // Listen for changes from other tabs
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === storageKey) {
+                setAvatarUrl(e.newValue);
+            }
+        };
+
+        // Poll for changes in the same tab (storage event only fires cross-tab)
+        const interval = setInterval(loadAvatar, 1000);
+
+        window.addEventListener('storage', handleStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            clearInterval(interval);
+        };
+    }, [userId]);
 
     // Ensure the document has the correct theme class so dark logos swap correctly.
     useEffect(() => {
@@ -125,16 +157,47 @@ export default function Header() {
                 <div className="flex items-center gap-4">
                     {user && (
                         <>
+                            <TeamSwitcher />
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="w-8 h-8 rounded-full bg-primary overflow-hidden flex items-center justify-center text-primary-foreground text-xs font-semibold">
                                     {avatarUrl ? (
                                         <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                                     ) : (
                                         (() => {
+                                            // Try to get initials from user metadata first
+                                            const metadata = user.user_metadata || {};
+                                            const fullName = metadata.full_name || metadata.name || '';
+                                            const firstName = metadata.first_name || '';
+                                            const lastName = metadata.last_name || '';
+                                            
+                                            // If we have first/last name from metadata
+                                            if (firstName && lastName) {
+                                                return (firstName.charAt(0) + lastName.charAt(0)).toUpperCase();
+                                            }
+                                            
+                                            // If we have a full name, split it
+                                            if (fullName) {
+                                                const parts = fullName.trim().split(/\s+/);
+                                                if (parts.length >= 2) {
+                                                    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
+                                                }
+                                                return fullName.charAt(0).toUpperCase();
+                                            }
+                                            
+                                            // Fall back to parsing email username
                                             const username = user.email?.split('@')[0] || '';
-                                            const first = username.charAt(0).toUpperCase();
-                                            const last = username.charAt(username.length - 1).toUpperCase();
-                                            return first + last;
+                                            // Try to split by common separators (., _, -)
+                                            const nameParts = username.split(/[._-]/);
+                                            if (nameParts.length >= 2) {
+                                                return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+                                            }
+                                            // Try to detect camelCase or concatenated names
+                                            const camelMatch = username.match(/^([a-z]).*?([A-Z])/);
+                                            if (camelMatch) {
+                                                return (camelMatch[1] + camelMatch[2]).toUpperCase();
+                                            }
+                                            // Last resort: first letter only
+                                            return username.charAt(0).toUpperCase();
                                         })()
                                     )}
                                 </div>

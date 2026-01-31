@@ -26,6 +26,8 @@ export async function handleInteractionTool(request, supabase) {
             insertData.due_date = args.due_date;
         if (args.assigned_to)
             insertData.assigned_to = args.assigned_to;
+        if (args.team_id)
+            insertData.team_id = args.team_id;
         const { data, error } = await supabase
             .from('interactions')
             .insert(insertData)
@@ -73,8 +75,10 @@ export async function handleInteractionTool(request, supabase) {
     }
     // List Interactions
     if (request.params.name === 'list_interactions') {
-        const { contact_id, deal_id, type, assigned_to } = request.params.arguments || {};
+        const { contact_id, deal_id, type, assigned_to, team_id } = request.params.arguments || {};
         let query = supabase.from('interactions').select('*');
+        if (team_id)
+            query = query.eq('team_id', team_id);
         if (contact_id)
             query = query.eq('contact_id', contact_id);
         if (deal_id)
@@ -209,6 +213,7 @@ export const interactionToolDefinitions = [
                 audio_url: { type: 'string', description: 'URL to audio recording' },
                 sentiment: { type: 'string', description: 'Sentiment analysis result' },
                 assigned_to: { type: 'string', description: 'Team member UUID to assign this task to' },
+                team_id: { type: 'string', description: 'Team ID this interaction belongs to' },
             },
             required: ['type', 'title'],
         },
@@ -234,6 +239,7 @@ export const interactionToolDefinitions = [
                 deal_id: { type: 'string', description: 'Filter by deal UUID' },
                 type: { type: 'string', enum: ['call', 'meeting', 'email', 'note'], description: 'Filter by type' },
                 assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
+                team_id: { type: 'string', description: 'Filter by team ID' },
             },
         },
     },
@@ -252,6 +258,7 @@ export const interactionToolDefinitions = [
                 audio_url: { type: 'string', description: 'URL to audio recording' },
                 sentiment: { type: 'string', description: 'Sentiment analysis result' },
                 assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this task to (null to unassign)' },
+                team_id: { type: 'string', description: 'Team ID this interaction belongs to' },
             },
             required: ['id'],
         },

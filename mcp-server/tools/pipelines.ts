@@ -49,12 +49,17 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
     if (request.params.name === 'create_pipeline') {
         const args = CreatePipelineSchema.parse(request.params.arguments);
 
+        const insertData: any = {
+            name: args.name,
+            stages: args.stages,
+        };
+        if (args.team_id) {
+            insertData.team_id = args.team_id;
+        }
+        
         const { data, error } = await supabase
             .from('pipelines')
-            .insert({
-                name: args.name,
-                stages: args.stages,
-            })
+            .insert(insertData)
             .select()
             .single();
 
@@ -109,9 +114,15 @@ export async function handlePipelineTool(request: any, supabase: SupabaseClient)
 
     // List Pipelines
     if (request.params.name === 'list_pipelines') {
-        const { data, error } = await supabase
-            .from('pipelines')
-            .select('*');
+        const { team_id } = request.params.arguments || {};
+        
+        let query = supabase.from('pipelines').select('*');
+        
+        if (team_id) {
+            query = query.eq('team_id', team_id);
+        }
+        
+        const { data, error } = await query;
 
         if (error) {
             return {
@@ -305,6 +316,7 @@ export const pipelineToolDefinitions = [
                     items: { type: 'string' },
                     description: 'List of pipeline stages (e.g., ["Lead", "Discovery", "Proposal", "Closed"])'
                 },
+                team_id: { type: 'string', description: 'Team ID this pipeline belongs to' },
             },
             required: ['name', 'stages'],
         },
@@ -325,7 +337,9 @@ export const pipelineToolDefinitions = [
         description: 'List all pipelines',
         inputSchema: {
             type: 'object',
-            properties: {},
+            properties: {
+                team_id: { type: 'string', description: 'Filter by team ID' },
+            },
         },
     },
     {

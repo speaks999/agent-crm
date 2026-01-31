@@ -125,6 +125,10 @@ export declare const contactToolDefinitions: ({
                 type: string;
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
             id?: undefined;
             dry_run?: undefined;
         };
@@ -147,6 +151,7 @@ export declare const contactToolDefinitions: ({
             phone?: undefined;
             role?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
             dry_run?: undefined;
         };
         required: string[];
@@ -162,6 +167,10 @@ export declare const contactToolDefinitions: ({
                 description: string;
             };
             assigned_to: {
+                type: string;
+                description: string;
+            };
+            team_id: {
                 type: string;
                 description: string;
             };
@@ -213,6 +222,10 @@ export declare const contactToolDefinitions: ({
                 type: string[];
                 description: string;
             };
+            team_id: {
+                type: string;
+                description: string;
+            };
             dry_run?: undefined;
         };
         required: string[];
@@ -230,6 +243,7 @@ export declare const contactToolDefinitions: ({
             phone?: undefined;
             role?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
             id?: undefined;
             dry_run?: undefined;
         };
@@ -253,6 +267,7 @@ export declare const contactToolDefinitions: ({
             phone?: undefined;
             role?: undefined;
             assigned_to?: undefined;
+            team_id?: undefined;
             id?: undefined;
         };
         required?: undefined;

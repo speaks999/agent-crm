@@ -17,6 +17,10 @@ export async function handleAccountTool(request, supabase) {
         if ('assigned_to' in args && args.assigned_to !== undefined) {
             insertData.assigned_to = args.assigned_to;
         }
+        // Include team_id if provided
+        if ('team_id' in args && args.team_id !== undefined) {
+            insertData.team_id = args.team_id;
+        }
         const { data, error } = await supabase
             .from('accounts')
             .insert(insertData)
@@ -89,8 +93,11 @@ export async function handleAccountTool(request, supabase) {
     }
     // List Accounts
     if (request.params.name === 'list_accounts') {
-        const { industry, assigned_to } = request.params.arguments || {};
+        const { industry, assigned_to, team_id } = request.params.arguments || {};
         let query = supabase.from('accounts').select('*');
+        if (team_id) {
+            query = query.eq('team_id', team_id);
+        }
         if (industry) {
             query = query.eq('industry', industry);
         }
@@ -316,6 +323,7 @@ export const accountToolDefinitions = [
                 industry: { type: 'string', description: 'Industry sector' },
                 website: { type: 'string', description: 'Company website URL' },
                 assigned_to: { type: 'string', description: 'Team member UUID to assign this account to' },
+                team_id: { type: 'string', description: 'Team ID this account belongs to' },
             },
             required: ['name'],
         },
@@ -339,6 +347,7 @@ export const accountToolDefinitions = [
             properties: {
                 industry: { type: 'string', description: 'Filter by industry' },
                 assigned_to: { type: 'string', description: 'Filter by assigned team member UUID' },
+                team_id: { type: 'string', description: 'Filter by team ID' },
             },
         },
     },
@@ -353,6 +362,7 @@ export const accountToolDefinitions = [
                 industry: { type: 'string', description: 'Industry sector' },
                 website: { type: 'string', description: 'Company website URL' },
                 assigned_to: { type: ['string', 'null'], description: 'Team member UUID to assign this account to (null to unassign)' },
+                team_id: { type: 'string', description: 'Team ID this account belongs to' },
             },
             required: ['id'],
         },

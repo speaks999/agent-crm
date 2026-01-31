@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Loader2, RefreshCw, Mail, Phone, Briefcase, Plus, Search, ArrowLeft, UserCircle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Contact {
     id: string;
@@ -21,21 +22,6 @@ interface TeamMember {
     first_name: string;
     last_name: string;
     email: string;
-}
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.result?.structuredContent || {};
 }
 
 export default function ContactsPage() {
@@ -66,7 +52,8 @@ export default function ContactsPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             setTeamMembers(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -211,9 +198,10 @@ export default function ContactsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredContacts.map((contact) => (
-                    <div
+                    <Link
                         key={contact.id}
-                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary"
+                        href={`/contacts/${contact.id}`}
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary cursor-pointer block"
                     >
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-full bg-primary-muted flex items-center justify-center text-primary text-lg font-semibold">
@@ -253,7 +241,7 @@ export default function ContactsPage() {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
 

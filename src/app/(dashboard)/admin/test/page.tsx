@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Play, CheckCircle2, XCircle, AlertCircle, Loader2, Filter, RefreshCw, ChevronDown, ChevronUp, Trash2 } from 'lucide-react';
 import { MCP_TESTS, TESTS_BY_CATEGORY, ALL_CATEGORIES, type MCPTest } from '@/lib/mcp-tests';
 import { callTool, listTools } from '@/lib/mcp-client';
+import { getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface CreatedTestData {
     type: 'account' | 'contact' | 'deal' | 'pipeline' | 'interaction';
@@ -257,7 +258,8 @@ export default function MCPTestPage() {
                 // If team_member_id is needed but not available, fetch first team member
                 if (!resolvedValue && placeholder === 'team_member_id') {
                     try {
-                        const teamResponse = await fetch('/api/team');
+                        const headers = await getAuthHeaders();
+                        const teamResponse = await fetch('/api/team', { headers, credentials: 'include' });
                         const teamData = await teamResponse.json();
                         const teamMembers = Array.isArray(teamData) ? teamData : [];
                         if (teamMembers.length > 0) {

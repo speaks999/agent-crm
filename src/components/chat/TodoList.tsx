@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { CheckSquare, Calendar, Loader2, Phone, Mail, Users, FileText, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Interaction {
     id: string;
@@ -35,13 +36,8 @@ export function TodoList() {
 
     async function fetchInteractions() {
         try {
-            const response = await fetch('/api/mcp/call-tool', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: 'list_interactions', arguments: {} }),
-            });
-            const result = await response.json();
-            const allInteractions = result.result?.structuredContent?.interactions || [];
+            const result = await fetchMCPData('list_interactions');
+            const allInteractions = result.interactions || [];
             setInteractions(allInteractions);
         } catch (error) {
             console.error('Failed to fetch interactions:', error);

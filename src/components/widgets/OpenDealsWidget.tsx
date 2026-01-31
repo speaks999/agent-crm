@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { DollarSign, TrendingUp, Clock } from 'lucide-react';
+import { fetchMCPData } from '@/lib/fetchMCPData';
 
 interface Deal {
     id: string;
@@ -20,13 +21,8 @@ export function OpenDealsWidget({ config, onRemove, onResize, onSettings, onDrag
     useEffect(() => {
         async function fetchDeals() {
             try {
-                const response = await fetch('/api/mcp/call-tool', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: 'list_deals', arguments: {} }),
-                });
-                const result = await response.json();
-                const allDeals = result.result?.structuredContent?.deals || [];
+                const result = await fetchMCPData('list_deals');
+                const allDeals = result.deals || [];
                 // Filter for open/active deals
                 const openDeals = allDeals.filter((d: Deal) => 
                     d.status === 'open' || d.status === 'active' || !d.status

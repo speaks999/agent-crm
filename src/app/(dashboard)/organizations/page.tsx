@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Building2, Loader2, RefreshCw, Globe, Briefcase, Plus, Search, ArrowLeft, UserCircle } from 'lucide-react';
 import Link from 'next/link';
+import { fetchMCPData, getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface Account {
     id: string;
@@ -18,21 +19,6 @@ interface TeamMember {
     first_name: string;
     last_name: string;
     email: string;
-}
-
-async function fetchMCPData(toolName: string, args: Record<string, unknown> = {}) {
-    const response = await fetch('/api/mcp/call-tool', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: toolName, arguments: args }),
-    });
-
-    if (!response.ok) {
-        throw new Error(`MCP request failed: ${response.status}`);
-    }
-
-    const json = await response.json();
-    return json.result?.structuredContent || {};
 }
 
 export default function AccountsPage() {
@@ -62,7 +48,8 @@ export default function AccountsPage() {
 
     async function fetchTeamMembers() {
         try {
-            const response = await fetch('/api/team');
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/team', { headers, credentials: 'include' });
             const data = await response.json();
             setTeamMembers(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -197,9 +184,10 @@ export default function AccountsPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredAccounts.map((account) => (
-                    <div
+                    <Link
                         key={account.id}
-                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary group"
+                        href={`/organizations/${account.id}`}
+                        className="bg-card p-6 rounded-xl border border-border shadow-sm hover:shadow-md transition-all hover:border-primary group cursor-pointer block"
                     >
                         <div className="flex items-start gap-4">
                             <div className="w-12 h-12 rounded-lg bg-primary-muted flex items-center justify-center text-primary shrink-0">
@@ -220,15 +208,16 @@ export default function AccountsPage() {
                                 {account.website && (
                                     <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                                         <Globe size={14} />
-                                        <a 
-                                            href={account.website.startsWith('http') ? account.website : `https://${account.website}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
+                                        <span 
                                             className="truncate hover:text-primary transition-colors"
-                                            onClick={(e) => e.stopPropagation()}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                window.open(account.website!.startsWith('http') ? account.website : `https://${account.website}`, '_blank');
+                                            }}
                                         >
                                             {account.website}
-                                        </a>
+                                        </span>
                                     </div>
                                 )}
                                 {account.assigned_to && getAssigneeName(account.assigned_to) && (
@@ -239,7 +228,7 @@ export default function AccountsPage() {
                                 )}
                             </div>
                         </div>
-                    </div>
+                    </Link>
                 ))}
             </div>
 
