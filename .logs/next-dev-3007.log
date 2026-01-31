@@ -1,0 +1,395 @@
+
+> agent-crm@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3007
+
+▲ Next.js 16.1.2 (Turbopack)
+- Local:         http://127.0.0.1:3007
+- Network:       http://127.0.0.1:3007
+- Environments: .env.local
+
+✓ Starting...
+✓ Ready in 433ms
+ GET /dashboard 200 in 672ms (compile: 458ms, render: 214ms)
+ GET /dashboard 200 in 680ms (compile: 500ms, render: 180ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 380ms (compile: 72ms, render: 308ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 562ms (compile: 3ms, render: 559ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 238ms (compile: 3ms, render: 234ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 479ms (compile: 1566µs, render: 477ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 199ms (compile: 4ms, render: 195ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 323ms (compile: 5ms, render: 318ms)
+ GET /chat 200 in 32ms (compile: 22ms, render: 10ms)
+ GET /data 200 in 24ms (compile: 14ms, render: 9ms)
+ GET /sales 200 in 22ms (compile: 14ms, render: 8ms)
+ GET /team 200 in 24ms (compile: 13ms, render: 11ms)
+ GET /admin/test 200 in 22ms (compile: 14ms, render: 8ms)
+ GET /admin/auth-test 200 in 22ms (compile: 14ms, render: 8ms)
+ GET /admin/auth-test 200 in 8ms (compile: 1307µs, render: 7ms)
+ GET /settings 200 in 24ms (compile: 13ms, render: 11ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 650ms (compile: 3ms, render: 647ms)
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ GET /settings 200 in 115ms (compile: 7ms, render: 108ms)
+ GET /dashboard 200 in 132ms (compile: 48ms, render: 83ms)
+ GET /settings 200 in 82ms (compile: 1226µs, render: 80ms)
+ GET /dashboard 200 in 82ms (compile: 12ms, render: 70ms)
+ GET /settings 200 in 78ms (compile: 4ms, render: 75ms)
+ GET /dashboard 200 in 86ms (compile: 19ms, render: 67ms)
+ GET /settings 200 in 78ms (compile: 3ms, render: 76ms)
+ GET /dashboard 200 in 78ms (compile: 11ms, render: 68ms)
+ GET /settings 200 in 70ms (compile: 1241µs, render: 69ms)
+ GET /dashboard 200 in 72ms (compile: 3ms, render: 69ms)
+ GET /settings 200 in 79ms (compile: 1150µs, render: 78ms)
+ GET /dashboard 200 in 74ms (compile: 2ms, render: 71ms)
+ GET /settings 200 in 80ms (compile: 1430µs, render: 78ms)
+ GET /dashboard 200 in 71ms (compile: 1888µs, render: 69ms)
+ GET /settings 200 in 80ms (compile: 1959µs, render: 78ms)
+ GET /dashboard 200 in 73ms (compile: 3ms, render: 69ms)
+ GET /settings 200 in 79ms (compile: 3ms, render: 76ms)
+ GET /dashboard 200 in 69ms (compile: 2ms, render: 67ms)
+ GET /settings 200 in 79ms (compile: 3ms, render: 76ms)
+ GET /dashboard 200 in 78ms (compile: 9ms, render: 69ms)
+ GET /settings 200 in 71ms (compile: 1835µs, render: 69ms)
+ GET /dashboard 200 in 76ms (compile: 1939µs, render: 74ms)
+ GET /settings 200 in 72ms (compile: 2ms, render: 69ms)
+ GET /dashboard 200 in 72ms (compile: 1753µs, render: 70ms)
+ GET /settings 200 in 77ms (compile: 1687µs, render: 75ms)
+ GET /dashboard 200 in 85ms (compile: 1960µs, render: 83ms)
+ GET /settings 200 in 74ms (compile: 1643µs, render: 72ms)
+ GET /dashboard 200 in 80ms (compile: 2ms, render: 78ms)
+ GET /settings 200 in 80ms (compile: 7ms, render: 72ms)
+ GET /dashboard 200 in 80ms (compile: 1083µs, render: 79ms)
+ GET /settings 200 in 74ms (compile: 1792µs, render: 72ms)
+ GET /dashboard 200 in 78ms (compile: 3ms, render: 75ms)
+ GET /settings 200 in 68ms (compile: 2ms, render: 65ms)
+ GET /dashboard 200 in 63ms (compile: 1509µs, render: 62ms)
+ GET /settings 200 in 63ms (compile: 8ms, render: 55ms)
+ GET /dashboard 200 in 64ms (compile: 1387µs, render: 62ms)
+ GET /settings 200 in 58ms (compile: 1481µs, render: 56ms)
+ GET /dashboard 200 in 64ms (compile: 1719µs, render: 63ms)
+ GET /settings 200 in 58ms (compile: 1236µs, render: 57ms)
+ GET /dashboard 200 in 63ms (compile: 1610µs, render: 61ms)
+ GET /settings 200 in 63ms (compile: 7ms, render: 56ms)
+ GET /dashboard 200 in 58ms (compile: 1363µs, render: 57ms)
+ GET /settings 200 in 58ms (compile: 1260µs, render: 57ms)
+ GET /dashboard 200 in 55ms (compile: 1572µs, render: 53ms)
+ GET /settings 200 in 54ms (compile: 1314µs, render: 53ms)
+ GET /dashboard 200 in 63ms (compile: 1636µs, render: 61ms)
+ GET /settings 200 in 56ms (compile: 1462µs, render: 55ms)
+ GET /dashboard 200 in 61ms (compile: 1385µs, render: 60ms)
+ GET /settings 200 in 67ms (compile: 1551µs, render: 66ms)
+ GET /dashboard 200 in 61ms (compile: 1461µs, render: 60ms)
+ GET /settings 200 in 67ms (compile: 1283µs, render: 66ms)
+ GET /dashboard 200 in 61ms (compile: 1636µs, render: 60ms)
+ GET /settings 200 in 67ms (compile: 9ms, render: 58ms)
+ GET /dashboard 200 in 59ms (compile: 1475µs, render: 58ms)
+ GET /settings 200 in 60ms (compile: 7ms, render: 53ms)
+ GET /dashboard 200 in 61ms (compile: 1013µs, render: 60ms)
+ GET /settings 200 in 61ms (compile: 7ms, render: 54ms)
+ GET /dashboard 200 in 59ms (compile: 1490µs, render: 58ms)
+ GET /settings 200 in 59ms (compile: 7ms, render: 53ms)
+ GET /dashboard 200 in 63ms (compile: 1065µs, render: 62ms)
+ GET /settings 200 in 58ms (compile: 1516µs, render: 56ms)
+ GET /dashboard 200 in 63ms (compile: 1624µs, render: 61ms)
+ GET /settings 200 in 72ms (compile: 1362µs, render: 71ms)
+ GET /dashboard 200 in 66ms (compile: 1496µs, render: 64ms)
+ GET /settings 200 in 72ms (compile: 1158µs, render: 71ms)
+ GET /dashboard 200 in 72ms (compile: 2ms, render: 70ms)
+ GET /settings 200 in 72ms (compile: 10ms, render: 62ms)
+ GET /dashboard 200 in 67ms (compile: 1498µs, render: 65ms)
+ GET /settings 200 in 66ms (compile: 7ms, render: 59ms)
+ GET /dashboard 200 in 87ms (compile: 1299µs, render: 86ms)
+ GET /settings 200 in 87ms (compile: 9ms, render: 78ms)
+ GET /dashboard 200 in 85ms (compile: 1594µs, render: 83ms)
+ GET /settings 200 in 85ms (compile: 7ms, render: 78ms)
+ GET /dashboard 200 in 84ms (compile: 926µs, render: 83ms)
+ GET /settings 200 in 91ms (compile: 2ms, render: 89ms)
+ GET /dashboard 200 in 80ms (compile: 2ms, render: 78ms)
+ GET /settings 200 in 93ms (compile: 13ms, render: 80ms)
+ GET /dashboard 200 in 74ms (compile: 2ms, render: 72ms)
+ GET /settings 200 in 73ms (compile: 8ms, render: 65ms)
+ GET /dashboard 200 in 72ms (compile: 1015µs, render: 71ms)
+ GET /settings 200 in 73ms (compile: 7ms, render: 66ms)
+ GET /dashboard 200 in 75ms (compile: 1040µs, render: 74ms)
+ GET /settings 200 in 75ms (compile: 7ms, render: 68ms)
+ GET /dashboard 200 in 78ms (compile: 1254µs, render: 77ms)
+ GET /settings 200 in 78ms (compile: 8ms, render: 70ms)
+ GET /settings 200 in 77ms (compile: 7ms, render: 71ms)
+ GET /dashboard 200 in 78ms (compile: 1013µs, render: 77ms)
+ GET /settings 200 in 77ms (compile: 7ms, render: 70ms)
+ GET /dashboard 200 in 78ms (compile: 1081µs, render: 77ms)
+ GET /dashboard 200 in 71ms (compile: 1285µs, render: 69ms)
+ GET /settings 200 in 71ms (compile: 8ms, render: 63ms)
+ GET /settings 200 in 69ms (compile: 8ms, render: 61ms)
+ GET /dashboard 200 in 70ms (compile: 1717µs, render: 68ms)
+ GET /dashboard 200 in 68ms (compile: 1080µs, render: 67ms)
+ GET /settings 200 in 68ms (compile: 7ms, render: 61ms)
+ GET /dashboard 200 in 62ms (compile: 1027µs, render: 61ms)
+ GET /settings 200 in 62ms (compile: 7ms, render: 55ms)
+ GET /dashboard 200 in 73ms (compile: 1109µs, render: 72ms)
+ GET /settings 200 in 74ms (compile: 8ms, render: 66ms)
+ GET /dashboard 200 in 69ms (compile: 838µs, render: 68ms)
+ GET /settings 200 in 69ms (compile: 1798µs, render: 68ms)
+ GET /dashboard 200 in 72ms (compile: 1199µs, render: 71ms)
+ GET /settings 200 in 72ms (compile: 1051µs, render: 71ms)
+ GET /dashboard 200 in 67ms (compile: 1867µs, render: 65ms)
+ GET /settings 200 in 70ms (compile: 1154µs, render: 69ms)
+ GET /dashboard 200 in 71ms (compile: 9ms, render: 61ms)
+ GET /settings 200 in 70ms (compile: 1281µs, render: 68ms)
+ GET /dashboard 200 in 63ms (compile: 3ms, render: 61ms)
+ GET /settings 200 in 71ms (compile: 1133µs, render: 70ms)
+ GET /dashboard 200 in 64ms (compile: 2ms, render: 62ms)
+ GET /settings 200 in 73ms (compile: 1581µs, render: 72ms)
+ GET /dashboard 200 in 74ms (compile: 2ms, render: 72ms)
+ GET /settings 200 in 71ms (compile: 1856µs, render: 69ms)
+ GET /dashboard 200 in 71ms (compile: 8ms, render: 63ms)
+ GET /settings 200 in 68ms (compile: 1600µs, render: 66ms)
+ GET /dashboard 200 in 69ms (compile: 1634µs, render: 67ms)
+ GET /settings 200 in 67ms (compile: 2ms, render: 65ms)
+ GET /dashboard 200 in 66ms (compile: 9ms, render: 57ms)
+ GET /settings 200 in 61ms (compile: 930µs, render: 60ms)
+ GET /dashboard 200 in 64ms (compile: 1504µs, render: 62ms)
+ GET /settings 200 in 64ms (compile: 1740µs, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 8ms, render: 56ms)
+ GET /settings 200 in 62ms (compile: 798µs, render: 61ms)
+ GET /dashboard 200 in 54ms (compile: 1764µs, render: 52ms)
+ GET /settings 200 in 62ms (compile: 1804µs, render: 60ms)
+ GET /dashboard 200 in 68ms (compile: 7ms, render: 61ms)
+ GET /settings 200 in 62ms (compile: 946µs, render: 61ms)
+ GET /dashboard 200 in 63ms (compile: 3ms, render: 59ms)
+ GET /settings 200 in 62ms (compile: 1568µs, render: 61ms)
+ GET /dashboard 200 in 63ms (compile: 1093µs, render: 62ms)
+ GET /settings 200 in 63ms (compile: 1336µs, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 7ms, render: 56ms)
+ GET /settings 200 in 60ms (compile: 1104µs, render: 59ms)
+ GET /dashboard 200 in 63ms (compile: 1241µs, render: 62ms)
+ GET /settings 200 in 63ms (compile: 1231µs, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 8ms, render: 55ms)
+ GET /settings 200 in 54ms (compile: 997µs, render: 53ms)
+ GET /dashboard 200 in 54ms (compile: 1482µs, render: 53ms)
+ GET /settings 200 in 63ms (compile: 1736µs, render: 61ms)
+ GET /dashboard 200 in 57ms (compile: 1304µs, render: 56ms)
+ GET /settings 200 in 63ms (compile: 958µs, render: 62ms)
+ GET /dashboard 200 in 55ms (compile: 1600µs, render: 54ms)
+ GET /settings 200 in 63ms (compile: 1564µs, render: 61ms)
+ GET /dashboard 200 in 57ms (compile: 1531µs, render: 55ms)
+ GET /settings 200 in 64ms (compile: 1306µs, render: 62ms)
+ GET /dashboard 200 in 62ms (compile: 1421µs, render: 61ms)
+ GET /settings 200 in 61ms (compile: 1591µs, render: 60ms)
+ GET /dashboard 200 in 63ms (compile: 7ms, render: 56ms)
+ GET /settings 200 in 62ms (compile: 1163µs, render: 61ms)
+ GET /dashboard 200 in 63ms (compile: 1194µs, render: 61ms)
+ GET /settings 200 in 60ms (compile: 1445µs, render: 59ms)
+ GET /dashboard 200 in 69ms (compile: 8ms, render: 61ms)
+ GET /settings 200 in 63ms (compile: 891µs, render: 62ms)
+ GET /dashboard 200 in 62ms (compile: 1236µs, render: 61ms)
+ GET /settings 200 in 63ms (compile: 4ms, render: 59ms)
+ GET /dashboard 200 in 70ms (compile: 7ms, render: 63ms)
+ GET /settings 200 in 64ms (compile: 1012µs, render: 63ms)
+ GET /dashboard 200 in 64ms (compile: 7ms, render: 57ms)
+ GET /settings 200 in 67ms (compile: 1585µs, render: 65ms)
+ GET /dashboard 200 in 58ms (compile: 1803µs, render: 56ms)
+ GET /settings 200 in 65ms (compile: 1768µs, render: 64ms)
+ GET /dashboard 200 in 65ms (compile: 8ms, render: 57ms)
+ GET /settings 200 in 65ms (compile: 1306µs, render: 64ms)
+ GET /dashboard 200 in 57ms (compile: 1586µs, render: 55ms)
+ GET /settings 200 in 64ms (compile: 2ms, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 1432µs, render: 62ms)
+ GET /settings 200 in 63ms (compile: 1870µs, render: 61ms)
+ GET /dashboard 200 in 63ms (compile: 7ms, render: 55ms)
+ GET /settings 200 in 60ms (compile: 1165µs, render: 59ms)
+ GET /dashboard 200 in 54ms (compile: 1360µs, render: 52ms)
+ GET /settings 200 in 63ms (compile: 1315µs, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 7ms, render: 56ms)
+ GET /settings 200 in 62ms (compile: 1096µs, render: 61ms)
+ GET /dashboard 200 in 64ms (compile: 1412µs, render: 62ms)
+ GET /settings 200 in 64ms (compile: 1618µs, render: 63ms)
+ GET /dashboard 200 in 71ms (compile: 7ms, render: 64ms)
+ GET /settings 200 in 65ms (compile: 1217µs, render: 63ms)
+ GET /dashboard 200 in 65ms (compile: 10ms, render: 55ms)
+ GET /settings 200 in 64ms (compile: 1730µs, render: 62ms)
+ GET /dashboard 200 in 63ms (compile: 1158µs, render: 62ms)
+ GET /settings 200 in 66ms (compile: 1538µs, render: 64ms)
+ GET /dashboard 200 in 74ms (compile: 9ms, render: 65ms)
+ GET /settings 200 in 66ms (compile: 1361µs, render: 65ms)
+ GET /dashboard 200 in 69ms (compile: 1418µs, render: 67ms)
+ GET /settings 200 in 69ms (compile: 1814µs, render: 67ms)
+ GET /dashboard 200 in 75ms (compile: 7ms, render: 68ms)
+ GET /settings 200 in 67ms (compile: 1114µs, render: 65ms)
+ GET /dashboard 200 in 69ms (compile: 1653µs, render: 67ms)
+ GET /settings 200 in 62ms (compile: 4ms, render: 59ms)
+ GET /dashboard 200 in 65ms (compile: 1157µs, render: 64ms)
+ GET /settings 200 in 59ms (compile: 2ms, render: 57ms)
+ GET /dashboard 200 in 67ms (compile: 1268µs, render: 66ms)
+ GET /settings 200 in 68ms (compile: 8ms, render: 60ms)
+ GET /dashboard 200 in 73ms (compile: 821µs, render: 72ms)
+ GET /settings 200 in 75ms (compile: 1726µs, render: 73ms)
+ GET /dashboard 200 in 74ms (compile: 1469µs, render: 72ms)
+ GET /settings 200 in 76ms (compile: 1266µs, render: 75ms)
+ GET /dashboard 200 in 77ms (compile: 1771µs, render: 75ms)
+ GET /settings 200 in 76ms (compile: 9ms, render: 67ms)
+ GET /dashboard 200 in 72ms (compile: 3ms, render: 69ms)
+ GET /settings 200 in 71ms (compile: 11ms, render: 60ms)
+ GET /dashboard 200 in 72ms (compile: 1053µs, render: 71ms)
+ GET /settings 200 in 67ms (compile: 3ms, render: 64ms)
+ GET /dashboard 200 in 78ms (compile: 1111µs, render: 77ms)
+ GET /settings 200 in 78ms (compile: 2000µs, render: 76ms)
+ GET /dashboard 200 in 83ms (compile: 1869µs, render: 81ms)
+ GET /settings 200 in 92ms (compile: 1334µs, render: 91ms)
+ GET /dashboard 200 in 95ms (compile: 1664µs, render: 93ms)
+ GET /settings 200 in 95ms (compile: 8ms, render: 87ms)
+ GET /dashboard 200 in 85ms (compile: 4ms, render: 81ms)
+ GET /settings 200 in 93ms (compile: 12ms, render: 81ms)
+ GET /dashboard 200 in 82ms (compile: 1427µs, render: 80ms)
+ GET /settings 200 in 92ms (compile: 10ms, render: 81ms)
+ GET /dashboard 200 in 80ms (compile: 2ms, render: 78ms)
+ GET /settings 200 in 88ms (compile: 9ms, render: 79ms)
+ GET /dashboard 200 in 81ms (compile: 1442µs, render: 79ms)
+ GET /settings 200 in 79ms (compile: 2ms, render: 77ms)
+ GET /dashboard 200 in 70ms (compile: 5ms, render: 66ms)
+ GET /settings 200 in 67ms (compile: 10ms, render: 58ms)
+ GET /dashboard 200 in 51ms (compile: 1857µs, render: 49ms)
+ GET /settings 200 in 50ms (compile: 11ms, render: 39ms)
+ GET /dashboard 200 in 32ms (compile: 1514µs, render: 30ms)
+ GET /settings 200 in 22ms (compile: 2ms, render: 19ms)
+ GET /dashboard 200 in 13ms (compile: 2ms, render: 11ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 569ms (compile: 2ms, render: 567ms)
+ GET /settings 200 in 44ms (compile: 4ms, render: 40ms)
+ GET /data 200 in 12ms (compile: 3ms, render: 9ms)
+ GET /api/stocks?symbols=AAPL,GOOGL,MSFT,AMZN,TSLA 200 in 246ms (compile: 1687µs, render: 244ms)
+⨯ Error: ENOENT: no such file or directory, open '/Users/evanspeaker/Projects/Agent CRM/agent-crm/.next/dev/server/app/api/stocks/[__metadata_id__]/route/app-paths-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/evanspeaker/Projects/Agent CRM/agent-crm/.next/dev/server/app/api/stocks/[__metadata_id__]/route/app-paths-manifest.json'
+}
+
+thread 'tokio-runtime-worker' (52525217) panicked at /Users/vercel/dev/actions-runner/_work/next.js/next.js/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17:
+Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+
+Caused by:
+    0: Looking up data for TaskId 565 from database failed
+    1: Unable to open static sorted file referenced from 00000259.meta
+    2: Unable to open static sorted file 00000251.sst
+    3: No such file or directory (os error 2)
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+-----
+[1m[31mFATAL[39m[0m: An unexpected Turbopack error occurred. A panic log has been written to /var/folders/nl/l9g1x7c53x111441gk4lnvjw0000gn/T/next-panic-ed1850a21a5670399da80c18f04ce96d.log.
+
+To help make Turbopack better, report this error by clicking here: https://github.com/vercel/next.js/discussions/new?category=turbopack-error-report&title=Turbopack%20Error%3A%20Failed%20to%20write%20page%20endpoint%20%2F_app&body=Turbopack%20version%3A%20%60v16.1.0-canary.22-63-gcb436b361%60%0ANext.js%20version%3A%20%600.0.0%60%0A%0AError%20message%3A%0A%60%60%60%0ATurbopack%20Error%3A%20Failed%20to%20write%20page%20endpoint%20%2F_app%0A%60%60%60&labels=Turbopack,Turbopack%20Panic%20Backtrace
+-----
+
+⨯ Error [TurbopackInternalError]: Failed to write page endpoint /_app
+
+Caused by:
+- content is not available as task execution failed
+- content is not available as task execution failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <PageEndpoint as Endpoint>::output failed
+- Failed to write page endpoint /_app
+- Execution of PageEndpoint::output failed
+- Execution of *ChunkGroupResult::all_assets failed
+- Execution of PageEndpoint::client_chunk_group failed
+- Execution of PageEndpoint::client_evaluatable_assets failed
+- content is not available as task execution failed
+- Execution of PageEndpoint::client_module failed
+- content is not available as task execution failed
+- Execution of *create_page_loader_entry_module failed
+- Execution of PagesProject::client_module_context failed
+- Execution of *ModuleAssetContext::new failed
+- Execution of PagesProject::client_module_options_context failed
+- Execution of PagesProject::pages_dir failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+  
+  Caused by:
+      0: Looking up data for TaskId 565 from database failed
+      1: Unable to open static sorted file referenced from 00000259.meta
+      2: Unable to open static sorted file 00000251.sst
+      3: No such file or directory (os error 2)
+    at <unknown> (TurbopackInternalError: Failed to write page endpoint /_app) {
+  location: '/Users/vercel/dev/actions-runner/_work/next.js/next.js/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17'
+}
+Error: ENOENT: no such file or directory, open '/Users/evanspeaker/Projects/Agent CRM/agent-crm/.next/dev/server/app/api/stocks/[__metadata_id__]/route/app-paths-manifest.json'
+    at ignore-listed frames {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'open',
+  path: '/Users/evanspeaker/Projects/Agent CRM/agent-crm/.next/dev/server/app/api/stocks/[__metadata_id__]/route/app-paths-manifest.json'
+}
+⨯ Error [TurbopackInternalError]: Failed to write page endpoint /_app
+
+Caused by:
+- content is not available as task execution failed
+- content is not available as task execution failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <PageEndpoint as Endpoint>::output failed
+- Failed to write page endpoint /_app
+- Execution of PageEndpoint::output failed
+- Execution of *ChunkGroupResult::all_assets failed
+- Execution of PageEndpoint::client_chunk_group failed
+- Execution of PageEndpoint::client_evaluatable_assets failed
+- content is not available as task execution failed
+- Execution of PageEndpoint::client_module failed
+- content is not available as task execution failed
+- Execution of *create_page_loader_entry_module failed
+- Execution of PagesProject::client_module_context failed
+- Execution of *ModuleAssetContext::new failed
+- Execution of PagesProject::client_module_options_context failed
+- Execution of PagesProject::pages_dir failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+  
+  Caused by:
+      0: Looking up data for TaskId 565 from database failed
+      1: Unable to open static sorted file referenced from 00000259.meta
+      2: Unable to open static sorted file 00000251.sst
+      3: No such file or directory (os error 2)
+    at <unknown> (TurbopackInternalError: Failed to write page endpoint /_app) {
+  location: '/Users/vercel/dev/actions-runner/_work/next.js/next.js/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17'
+}
+Error [TurbopackInternalError]: Failed to write page endpoint /_app
+
+Caused by:
+- content is not available as task execution failed
+- content is not available as task execution failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+
+Debug info:
+- Execution of get_written_endpoint_with_issues_operation failed
+- Execution of endpoint_write_to_disk failed
+- Execution of <PageEndpoint as Endpoint>::output failed
+- Failed to write page endpoint /_app
+- Execution of PageEndpoint::output failed
+- Execution of *ChunkGroupResult::all_assets failed
+- Execution of PageEndpoint::client_chunk_group failed
+- Execution of PageEndpoint::client_evaluatable_assets failed
+- content is not available as task execution failed
+- Execution of PageEndpoint::client_module failed
+- content is not available as task execution failed
+- Execution of *create_page_loader_entry_module failed
+- Execution of PagesProject::client_module_context failed
+- Execution of *ModuleAssetContext::new failed
+- Execution of PagesProject::client_module_options_context failed
+- Execution of PagesProject::pages_dir failed
+- Failed to restore task data (corrupted database or bug): Meta for find_pages_structure (TaskId 565))
+  
+  Caused by:
+      0: Looking up data for TaskId 565 from database failed
+      1: Unable to open static sorted file referenced from 00000259.meta
+      2: Unable to open static sorted file 00000251.sst
+      3: No such file or directory (os error 2)
+    at <unknown> (TurbopackInternalError: Failed to write page endpoint /_app) {
+  location: '/Users/vercel/dev/actions-runner/_work/next.js/next.js/turbopack/crates/turbo-tasks-backend/src/backend/operation/mod.rs:156:17'
+}
+Persisting failed: Unable to write SST file 00000267.sst
+
+Caused by:
+    No such file or directory (os error 2)
+Persisting failed: Another write batch or compaction is already active (Only a single write operations is allowed at a time)

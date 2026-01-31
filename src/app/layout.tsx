@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Whitespace CRM - AI-Powered Sales Assistant",
+  title: "Whitespace CRM",
   description: "Agent-driven CRM for modern sales teams",
 };
 
