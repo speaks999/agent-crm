@@ -134,6 +134,9 @@ To ensure email confirmations are working:
 The callback URL is already configured:
 - **Redirect URL**: `https://yourdomain.com/auth/callback`
 
+To ensure confirmation and reset emails always use your public domain (not localhost),
+set `NEXT_PUBLIC_SITE_URL` in your environment.
+
 ### Resending Confirmation Emails
 
 If a user doesn't receive the confirmation email, they can:
@@ -155,6 +158,7 @@ Required environment variables:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+NEXT_PUBLIC_SITE_URL=https://yourdomain.com  # Public base URL for auth emails
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key  # For server-side operations
 ```
 
