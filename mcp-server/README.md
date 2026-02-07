@@ -92,6 +92,27 @@ npm start
 
 The server runs on stdio and communicates via JSON-RPC 2.0.
 
+### Insightly Contacts Server
+
+In addition to the Supabase-backed CRM server, this package now exposes a dedicated Insightly contacts MCP server that speaks directly to the Insightly REST API (`https://api.<pod>.insightly.com/v3.1/Contacts`). It lives in `insightly-contacts.ts` and ships the following tools:
+
+- `insightly_list_contacts`
+- `insightly_get_contact`
+- `insightly_create_contact`
+- `insightly_update_contact`
+- `insightly_delete_contact`
+- `insightly_search_contacts`
+
+To run it you need an Insightly API key (Admin > User Settings > API Key) and, optionally, a pod identifier (defaults to `na1`):
+
+```bash
+export INSIGHTLY_API_KEY=your-key
+export INSIGHTLY_POD=na1 # optional
+npm run start:insightly
+```
+
+When wiring it into an MCP-compatible client (Claude Desktop, OpenAI Apps, etc.), point the command to `dist/insightly-contacts.js` and set the `INSIGHTLY_API_KEY`/`INSIGHTLY_POD` env vars in the client configuration.
+
 ### Testing the Server
 
 Test that the server lists tools correctly:
