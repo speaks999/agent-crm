@@ -94,6 +94,19 @@ export async function GET(request: NextRequest) {
                   role: 'owner',
                 });
 
+              // Also add as a team_members record so they show up on the team page
+              await supabaseAdmin
+                .from('team_members')
+                .insert({
+                  team_id: team.id,
+                  user_id: data.user.id,
+                  first_name: firstName || '',
+                  last_name: lastName || '',
+                  email: data.user.email || '',
+                  role: 'admin',
+                  active: true,
+                });
+
               // Set as current team
               await supabaseAdmin
                 .from('user_team_preferences')
