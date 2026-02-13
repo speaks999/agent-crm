@@ -2165,7 +2165,7 @@ export default function MVPTestsPage() {
                     return (
                         <div
                             key={test.id}
-                            ref={el => testCardRefs.current[test.id] = el}
+                            ref={el => { testCardRefs.current[test.id] = el; }}
                             className={`bg-card border rounded-lg p-4 ${
                                 test.critical ? 'border-orange-500/50' : 'border-border'
                             }`}

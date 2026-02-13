@@ -2125,7 +2125,7 @@ export default function TeamTestsPage() {
                     return (
                         <div
                             key={test.id}
-                            ref={el => testCardRefs.current[test.id] = el}
+                            ref={el => { testCardRefs.current[test.id] = el; }}
                             className="bg-card border border-border rounded-lg p-4"
                         >
                             <div className="flex items-start gap-3">
