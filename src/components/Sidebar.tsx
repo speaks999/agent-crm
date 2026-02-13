@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube, Shield, UserCheck, Rocket } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube, Shield, UserCheck, Rocket, Trash2 } from 'lucide-react';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -104,6 +104,12 @@ export default function Sidebar() {
                     icon={<UserCheck size={20} />}
                     label="Team Tests"
                     active={pathname?.startsWith('/admin/team-tests')}
+                />
+                <NavItem
+                    href="/admin/delete-user"
+                    icon={<Trash2 size={20} />}
+                    label="Delete User"
+                    active={pathname?.startsWith('/admin/delete-user')}
                 />
                 <NavItem
                     href="/settings"
