@@ -115,13 +115,41 @@ export async function GET(req: Request) {
     try {
         const authHeader = req.headers.get('authorization');
         
-        // Require authentication
-        const user = await getUserFromAuth(authHeader);
+        // Try Bearer token first
+        let user = await getUserFromAuth(authHeader);
+        
+        // Fallback to cookie-based auth if no Bearer token
         if (!user) {
+            const cookieStore = await cookies();
+            const supabaseAuth = createServerClient(supabaseUrl, supabaseAnonKey, {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                },
+            });
+            const { data, error: authError } = await supabaseAuth.auth.getUser();
+            if (!authError && data.user) {
+                user = data.user;
+                console.log('[Team API] User authenticated via cookies:', user.email);
+            }
+        }
+        
+        // Require authentication
+        if (!user) {
+            console.log('[Team API] No authenticated user found');
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
         
-        const teamId = await getCurrentUserTeamId(authHeader);
+        // Get team ID - need to use service key for this
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: prefs } = await supabaseAdmin
+            .from('user_team_preferences')
+            .select('current_team_id')
+            .eq('user_id', user.id)
+            .single();
+        
+        const teamId = prefs?.current_team_id;
         
         // If no team, return empty array
         if (!teamId) {
@@ -138,8 +166,12 @@ export async function GET(req: Request) {
             .eq('active', true)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error('[Team API] Error fetching team_members:', error);
+            throw error;
+        }
 
+        console.log(`[Team API] Found ${data?.length || 0} team members`);
         return Response.json(data || []);
     } catch (error: any) {
         console.error('Error fetching team members:', error);
