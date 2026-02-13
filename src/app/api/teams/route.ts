@@ -36,13 +36,12 @@ async function getUserFromRequest(req: NextRequest) {
 export async function GET(req: NextRequest) {
     try {
         if (!supabaseAdmin) {
-            return NextResponse.json({ teams: [], currentTeamId: null });
+            return NextResponse.json({ error: 'Database not configured' }, { status: 500 });
         }
         const user = await getUserFromRequest(req);
         
         if (!user) {
-            // Return empty teams for unauthenticated users instead of error
-            return NextResponse.json({ teams: [], currentTeamId: null });
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
         // Get all teams the user is a member of
@@ -107,7 +106,12 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { name, logo_url } = body;
 
-        if (!name || name.trim().length === 0) {
+        // Validate data types
+        if (name !== undefined && name !== null && typeof name !== 'string') {
+            return NextResponse.json({ error: 'Team name must be a string' }, { status: 400 });
+        }
+
+        if (!name || (typeof name === 'string' && name.trim().length === 0)) {
             return NextResponse.json({ error: 'Team name is required' }, { status: 400 });
         }
 
@@ -115,7 +119,7 @@ export async function POST(req: NextRequest) {
         const { data: team, error: teamError } = await supabaseAdmin
             .from('teams')
             .insert({
-                name: name.trim(),
+                name: String(name).trim(), // Ensure it's a string
                 owner_id: user.id,
                 logo_url: logo_url || null,
             })

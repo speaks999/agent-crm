@@ -100,6 +100,8 @@ export async function GET(request: NextRequest) {
                 .upsert({
                   user_id: data.user.id,
                   current_team_id: team.id,
+                }, {
+                  onConflict: 'user_id'
                 });
 
               console.log(`Created team "${teamName}" for user ${data.user.email}`);

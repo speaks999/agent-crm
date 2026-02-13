@@ -2,8 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut } from 'lucide-react';
+import { LogOut, TestTube, Shield, UserCheck, Rocket } from 'lucide-react';
 import TeamSwitcher from './TeamSwitcher';
 
 export default function Header() {
@@ -153,6 +154,53 @@ export default function Header() {
                             />
                         )}
                     </div>
+                    {/* Test Navigation Links */}
+                    <nav className="flex items-center gap-2 ml-4">
+                        <Link
+                            href="/admin/mvp-tests"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                pathname?.startsWith('/admin/mvp-tests')
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                        >
+                            <Rocket size={16} />
+                            <span>MVP Tests</span>
+                        </Link>
+                        <Link
+                            href="/admin/test"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                pathname?.startsWith('/admin/test') && !pathname?.startsWith('/admin/auth-test') && !pathname?.startsWith('/admin/team-tests') && !pathname?.startsWith('/admin/mvp-tests')
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                        >
+                            <TestTube size={16} />
+                            <span>MCP Tests</span>
+                        </Link>
+                        <Link
+                            href="/admin/auth-test"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                pathname?.startsWith('/admin/auth-test')
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                        >
+                            <Shield size={16} />
+                            <span>Auth Tests</span>
+                        </Link>
+                        <Link
+                            href="/admin/team-tests"
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                                pathname?.startsWith('/admin/team-tests')
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                        >
+                            <UserCheck size={16} />
+                            <span>Team Tests</span>
+                        </Link>
+                    </nav>
                 </div>
                 <div className="flex items-center gap-4">
                     {user && (

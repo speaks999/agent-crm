@@ -27,6 +27,31 @@ async function getUserFromRequest(req: NextRequest) {
     return user;
 }
 
+// Email validation helper
+function isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+        return false;
+    }
+    
+    if (email.includes('..')) return false;
+    if (email.startsWith('.')) return false;
+    if (email.endsWith('.')) return false;
+    if (email.includes(' ')) return false;
+    
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const domain = parts[1];
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    
+    if (!tld || tld.length < 2) return false;
+    
+    return true;
+}
+
 /**
  * GET /api/teams/invites
  * Get all pending invites for the current user
@@ -98,6 +123,11 @@ export async function POST(req: NextRequest) {
 
         if (!team_id || !email) {
             return NextResponse.json({ error: 'team_id and email are required' }, { status: 400 });
+        }
+        
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return NextResponse.json({ error: 'Invalid email format' }, { status: 400 });
         }
 
         // Verify user is admin/owner of the team

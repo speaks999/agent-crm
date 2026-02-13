@@ -118,7 +118,7 @@ async function getCurrentUserAndTeam(authHeader: string | null): Promise<{ userI
                 // Try to set this as the current team preference
                 await supabaseForQuery
                     .from('user_team_preferences')
-                    .upsert({ user_id: user.id, current_team_id: teamId })
+                    .upsert({ user_id: user.id, current_team_id: teamId }, { onConflict: 'user_id' })
                     .select();
                 
                 return { userId: user.id, teamId, email: user.email || null };

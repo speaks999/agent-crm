@@ -54,9 +54,73 @@ async function getCurrentUserTeamId(authHeader: string | null): Promise<string |
     }
 }
 
+async function getUserFromAuth(authHeader: string | null): Promise<any> {
+    try {
+        // Only accept Bearer token for API calls
+        if (!authHeader?.startsWith('Bearer ') || !supabaseServiceKey) {
+            return null;
+        }
+        
+        const token = authHeader.slice(7);
+        const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+        
+        if (error || !data.user) {
+            return null;
+        }
+        
+        return data.user;
+    } catch {
+        return null;
+    }
+}
+
+// Email validation helper
+function isValidEmail(email: string): boolean {
+    // RFC 5322 simplified email regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    // Basic validation
+    if (!emailRegex.test(email)) {
+        return false;
+    }
+    
+    // Additional checks
+    if (email.includes('..')) return false; // No consecutive dots
+    if (email.startsWith('.')) return false; // Can't start with dot
+    if (email.endsWith('.')) return false; // Can't end with dot
+    if (email.includes(' ')) return false; // No spaces
+    
+    // Check for valid TLD (at least 2 chars after last dot)
+    const parts = email.split('@');
+    if (parts.length !== 2) return false;
+    
+    const domain = parts[1];
+    const domainParts = domain.split('.');
+    const tld = domainParts[domainParts.length - 1];
+    
+    if (!tld || tld.length < 2) return false;
+    
+    return true;
+}
+
+// UUID validation helper
+function isValidUUID(uuid: string): boolean {
+    if (typeof uuid !== 'string') return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(uuid);
+}
+
 export async function GET(req: Request) {
     try {
         const authHeader = req.headers.get('authorization');
+        
+        // Require authentication
+        const user = await getUserFromAuth(authHeader);
+        if (!user) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
         const teamId = await getCurrentUserTeamId(authHeader);
         
         // If no team, return empty array
@@ -86,6 +150,13 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
     try {
         const authHeader = req.headers.get('authorization');
+        
+        // Require authentication
+        const user = await getUserFromAuth(authHeader);
+        if (!user) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
         const teamId = await getCurrentUserTeamId(authHeader);
         
         if (!teamId) {
@@ -101,6 +172,31 @@ export async function POST(req: Request) {
         if (!first_name || !last_name || !email) {
             return Response.json(
                 { error: 'Missing required fields' },
+                { status: 400 }
+            );
+        }
+        
+        // Validate data types
+        if (typeof first_name !== 'string' || typeof last_name !== 'string' || typeof email !== 'string') {
+            return Response.json(
+                { error: 'Invalid data types - first_name, last_name, and email must be strings' },
+                { status: 400 }
+            );
+        }
+        
+        // Validate email format
+        if (!isValidEmail(email)) {
+            return Response.json(
+                { error: 'Invalid email format' },
+                { status: 400 }
+            );
+        }
+        
+        // Validate role if provided
+        const validRoles = ['owner', 'admin', 'member', 'viewer'];
+        if (role && !validRoles.includes(role)) {
+            return Response.json(
+                { error: `Invalid role. Must be one of: ${validRoles.join(', ')}` },
                 { status: 400 }
             );
         }
@@ -158,11 +254,29 @@ export async function POST(req: Request) {
 
 export async function PUT(req: Request) {
     try {
+        const authHeader = req.headers.get('authorization');
+        
+        // Require authentication
+        const user = await getUserFromAuth(authHeader);
+        if (!user) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
         const body = await req.json();
         const { id, ...updates } = body;
 
         if (!id) {
             return Response.json({ error: 'Missing member ID' }, { status: 400 });
+        }
+        
+        // Validate UUID format
+        if (!isValidUUID(id)) {
+            return Response.json({ error: 'Invalid member ID format' }, { status: 400 });
+        }
+        
+        // Validate update fields if present
+        if (updates.email && typeof updates.email === 'string' && !isValidEmail(updates.email)) {
+            return Response.json({ error: 'Invalid email format' }, { status: 400 });
         }
 
         const { data, error } = await supabase
@@ -172,7 +286,18 @@ export async function PUT(req: Request) {
             .select()
             .single();
 
-        if (error) throw error;
+        if (error) {
+            // Check for specific error codes
+            if (error.code === '22P02') {
+                // Invalid UUID format
+                return Response.json({ error: 'Invalid ID format' }, { status: 400 });
+            }
+            if (error.code === 'PGRST116') {
+                // No rows found
+                return Response.json({ error: 'Team member not found' }, { status: 404 });
+            }
+            throw error;
+        }
 
         return Response.json(data);
     } catch (error: any) {
@@ -183,11 +308,24 @@ export async function PUT(req: Request) {
 
 export async function DELETE(req: Request) {
     try {
+        const authHeader = req.headers.get('authorization');
+        
+        // Require authentication
+        const user = await getUserFromAuth(authHeader);
+        if (!user) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
 
         if (!id) {
             return Response.json({ error: 'Missing member ID' }, { status: 400 });
+        }
+        
+        // Validate UUID format
+        if (!isValidUUID(id)) {
+            return Response.json({ error: 'Invalid member ID format' }, { status: 400 });
         }
 
         // Soft delete by setting active to false
@@ -196,7 +334,12 @@ export async function DELETE(req: Request) {
             .update({ active: false })
             .eq('id', id);
 
-        if (error) throw error;
+        if (error) {
+            if (error.code === '22P02') {
+                return Response.json({ error: 'Invalid ID format' }, { status: 400 });
+            }
+            throw error;
+        }
 
         return Response.json({ success: true });
     } catch (error: any) {

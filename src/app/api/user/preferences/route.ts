@@ -139,3 +139,8 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// PUT method (alias for POST for compatibility)
+export async function PUT(req: NextRequest) {
+  return POST(req);
+}
+

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube, Shield } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Users, PieChart, Settings, Building2, FolderKanban, CheckSquare, Calendar, Target, UsersRound, TestTube, Shield, UserCheck, Rocket } from 'lucide-react';
 
 export default function Sidebar() {
     const pathname = usePathname();
@@ -82,16 +82,28 @@ export default function Sidebar() {
 
             <div className="p-4 border-t border-border space-y-2">
                 <NavItem
+                    href="/admin/mvp-tests"
+                    icon={<Rocket size={20} />}
+                    label="MVP Tests"
+                    active={pathname?.startsWith('/admin/mvp-tests')}
+                />
+                <NavItem
                     href="/admin/test"
                     icon={<TestTube size={20} />}
                     label="MCP Tests"
-                    active={pathname?.startsWith('/admin/test') && !pathname?.startsWith('/admin/auth-test')}
+                    active={pathname?.startsWith('/admin/test') && !pathname?.startsWith('/admin/auth-test') && !pathname?.startsWith('/admin/team-tests') && !pathname?.startsWith('/admin/mvp-tests')}
                 />
                 <NavItem
                     href="/admin/auth-test"
                     icon={<Shield size={20} />}
                     label="Auth Tests"
                     active={pathname?.startsWith('/admin/auth-test')}
+                />
+                <NavItem
+                    href="/admin/team-tests"
+                    icon={<UserCheck size={20} />}
+                    label="Team Tests"
+                    active={pathname?.startsWith('/admin/team-tests')}
                 />
                 <NavItem
                     href="/settings"

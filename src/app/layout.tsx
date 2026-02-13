@@ -16,6 +16,12 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Whitespace CRM",
   description: "Agent-driven CRM for modern sales teams",
+  icons: {
+    icon: [
+      { url: '/Icon White.png', type: 'image/png' },
+    ],
+    apple: '/Icon White.png',
+  },
 };
 
 export default function RootLayout({

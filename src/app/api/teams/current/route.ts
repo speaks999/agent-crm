@@ -64,6 +64,8 @@ export async function GET(req: NextRequest) {
                     .upsert({
                         user_id: user.id,
                         current_team_id: memberships[0].team_id,
+                    }, {
+                        onConflict: 'user_id'
                     });
 
                 // Fetch team details
@@ -137,6 +139,8 @@ export async function PUT(req: NextRequest) {
             .upsert({
                 user_id: user.id,
                 current_team_id: team_id,
+            }, {
+                onConflict: 'user_id'
             });
 
         if (updateError) {
