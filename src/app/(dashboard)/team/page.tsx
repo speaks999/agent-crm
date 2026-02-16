@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus, Mail, Shield, User, Loader2, Pencil, Trash2, X, MoreVertical } from 'lucide-react';
+import { createBrowserClient } from '@/lib/supabaseClient';
 import { getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface TeamMember {
@@ -377,7 +378,22 @@ export default function TeamPage() {
 
     async function fetchTeamMembers() {
         try {
-            const headers = await getAuthHeaders();
+            // Get auth token from Supabase session
+            const supabase = createBrowserClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+            
+            // Add Bearer token if we have a session
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+                console.log('[Team Page] Fetching with Bearer token');
+            } else {
+                console.log('[Team Page] No session found, fetching without auth');
+            }
+            
             console.log('[Team Page] Fetching team members with headers:', headers);
             const response = await fetch('/api/team', { headers, credentials: 'include' });
             console.log('[Team Page] Response status:', response.status);
