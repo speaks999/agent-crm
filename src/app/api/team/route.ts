@@ -120,15 +120,23 @@ export async function GET(req: Request) {
         
         // Fallback to cookie-based auth if no Bearer token
         if (!user) {
+            console.log('[Team API] No Bearer token, trying cookie auth...');
             const cookieStore = await cookies();
+            const allCookies = cookieStore.getAll();
+            console.log('[Team API] Found cookies:', allCookies.map(c => c.name).join(', '));
+            
             const supabaseAuth = createServerClient(supabaseUrl, supabaseAnonKey, {
                 cookies: {
                     getAll() {
-                        return cookieStore.getAll();
+                        return allCookies;
+                    },
+                    setAll(cookiesToSet) {
+                        // No-op for GET requests
                     },
                 },
             });
             const { data, error: authError } = await supabaseAuth.auth.getUser();
+            console.log('[Team API] getUser result:', { hasUser: !!data?.user, error: authError?.message });
             if (!authError && data.user) {
                 user = data.user;
                 console.log('[Team API] User authenticated via cookies:', user.email);

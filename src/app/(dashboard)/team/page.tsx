@@ -378,8 +378,13 @@ export default function TeamPage() {
     async function fetchTeamMembers() {
         try {
             const headers = await getAuthHeaders();
+            console.log('[Team Page] Fetching team members with headers:', headers);
             const response = await fetch('/api/team', { headers, credentials: 'include' });
+            console.log('[Team Page] Response status:', response.status);
             const data = await response.json();
+            console.log('[Team Page] Response data:', data);
+            console.log('[Team Page] Is array?', Array.isArray(data));
+            console.log('[Team Page] Data length:', Array.isArray(data) ? data.length : 'not array');
             setMembers(Array.isArray(data) ? data : []);
         } catch (error) {
             console.error('Failed to fetch team members:', error);
