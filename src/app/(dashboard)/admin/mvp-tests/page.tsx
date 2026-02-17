@@ -2078,12 +2078,39 @@ const emailTests: MVPTest[] = [
             try {
                 const testEmail = `test+invite${Date.now()}@example.com`;
                 
+                // Get current team first
+                const teamResponse = await apiCall(
+                    '/api/teams/current',
+                    { method: 'GET' },
+                    context.getAuthHeaders()
+                );
+                
+                if (!teamResponse.ok) {
+                    return {
+                        passed: false,
+                        message: 'No team found - create a team first',
+                        error: 'User must have a team to test team invites',
+                    };
+                }
+                
+                const teamData = await teamResponse.json();
+                const teamId = teamData.team?.id;
+                
+                if (!teamId) {
+                    return {
+                        passed: false,
+                        message: 'No team ID available',
+                        error: 'Could not get team ID from current team',
+                    };
+                }
+                
                 // Send a team invite (which should trigger email)
                 const response = await apiCall(
                     '/api/teams/invites',
                     {
                         method: 'POST',
                         body: JSON.stringify({
+                            team_id: teamId,
                             email: testEmail,
                             role: 'member',
                         }),
