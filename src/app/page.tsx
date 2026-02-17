@@ -196,7 +196,7 @@ export default function LandingPage() {
                                 <Globe className="text-primary" size={24} />
                             </div>
                             <h3 className="text-2xl font-bold text-foreground mb-3">
-                                Integrations
+                                Integrations (Coming Soon)
                             </h3>
                             <p className="text-muted-foreground">
                                 Connect with your favorite tools. Seamlessly integrate with Insightly and more platforms.
