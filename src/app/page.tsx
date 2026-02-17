@@ -2,16 +2,38 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Users, MessageSquare, BarChart3, Zap, Shield, Globe, CheckCircle } from 'lucide-react';
+import { ArrowRight, Users, MessageSquare, BarChart3, Zap, Shield, Globe, CheckCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function LandingPage() {
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
+    const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+    // App screenshots for the carousel
+    const appScreenshots = [
+        { src: '/screenshots/dashboard.png', alt: 'Dashboard Overview', title: 'Dashboard' },
+        { src: '/screenshots/contacts.png', alt: 'Contact Management', title: 'Contacts' },
+        { src: '/screenshots/opportunities.png', alt: 'Deal Pipeline', title: 'Opportunities' },
+        { src: '/screenshots/team.png', alt: 'Team Collaboration', title: 'Team' },
+        { src: '/screenshots/chat.png', alt: 'AI Chat Assistant', title: 'AI Chat' },
+    ];
 
     useEffect(() => {
         // Detect theme
         const isDark = document.documentElement.classList.contains('dark');
         setTheme(isDark ? 'dark' : 'light');
     }, []);
+
+    const nextImage = () => {
+        setCurrentImageIndex((prev) => (prev + 1) % appScreenshots.length);
+    };
+
+    const prevImage = () => {
+        setCurrentImageIndex((prev) => (prev - 1 + appScreenshots.length) % appScreenshots.length);
+    };
+
+    const goToImage = (index: number) => {
+        setCurrentImageIndex(index);
+    };
 
     return (
         <div className="min-h-screen bg-background text-foreground">
@@ -275,8 +297,77 @@ export default function LandingPage() {
                             </ul>
                         </div>
                         <div className="relative">
-                            <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl border border-border shadow-2xl flex items-center justify-center">
-                                <div className="text-muted-foreground">Dashboard Preview</div>
+                            {/* Image Carousel */}
+                            <div className="relative aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl border border-border shadow-2xl overflow-hidden group">
+                                {/* Screenshots */}
+                                <div className="relative w-full h-full">
+                                    {appScreenshots.map((screenshot, index) => (
+                                        <div
+                                            key={index}
+                                            className={`absolute inset-0 transition-opacity duration-500 ${
+                                                index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+                                            }`}
+                                        >
+                                            <img
+                                                src={screenshot.src}
+                                                alt={screenshot.alt}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    // Fallback if image doesn't exist
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                            {/* Fallback content */}
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-secondary/20">
+                                                <div className="text-center">
+                                                    <div className="text-2xl font-bold text-foreground mb-2">
+                                                        {screenshot.title}
+                                                    </div>
+                                                    <div className="text-muted-foreground">Preview Coming Soon</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Navigation Arrows */}
+                                <button
+                                    onClick={prevImage}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label="Previous image"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                                <button
+                                    onClick={nextImage}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                    aria-label="Next image"
+                                >
+                                    <ChevronRight size={24} />
+                                </button>
+
+                                {/* Image Title Overlay */}
+                                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
+                                    <div className="text-white font-semibold text-lg">
+                                        {appScreenshots[currentImageIndex].title}
+                                    </div>
+                                </div>
+
+                                {/* Dot Indicators */}
+                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                                    {appScreenshots.map((_, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => goToImage(index)}
+                                            className={`w-2 h-2 rounded-full transition-all ${
+                                                index === currentImageIndex
+                                                    ? 'bg-white w-8'
+                                                    : 'bg-white/50 hover:bg-white/75'
+                                            }`}
+                                            aria-label={`Go to image ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </div>
