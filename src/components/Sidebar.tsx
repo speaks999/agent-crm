@@ -81,6 +81,8 @@ export default function Sidebar() {
             </nav>
 
             <div className="p-4 border-t border-border space-y-2">
+                {/* Testing pages hidden but still accessible via direct URL */}
+                {/* Uncomment to show testing pages:
                 <NavItem
                     href="/admin/mvp-tests"
                     icon={<Rocket size={20} />}
@@ -111,6 +113,7 @@ export default function Sidebar() {
                     label="Delete User"
                     active={pathname?.startsWith('/admin/delete-user')}
                 />
+                */}
                 <NavItem
                     href="/settings"
                     icon={<Settings size={20} />}

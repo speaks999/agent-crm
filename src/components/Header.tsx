@@ -154,7 +154,8 @@ export default function Header() {
                             />
                         )}
                     </div>
-                    {/* Test Navigation Links */}
+                    {/* Test Navigation Links - Hidden */}
+                    {/* Uncomment to show test pages:
                     <nav className="flex items-center gap-2 ml-4">
                         <Link
                             href="/admin/mvp-tests"
@@ -201,6 +202,7 @@ export default function Header() {
                             <span>Team Tests</span>
                         </Link>
                     </nav>
+                    */}
                 </div>
                 <div className="flex items-center gap-4">
                     {user && (
