@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { createServerClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
+import { sendTeamUpdate } from '@/lib/email/emailService';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -285,6 +286,23 @@ export async function POST(req: Request) {
 
         if (error) throw error;
 
+        // Get team name for notification
+        const { data: teamData } = await supabase
+            .from('teams')
+            .select('name')
+            .eq('id', teamId)
+            .single();
+        
+        // Send notification email to new member
+        if (teamData && email) {
+            await sendTeamUpdate({
+                to: email,
+                teamName: teamData.name,
+                updateType: 'member_added',
+                details: `You've been added to ${teamData.name} as a ${role}.`,
+            });
+        }
+
         return Response.json(data);
     } catch (error: any) {
         console.error('Error creating team member:', error);
@@ -339,6 +357,24 @@ export async function PUT(req: Request) {
             throw error;
         }
 
+        // Send notification if role was changed
+        if (updates.role && data.email) {
+            const { data: teamData } = await supabase
+                .from('teams')
+                .select('name')
+                .eq('id', data.team_id)
+                .single();
+            
+            if (teamData) {
+                await sendTeamUpdate({
+                    to: data.email,
+                    teamName: teamData.name,
+                    updateType: 'role_changed',
+                    details: `Your role has been updated to ${updates.role}.`,
+                });
+            }
+        }
+
         return Response.json(data);
     } catch (error: any) {
         console.error('Error updating team member:', error);
@@ -368,6 +404,13 @@ export async function DELETE(req: Request) {
             return Response.json({ error: 'Invalid member ID format' }, { status: 400 });
         }
 
+        // Get member details before deletion for notification
+        const { data: memberData } = await supabase
+            .from('team_members')
+            .select('email, first_name, team_id')
+            .eq('id', id)
+            .single();
+
         // Soft delete by setting active to false
         const { error } = await supabase
             .from('team_members')
@@ -379,6 +422,24 @@ export async function DELETE(req: Request) {
                 return Response.json({ error: 'Invalid ID format' }, { status: 400 });
             }
             throw error;
+        }
+
+        // Send notification to removed member
+        if (memberData?.email) {
+            const { data: teamData } = await supabase
+                .from('teams')
+                .select('name')
+                .eq('id', memberData.team_id)
+                .single();
+            
+            if (teamData) {
+                await sendTeamUpdate({
+                    to: memberData.email,
+                    teamName: teamData.name,
+                    updateType: 'member_removed',
+                    details: `You have been removed from ${teamData.name}.`,
+                });
+            }
         }
 
         return Response.json({ success: true });

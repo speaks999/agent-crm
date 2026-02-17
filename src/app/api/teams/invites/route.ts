@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendTeamInvite } from '@/lib/email/emailService';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -199,8 +200,22 @@ export async function POST(req: NextRequest) {
             throw inviteError;
         }
 
-        // TODO: Send email notification to invitee
-        // For now, just return the invite
+        // Get team name and inviter name for email
+        const teamName = (invite.teams as any)?.name || 'the team';
+        const { data: inviterData } = await supabaseAdmin.auth.admin.getUserById(user.id);
+        const inviterName = inviterData?.user?.user_metadata?.first_name 
+            ? `${inviterData.user.user_metadata.first_name} ${inviterData.user.user_metadata.last_name || ''}`.trim()
+            : inviterData?.user?.email || 'A team member';
+
+        // Send email notification to invitee
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        await sendTeamInvite({
+            to: email,
+            teamName,
+            inviterName,
+            inviteLink: `${appUrl}/team/invites`,
+            role,
+        });
 
         return NextResponse.json({ 
             invite,

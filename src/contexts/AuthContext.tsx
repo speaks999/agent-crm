@@ -112,6 +112,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });
 
+    // Send password reset notification email
+    if (!error) {
+      try {
+        await fetch('/api/notifications/password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+      } catch (emailError) {
+        console.error('Failed to send password reset notification:', emailError);
+        // Don't fail the reset if email fails
+      }
+    }
+
     return { error };
   };
 

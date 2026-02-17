@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
+import { sendWelcomeEmail } from '@/lib/email/emailService';
 
 /**
  * Auth Callback Route
@@ -118,6 +119,13 @@ export async function GET(request: NextRequest) {
                 });
 
               console.log(`Created team "${teamName}" for user ${data.user.email}`);
+              
+              // Send welcome email
+              await sendWelcomeEmail({
+                to: data.user.email || '',
+                firstName: firstName || data.user.email?.split('@')[0] || 'User',
+                teamName: teamName,
+              });
             }
           }
         } catch (teamErr) {
