@@ -222,18 +222,12 @@ export async function POST(req: Request) {
                 finalArgs = { ...finalArgs, team_id: teamId };
                 console.log(`[MCP] Injecting team_id=${teamId} for ${name} (user: ${email})`);
             } else {
-                // For list operations, return empty results if no team
+                // For list operations with no team, still allow but log warning
+                // This allows backwards compatibility with contacts that don't have team_id
                 if (TEAM_REQUIRED_TOOLS.includes(name)) {
-                    console.warn(`[MCP] No team_id for ${name} - returning empty results for data isolation`);
-                    return Response.json({
-                        result: {
-                            content: [{ type: 'text', text: 'No team found. Please set up your team first.' }],
-                            structuredContent: { 
-                                accounts: [], contacts: [], deals: [], 
-                                interactions: [], pipelines: [], tags: [] 
-                            },
-                        }
-                    });
+                    console.warn(`[MCP] No team_id for ${name} - will show unassigned data`);
+                    // Don't return empty - let the MCP server handle it
+                    // It will return contacts with null team_id
                 }
                 console.warn(`[MCP] No team_id available for ${name}`);
             }
