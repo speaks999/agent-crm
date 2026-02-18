@@ -64,7 +64,9 @@ export default function ContactsPage() {
     async function fetchContacts() {
         try {
             setError(null);
+            console.log('[Contacts] Fetching contacts...');
             const data = await fetchMCPData('list_contacts');
+            console.log('[Contacts] Received data:', data);
             const contactsList = data.contacts || [];
             // Sort by newest first
             const sorted = [...contactsList].sort((a: Contact, b: Contact) => {
@@ -74,9 +76,10 @@ export default function ContactsPage() {
             });
             setAllContacts(sorted);
             setContacts(sorted);
+            console.log('[Contacts] Loaded', sorted.length, 'contacts');
         } catch (err: any) {
             console.error('Error fetching contacts:', err);
-            setError(err.message);
+            setError(err.message || 'Failed to load contacts. Please check authentication.');
         } finally {
             setIsLoading(false);
         }
