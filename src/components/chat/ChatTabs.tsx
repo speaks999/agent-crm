@@ -18,8 +18,9 @@ const tabs: Tab[] = [
   { id: 'sales', label: 'Sales', href: '/sales', icon: <TrendingUp size={18} /> },
   { id: 'data', label: 'Data', href: '/data', icon: <Database size={18} /> },
   { id: 'team', label: 'Team', href: '/team', icon: <UsersRound size={18} /> },
-  { id: 'mcp-tests', label: 'MCP Tests', href: '/admin/test', icon: <TestTube size={18} /> },
-  { id: 'auth-tests', label: 'Auth Tests', href: '/admin/auth-test', icon: <Shield size={18} /> },
+  // Testing tabs hidden (still accessible via direct URL)
+  // { id: 'mcp-tests', label: 'MCP Tests', href: '/admin/test', icon: <TestTube size={18} /> },
+  // { id: 'auth-tests', label: 'Auth Tests', href: '/admin/auth-test', icon: <Shield size={18} /> },
   { id: 'settings', label: 'Settings', href: '/settings', icon: <Settings size={18} /> },
 ];
 
