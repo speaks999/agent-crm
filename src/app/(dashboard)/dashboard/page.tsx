@@ -217,6 +217,12 @@ export default function Dashboard() {
         ));
     }, []);
 
+    const handleUpdateSettings = useCallback((id: string, settings: Record<string, any>) => {
+        setWidgets(prev => prev.map(w => 
+            w.id === id ? { ...w, settings: { ...w.settings, ...settings } } : w
+        ));
+    }, []);
+
     const handleResetWidgets = useCallback(() => {
         setWidgets(DEFAULT_WIDGETS);
     }, []);
@@ -459,6 +465,7 @@ export default function Dashboard() {
                                         config={widget}
                                         onRemove={handleRemoveWidget}
                                         onResize={handleResizeWidget}
+                                        onUpdateSettings={handleUpdateSettings}
                                         onDragStart={handleDragStart}
                                         isDragging={draggedWidgetId === widget.id}
                                     />

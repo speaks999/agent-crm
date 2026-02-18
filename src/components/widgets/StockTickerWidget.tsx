@@ -17,7 +17,7 @@ interface StockQuote {
 const DEFAULT_SYMBOLS = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA'];
 const STORAGE_KEY = 'stock-ticker-symbols';
 
-export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDragStart, isDragging }: WidgetProps) {
+export function StockTickerWidget({ config, onRemove, onResize, onSettings, onUpdateSettings, onDragStart, isDragging }: WidgetProps) {
     const [stocks, setStocks] = useState<StockQuote[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,29 +26,51 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onDr
     const [newSymbol, setNewSymbol] = useState('');
     const [symbols, setSymbols] = useState<string[]>([]);
 
-    // Load symbols from localStorage on mount
+    // Load symbols from config settings first, then localStorage as fallback
     useEffect(() => {
+        // Prioritize cloud-saved settings
+        if (config.settings?.symbols && Array.isArray(config.settings.symbols) && config.settings.symbols.length > 0) {
+            setSymbols(config.settings.symbols);
+            return;
+        }
+        
+        // Fallback to localStorage (legacy)
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setSymbols(parsed);
+                    // Migrate to cloud storage
+                    if (onUpdateSettings) {
+                        onUpdateSettings(config.id, { symbols: parsed });
+                    }
                     return;
                 }
             } catch (e) {
                 console.error('Failed to parse stored symbols:', e);
             }
         }
-        setSymbols(config.settings?.symbols || DEFAULT_SYMBOLS);
-    }, [config.settings?.symbols]);
+        
+        // Final fallback to defaults
+        setSymbols(DEFAULT_SYMBOLS);
+        if (onUpdateSettings) {
+            onUpdateSettings(config.id, { symbols: DEFAULT_SYMBOLS });
+        }
+    }, [config.id, config.settings?.symbols, onUpdateSettings]);
 
-    // Save symbols to localStorage when they change
+    // Save symbols to both cloud and localStorage when they change
     useEffect(() => {
         if (symbols.length > 0) {
+            // Save to localStorage for offline support
             localStorage.setItem(STORAGE_KEY, JSON.stringify(symbols));
+            
+            // Save to cloud via config settings
+            if (onUpdateSettings) {
+                onUpdateSettings(config.id, { symbols });
+            }
         }
-    }, [symbols]);
+    }, [symbols, config.id, onUpdateSettings]);
 
     const fetchStocks = useCallback(async () => {
         if (symbols.length === 0) {

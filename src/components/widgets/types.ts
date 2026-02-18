@@ -36,6 +36,7 @@ export interface WidgetProps {
     onRemove: (id: string) => void;
     onResize?: (id: string, size: WidgetSize) => void;
     onSettings?: (id: string) => void;
+    onUpdateSettings?: (id: string, settings: Record<string, any>) => void;
     onDragStart?: (e: React.DragEvent, id: string) => void;
     isDragging?: boolean;
 }
