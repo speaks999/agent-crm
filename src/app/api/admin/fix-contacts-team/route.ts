@@ -11,34 +11,54 @@ export async function POST(req: NextRequest) {
     try {
         const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
         
-        // Get user from session
-        const cookieStore = await cookies();
-        const allCookies = cookieStore.getAll();
-        const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-            cookies: {
-                getAll() {
-                    return allCookies;
-                },
-            },
-        });
+        // Try multiple auth methods
+        let user = null;
         
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        // First try Authorization header
+        const authHeader = req.headers.get('authorization');
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.slice(7);
+            const { data } = await supabaseAdmin.auth.getUser(token);
+            user = data.user;
         }
         
+        // Fallback to cookies
+        if (!user) {
+            const cookieStore = await cookies();
+            const allCookies = cookieStore.getAll();
+            const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+                cookies: {
+                    getAll() {
+                        return allCookies;
+                    },
+                },
+            });
+            
+            const { data } = await supabase.auth.getUser();
+            user = data.user;
+        }
+        
+        if (!user) {
+            console.log('[Fix Contacts] No user found');
+            return NextResponse.json({ error: 'Unauthorized - Please sign in' }, { status: 401 });
+        }
+        
+        console.log(`[Fix Contacts] User authenticated: ${user.email}`);
+        
         // Get user's current team
-        const { data: prefs } = await supabaseAdmin
+        const { data: prefs, error: prefsError } = await supabaseAdmin
             .from('user_team_preferences')
             .select('current_team_id')
             .eq('user_id', user.id)
             .single();
         
-        if (!prefs?.current_team_id) {
-            return NextResponse.json({ error: 'No team found' }, { status: 400 });
+        if (prefsError || !prefs?.current_team_id) {
+            console.log('[Fix Contacts] No team preference found');
+            return NextResponse.json({ error: 'No team found. Please set up your team first.' }, { status: 400 });
         }
         
         const teamId = prefs.current_team_id;
+        console.log(`[Fix Contacts] Using team_id: ${teamId}`);
         
         // Update all contacts with null team_id to use this team_id
         const { data: updated, error } = await supabaseAdmin
@@ -48,8 +68,11 @@ export async function POST(req: NextRequest) {
             .select('id, first_name, last_name');
         
         if (error) {
+            console.error('[Fix Contacts] Update error:', error);
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
+        
+        console.log(`[Fix Contacts] Updated ${updated?.length || 0} contacts`);
         
         return NextResponse.json({
             success: true,
@@ -58,6 +81,7 @@ export async function POST(req: NextRequest) {
             contacts: updated,
         });
     } catch (error: any) {
+        console.error('[Fix Contacts] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

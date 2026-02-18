@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createBrowserClient } from '@/lib/supabaseClient';
 
 export default function FixContactsPage() {
     const [result, setResult] = useState<any>(null);
@@ -9,8 +10,21 @@ export default function FixContactsPage() {
     const fixContacts = async () => {
         setLoading(true);
         try {
+            // Get auth token
+            const supabase = createBrowserClient();
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+            
+            if (session?.access_token) {
+                headers['Authorization'] = `Bearer ${session.access_token}`;
+            }
+            
             const response = await fetch('/api/admin/fix-contacts-team', {
                 method: 'POST',
+                headers,
                 credentials: 'include',
             });
             const data = await response.json();
@@ -40,9 +54,18 @@ export default function FixContactsPage() {
                 
                 {result && (
                     <div className="mt-6 p-4 bg-muted rounded-lg">
+                        <h3 className="font-semibold mb-2">
+                            {result.success ? '✅ Success!' : '❌ Error'}
+                        </h3>
                         <pre className="text-sm overflow-auto">
                             {JSON.stringify(result, null, 2)}
                         </pre>
+                        
+                        {result.success && (
+                            <p className="mt-4 text-sm text-muted-foreground">
+                                {result.updated} contacts updated. Now go to the Contacts page and click refresh!
+                            </p>
+                        )}
                     </div>
                 )}
             </div>
