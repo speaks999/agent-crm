@@ -251,7 +251,27 @@ export default function Header() {
                                         })()
                                     )}
                                 </div>
-                                <span className="text-foreground">{user.email}</span>
+                                <span className="text-foreground">
+                                    {(() => {
+                                        const metadata = user.user_metadata || {};
+                                        const firstName = metadata.first_name || '';
+                                        const lastName = metadata.last_name || '';
+                                        const fullName = metadata.full_name || metadata.name || '';
+                                        
+                                        // If we have first/last name from metadata
+                                        if (firstName && lastName) {
+                                            return `${firstName} ${lastName}`;
+                                        }
+                                        
+                                        // If we have a full name
+                                        if (fullName) {
+                                            return fullName;
+                                        }
+                                        
+                                        // Fall back to email if no name available
+                                        return user.email;
+                                    })()}
+                                </span>
                             </div>
                             <button
                                 onClick={async () => {
