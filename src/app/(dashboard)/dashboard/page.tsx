@@ -41,6 +41,7 @@ export default function Dashboard() {
             const response = await fetch('/api/user/preferences', {
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
                 },
                 credentials: 'include',
             });
@@ -90,6 +91,7 @@ export default function Dashboard() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
                 },
                 credentials: 'include',
                 body: JSON.stringify({ widget_layout: widgetsToSave }),
