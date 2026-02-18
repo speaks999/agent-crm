@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { WidgetWrapper } from './WidgetWrapper';
 import { WidgetProps } from './types';
 import { TrendingUp, TrendingDown, Minus, RefreshCw, AlertCircle, Plus, X, Settings, Check } from 'lucide-react';
@@ -25,12 +25,14 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onUp
     const [isEditing, setIsEditing] = useState(false);
     const [newSymbol, setNewSymbol] = useState('');
     const [symbols, setSymbols] = useState<string[]>([]);
+    const isInitialMount = useRef(true);
 
     // Load symbols from config settings first, then localStorage as fallback
     useEffect(() => {
         // Prioritize cloud-saved settings
         if (config.settings?.symbols && Array.isArray(config.settings.symbols) && config.settings.symbols.length > 0) {
             setSymbols(config.settings.symbols);
+            isInitialMount.current = false;
             return;
         }
         
@@ -41,10 +43,11 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onUp
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
                     setSymbols(parsed);
-                    // Migrate to cloud storage
-                    if (onUpdateSettings) {
+                    // Migrate to cloud storage (only on initial mount)
+                    if (onUpdateSettings && isInitialMount.current) {
                         onUpdateSettings(config.id, { symbols: parsed });
                     }
+                    isInitialMount.current = false;
                     return;
                 }
             } catch (e) {
@@ -54,23 +57,35 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onUp
         
         // Final fallback to defaults
         setSymbols(DEFAULT_SYMBOLS);
-        if (onUpdateSettings) {
+        if (onUpdateSettings && isInitialMount.current) {
             onUpdateSettings(config.id, { symbols: DEFAULT_SYMBOLS });
         }
+        isInitialMount.current = false;
     }, [config.id, config.settings?.symbols, onUpdateSettings]);
 
-    // Save symbols to both cloud and localStorage when they change
+    // Save symbols to both cloud and localStorage when they change (but not on initial load)
     useEffect(() => {
-        if (symbols.length > 0) {
-            // Save to localStorage for offline support
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(symbols));
-            
-            // Save to cloud via config settings
-            if (onUpdateSettings) {
-                onUpdateSettings(config.id, { symbols });
-            }
+        // Skip if this is the initial mount
+        if (isInitialMount.current || symbols.length === 0) {
+            return;
         }
-    }, [symbols, config.id, onUpdateSettings]);
+        
+        // Check if symbols are different from what's in config
+        const configSymbols = config.settings?.symbols;
+        const symbolsChanged = JSON.stringify(symbols) !== JSON.stringify(configSymbols);
+        
+        if (!symbolsChanged) {
+            return; // Don't save if nothing changed
+        }
+        
+        // Save to localStorage for offline support
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(symbols));
+        
+        // Save to cloud via config settings
+        if (onUpdateSettings) {
+            onUpdateSettings(config.id, { symbols });
+        }
+    }, [symbols, config.id, config.settings?.symbols, onUpdateSettings]);
 
     const fetchStocks = useCallback(async () => {
         if (symbols.length === 0) {
