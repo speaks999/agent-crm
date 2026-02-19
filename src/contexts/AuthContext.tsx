@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { createBrowserClient } from '@/lib/supabaseClient';
+import { buildPublicUrl } from '@/lib/publicUrl';
 import { useRouter } from 'next/navigation';
 
 interface SignUpData {
@@ -63,12 +64,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase.auth]);
 
   const signUp = async ({ email, password, firstName, lastName, companyName }: SignUpData) => {
+    const emailRedirectTo = buildPublicUrl('/auth/callback');
     // Email confirmations are enabled - users must confirm their email
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo,
         data: {
           first_name: firstName,
           last_name: lastName,
@@ -108,8 +110,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
+    const redirectTo = buildPublicUrl('/auth/reset-password');
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/reset-password`,
+      redirectTo,
     });
 
     // Send password reset notification email
@@ -130,11 +133,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resendConfirmationEmail = async (email: string) => {
+    const emailRedirectTo = buildPublicUrl('/auth/callback');
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo,
       },
     });
 
