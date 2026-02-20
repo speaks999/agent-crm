@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ invites: [] });
         }
 
-        // Get invites for user's email
+        // Get invites for user's email (normalized to lowercase to match stored format)
         const { data: invites, error } = await supabaseAdmin
             .from('team_invites')
             .select(`
@@ -78,26 +78,36 @@ export async function GET(req: NextRequest) {
                 status,
                 created_at,
                 expires_at,
+                invited_by,
                 teams (
                     id,
                     name,
                     logo_url
-                ),
-                invited_by_user:invited_by (
-                    email
                 )
             `)
-            .eq('email', user.email)
+            .eq('email', user.email?.toLowerCase())
             .eq('status', 'pending')
             .gt('expires_at', new Date().toISOString());
 
         if (error) {
-            // Table might not exist yet, return empty
-            console.warn('Error fetching invites:', error.message);
-            return NextResponse.json({ invites: [] });
+            console.error('Error fetching invites:', error.message);
+            return NextResponse.json({ error: 'Failed to fetch invites' }, { status: 500 });
         }
 
-        return NextResponse.json({ invites: invites || [] });
+        // Look up inviter emails via the admin API (can't join on auth.users via PostgREST)
+        const invitesWithInviters = await Promise.all(
+            (invites || []).map(async (invite) => {
+                let inviterEmail: string | null = null;
+                if (invite.invited_by) {
+                    const { data } = await supabaseAdmin.auth.admin.getUserById(invite.invited_by);
+                    inviterEmail = data?.user?.email ?? null;
+                }
+                const { invited_by, ...rest } = invite;
+                return { ...rest, invited_by_user: inviterEmail ? { email: inviterEmail } : null };
+            })
+        );
+
+        return NextResponse.json({ invites: invitesWithInviters });
     } catch (error: any) {
         console.error('Error fetching invites:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -254,7 +264,7 @@ export async function PUT(req: NextRequest) {
             .from('team_invites')
             .select('*')
             .eq('id', invite_id)
-            .eq('email', user.email)
+            .eq('email', user.email?.toLowerCase())
             .eq('status', 'pending')
             .single();
 

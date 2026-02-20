@@ -135,23 +135,40 @@ export default function Header() {
             <div className="h-16 flex items-center justify-between px-8">
                 <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
-                        {/* Show white logo on dark backgrounds, black logo on light backgrounds */}
                         {resolvedTheme === 'dark' ? (
-                            <img
-                                key="logo-white"
-                                src="/Logo White.png"
-                                alt="Whitespace logo"
-                                className="h-10 w-auto"
-                                loading="eager"
-                            />
+                            <>
+                                <img
+                                    key="icon-white"
+                                    src="/Icon White.png"
+                                    alt="Whitespace"
+                                    className="h-10 w-auto md:hidden"
+                                    loading="eager"
+                                />
+                                <img
+                                    key="logo-white"
+                                    src="/Logo White.png"
+                                    alt="Whitespace"
+                                    className="h-10 w-auto hidden md:block"
+                                    loading="eager"
+                                />
+                            </>
                         ) : (
-                            <img
-                                key="logo-black"
-                                src="/Logo Black.png"
-                                alt="Whitespace logo"
-                                className="h-10 w-auto"
-                                loading="eager"
-                            />
+                            <>
+                                <img
+                                    key="icon-black"
+                                    src="/Icon Black.png"
+                                    alt="Whitespace"
+                                    className="h-10 w-auto md:hidden"
+                                    loading="eager"
+                                />
+                                <img
+                                    key="logo-black"
+                                    src="/Logo Black.png"
+                                    alt="Whitespace"
+                                    className="h-10 w-auto hidden md:block"
+                                    loading="eager"
+                                />
+                            </>
                         )}
                     </div>
                     {/* Test Navigation Links - Hidden */}

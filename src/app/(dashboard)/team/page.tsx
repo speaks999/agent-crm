@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Plus, Mail, Shield, User, Loader2, Pencil, Trash2, X, MoreVertical } from 'lucide-react';
+import { Plus, Mail, Shield, User, Loader2, Pencil, Trash2, X, MoreVertical, CheckCircle2 } from 'lucide-react';
 import { createBrowserClient } from '@/lib/supabaseClient';
 import { getAuthHeaders } from '@/lib/fetchMCPData';
 
@@ -35,6 +35,8 @@ function TeamMemberModal({
     });
     const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [inviteSent, setInviteSent] = useState(false);
+    const [invitedEmail, setInvitedEmail] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
