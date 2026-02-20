@@ -40,7 +40,7 @@ interface PendingInvite {
 }
 
 export default function TeamSettingsPage() {
-    const { currentTeam, sendInvite, loading: teamLoading } = useTeam();
+    const { currentTeam, sendInvite, refreshTeams, loading: teamLoading } = useTeam();
     const { session } = useAuth();
     const [members, setMembers] = useState<TeamMember[]>([]);
     const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
@@ -57,6 +57,8 @@ export default function TeamSettingsPage() {
     // Edit team name
     const [isEditingName, setIsEditingName] = useState(false);
     const [teamName, setTeamName] = useState('');
+    const [isSavingName, setIsSavingName] = useState(false);
+    const [nameSaveSuccess, setNameSaveSuccess] = useState(false);
 
     useEffect(() => {
         if (currentTeam) {
@@ -103,6 +105,53 @@ export default function TeamSettingsPage() {
             setError(err.message || 'Failed to send invite');
         } finally {
             setIsSendingInvite(false);
+        }
+    };
+
+    const handleSaveTeamName = async () => {
+        if (!currentTeam || !session?.access_token) return;
+        const nextName = teamName.trim();
+        if (!nextName) {
+            setError('Team name cannot be empty');
+            return;
+        }
+
+        if (nextName === currentTeam.name) {
+            setIsEditingName(false);
+            return;
+        }
+
+        setIsSavingName(true);
+        setError(null);
+        setNameSaveSuccess(false);
+
+        try {
+            const response = await fetch('/api/teams', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                credentials: 'include',
+                body: JSON.stringify({
+                    team_id: currentTeam.id,
+                    name: nextName,
+                }),
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to update team name');
+            }
+
+            await refreshTeams();
+            setIsEditingName(false);
+            setNameSaveSuccess(true);
+            setTimeout(() => setNameSaveSuccess(false), 2500);
+        } catch (err: any) {
+            setError(err.message || 'Failed to update team name');
+        } finally {
+            setIsSavingName(false);
         }
     };
 
@@ -189,10 +238,11 @@ export default function TeamSettingsPage() {
                                         className="px-3 py-1.5 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                     />
                                     <button
-                                        onClick={() => setIsEditingName(false)}
+                                        onClick={handleSaveTeamName}
+                                        disabled={isSavingName}
                                         className="px-3 py-1.5 bg-primary text-primary-foreground rounded-lg text-sm hover:bg-primary-glow transition-colors"
                                     >
-                                        Save
+                                        {isSavingName ? 'Saving...' : 'Save'}
                                     </button>
                                     <button
                                         onClick={() => {
@@ -213,6 +263,9 @@ export default function TeamSettingsPage() {
                                         <p className="text-sm text-muted-foreground">
                                             /{currentTeam.slug}
                                         </p>
+                                    )}
+                                    {nameSaveSuccess && (
+                                        <p className="text-sm text-green-500 mt-1">Team name saved</p>
                                     )}
                                 </div>
                             )}

@@ -152,3 +152,59 @@ export async function POST(req: NextRequest) {
     }
 }
 
+/**
+ * PUT /api/teams
+ * Update team details (owner only)
+ */
+export async function PUT(req: NextRequest) {
+    try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: 'Supabase env not configured' }, { status: 500 });
+        }
+
+        const user = await getUserFromRequest(req);
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const body = await req.json();
+        const { team_id, name } = body;
+
+        if (!team_id || typeof team_id !== 'string') {
+            return NextResponse.json({ error: 'team_id is required' }, { status: 400 });
+        }
+
+        if (!name || typeof name !== 'string' || name.trim().length === 0) {
+            return NextResponse.json({ error: 'Team name is required' }, { status: 400 });
+        }
+
+        // Only owners can rename a team
+        const { data: membership, error: membershipError } = await supabaseAdmin
+            .from('team_memberships')
+            .select('role')
+            .eq('team_id', team_id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (membershipError || !membership || membership.role !== 'owner') {
+            return NextResponse.json({ error: 'Only team owners can update team settings' }, { status: 403 });
+        }
+
+        const { data: team, error: updateError } = await supabaseAdmin
+            .from('teams')
+            .update({ name: name.trim() })
+            .eq('id', team_id)
+            .select()
+            .single();
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        return NextResponse.json({ team, message: 'Team updated successfully' });
+    } catch (error: any) {
+        console.error('Error updating team:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
