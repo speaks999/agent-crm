@@ -432,14 +432,13 @@ export async function DELETE(req: NextRequest) {
             return NextResponse.json({ error: 'You do not have permission to revoke invites for this team' }, { status: 403 });
         }
 
-        // Mark the invite as revoked
-        const { error: updateError } = await supabaseAdmin
+        const { error: deleteError } = await supabaseAdmin
             .from('team_invites')
-            .update({ status: 'revoked' })
+            .delete()
             .eq('id', inviteId);
 
-        if (updateError) {
-            throw updateError;
+        if (deleteError) {
+            throw deleteError;
         }
 
         return NextResponse.json({ message: 'Invite revoked' });
