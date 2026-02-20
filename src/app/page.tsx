@@ -414,10 +414,12 @@ export default function LandingPage() {
                                                 index === currentImageIndex ? 'opacity-100' : 'opacity-0'
                                             }`}
                                         >
-                                            <img
+                                            <Image
                                                 src={screenshot.src}
                                                 alt={screenshot.alt}
-                                                className="w-full h-full object-cover"
+                                                fill
+                                                sizes="(max-width: 1024px) 100vw, 50vw"
+                                                className="object-cover"
                                                 onError={(e) => {
                                                     // Fallback if image doesn't exist
                                                     (e.target as HTMLImageElement).style.display = 'none';
