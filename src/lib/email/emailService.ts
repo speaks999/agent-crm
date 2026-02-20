@@ -6,7 +6,7 @@ import { teamUpdateTemplate } from './templates/teamUpdate';
 import { logEmail } from './emailLogger';
 
 const resendApiKey = process.env.RESEND_API_KEY;
-const fromEmail = process.env.RESEND_FROM_EMAIL || 'Whitespace CRM <noreply@whitespace-crm.com>';
+const fromEmail = process.env.RESEND_FROM_EMAIL || 'Whitespace CRM <noreply@whitespace.company>';
 
 let resend: Resend | null = null;
 

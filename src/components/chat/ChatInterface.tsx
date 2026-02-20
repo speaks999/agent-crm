@@ -390,6 +390,7 @@ export function ChatInterface() {
             const responseText = data.text || '';
             const structuredContent = data.structuredContent;
             const chartData = data.chartData;
+            const toolName = data.toolName; // Track which tool was called
 
             // Detect actions based on content
             const actions = detectAndAddActions(responseText);
@@ -409,6 +410,12 @@ export function ChatInterface() {
                 if (structuredContent.removed) {
                     duplicates = { ...duplicates, removed: structuredContent.removed };
                 }
+            }
+
+            // Trigger task refresh if an interaction was created
+            if (toolName === 'create_interaction' || structuredContent?.interactions) {
+                console.log('[ChatInterface] Task created, triggering refresh');
+                window.dispatchEvent(new Event('taskCreated'));
             }
 
             // Update the message with response text, actions, duplicates, and chart

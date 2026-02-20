@@ -28,6 +28,7 @@ type Contact = {
   email?: string;
   phone?: string;
   role?: string;
+  account_id?: string;
   created_at?: string;
 };
 
@@ -229,8 +230,17 @@ export default function DataHubPage() {
   };
 
   const renderMeta = (sectionTitle: string, item: any) => {
-    if (sectionTitle === 'Contacts' && item.role) {
-      return item.role;
+    if (sectionTitle === 'Contacts') {
+      const parts = [];
+      if (item.role) parts.push(item.role);
+      // Find the associated account name if account_id exists
+      if (item.account_id) {
+        const account = accounts.find(acc => acc.id === item.account_id);
+        if (account?.name) {
+          parts.push(account.name);
+        }
+      }
+      return parts.join(' - ') || null;
     }
     if (sectionTitle === 'Accounts' && item.industry) {
       return item.industry;

@@ -8,7 +8,17 @@ import {
 export async function handleAccountTool(request: any, supabase: SupabaseClient) {
     // Create Account
     if (request.params.name === 'create_account') {
-        const args = CreateAccountSchema.parse(request.params.arguments);
+        // Preprocess website field to add protocol if missing
+        const rawArgs = request.params.arguments;
+        if (rawArgs.website && typeof rawArgs.website === 'string' && rawArgs.website.trim() !== '') {
+            const website = rawArgs.website.trim();
+            // Add https:// if no protocol is present
+            if (!website.match(/^https?:\/\//i)) {
+                rawArgs.website = `https://${website}`;
+            }
+        }
+        
+        const args = CreateAccountSchema.parse(rawArgs);
 
         const insertData: any = {
             name: args.name,
@@ -146,7 +156,17 @@ export async function handleAccountTool(request: any, supabase: SupabaseClient) 
 
     // Update Account
     if (request.params.name === 'update_account') {
-        const args = UpdateAccountSchema.parse(request.params.arguments);
+        // Preprocess website field to add protocol if missing
+        const rawArgs = request.params.arguments;
+        if (rawArgs.website && typeof rawArgs.website === 'string' && rawArgs.website.trim() !== '') {
+            const website = rawArgs.website.trim();
+            // Add https:// if no protocol is present
+            if (!website.match(/^https?:\/\//i)) {
+                rawArgs.website = `https://${website}`;
+            }
+        }
+        
+        const args = UpdateAccountSchema.parse(rawArgs);
         const { id, ...updates } = args;
 
         const updateData: any = { ...updates, updated_at: new Date().toISOString() };

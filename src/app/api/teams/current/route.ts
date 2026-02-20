@@ -75,10 +75,10 @@ export async function GET(req: NextRequest) {
                     .eq('id', memberships[0].team_id)
                     .single();
 
-                return NextResponse.json({ team });
+                return NextResponse.json({ team, team_id: memberships[0].team_id });
             }
 
-            return NextResponse.json({ team: null });
+            return NextResponse.json({ team: null, team_id: null });
         }
 
         // Fetch current team details
@@ -92,7 +92,7 @@ export async function GET(req: NextRequest) {
             throw error;
         }
 
-        return NextResponse.json({ team });
+        return NextResponse.json({ team, team_id: prefs.current_team_id });
     } catch (error: any) {
         console.error('Error fetching current team:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });

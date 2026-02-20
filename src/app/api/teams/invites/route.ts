@@ -282,7 +282,7 @@ export async function PUT(req: NextRequest) {
         }
 
         // Accept invite
-        // Add user to team
+        // Add user to team_memberships
         const { error: membershipError } = await supabaseAdmin
             .from('team_memberships')
             .insert({
@@ -294,6 +294,22 @@ export async function PUT(req: NextRequest) {
         if (membershipError) {
             throw membershipError;
         }
+
+        // Also add user to team_members table so they appear on the team page
+        const { data: userData } = await supabaseAdmin.auth.admin.getUserById(user.id);
+        const metadata = userData?.user?.user_metadata || {};
+        
+        await supabaseAdmin
+            .from('team_members')
+            .insert({
+                team_id: invite.team_id,
+                user_id: user.id,
+                first_name: metadata.first_name || '',
+                last_name: metadata.last_name || '',
+                email: user.email || '',
+                role: invite.role === 'owner' ? 'admin' : invite.role,
+                active: true,
+            });
 
         // Update invite status
         await supabaseAdmin

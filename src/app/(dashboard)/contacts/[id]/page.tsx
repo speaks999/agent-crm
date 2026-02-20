@@ -504,7 +504,7 @@ export default function ContactDetailPage() {
     const initials = [contact.first_name?.[0], contact.last_name?.[0]].filter(Boolean).join('').toUpperCase() || '?';
 
     return (
-        <div className="flex-1 overflow-auto p-8">
+        <div className="flex-1 overflow-y-auto p-8">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <Link href="/contacts" className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">

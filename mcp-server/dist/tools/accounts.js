@@ -2,7 +2,16 @@ import { CreateAccountSchema, UpdateAccountSchema, } from '../types.js';
 export async function handleAccountTool(request, supabase) {
     // Create Account
     if (request.params.name === 'create_account') {
-        const args = CreateAccountSchema.parse(request.params.arguments);
+        // Preprocess website field to add protocol if missing
+        const rawArgs = request.params.arguments;
+        if (rawArgs.website && typeof rawArgs.website === 'string' && rawArgs.website.trim() !== '') {
+            const website = rawArgs.website.trim();
+            // Add https:// if no protocol is present
+            if (!website.match(/^https?:\/\//i)) {
+                rawArgs.website = `https://${website}`;
+            }
+        }
+        const args = CreateAccountSchema.parse(rawArgs);
         const insertData = {
             name: args.name,
             industry: args.industry || null,
@@ -123,7 +132,16 @@ export async function handleAccountTool(request, supabase) {
     }
     // Update Account
     if (request.params.name === 'update_account') {
-        const args = UpdateAccountSchema.parse(request.params.arguments);
+        // Preprocess website field to add protocol if missing
+        const rawArgs = request.params.arguments;
+        if (rawArgs.website && typeof rawArgs.website === 'string' && rawArgs.website.trim() !== '') {
+            const website = rawArgs.website.trim();
+            // Add https:// if no protocol is present
+            if (!website.match(/^https?:\/\//i)) {
+                rawArgs.website = `https://${website}`;
+            }
+        }
+        const args = UpdateAccountSchema.parse(rawArgs);
         const { id, ...updates } = args;
         const updateData = { ...updates, updated_at: new Date().toISOString() };
         // Only include tags if explicitly provided (tags column may not exist if migration not applied)

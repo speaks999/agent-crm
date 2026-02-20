@@ -113,9 +113,16 @@ export async function getAccessToken(): Promise<string | null> {
  * to avoid 431 Request Header Fields Too Large errors
  */
 export async function getAuthHeaders(): Promise<HeadersInit> {
-    return {
+    const accessToken = await getAccessToken();
+    const headers: HeadersInit = {
         'Content-Type': 'application/json',
     };
+    
+    if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
+    return headers;
 }
 
 /**

@@ -27,13 +27,6 @@ export function TodoList() {
     const [interactions, setInteractions] = useState<Interaction[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        fetchInteractions();
-        // Refresh every 30 seconds
-        const interval = setInterval(fetchInteractions, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
     async function fetchInteractions() {
         try {
             const result = await fetchMCPData('list_interactions');
@@ -45,6 +38,25 @@ export function TodoList() {
             setIsLoading(false);
         }
     }
+
+    useEffect(() => {
+        fetchInteractions();
+        
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchInteractions, 30000);
+        
+        // Listen for custom event to refresh immediately
+        const handleRefresh = () => {
+            console.log('[TodoList] Refreshing due to task creation');
+            fetchInteractions();
+        };
+        window.addEventListener('taskCreated', handleRefresh);
+        
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('taskCreated', handleRefresh);
+        };
+    }, []);
 
     // Sort by due_date (most urgent first), then by created_at
     const upcomingTasks = interactions

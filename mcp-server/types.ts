@@ -57,7 +57,7 @@ export interface Interaction {
 export const CreateAccountSchema = z.object({
     name: z.string().min(1).describe('Company name'),
     industry: z.string().optional().describe('Industry sector'),
-    website: z.string().url().optional().describe('Company website URL'),
+    website: z.union([z.string().url(), z.literal('')]).optional().describe('Company website URL'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().optional().describe('Team member UUID to assign this account to'),
     team_id: z.string().uuid().optional().describe('Team ID this account belongs to'),
@@ -67,7 +67,7 @@ export const UpdateAccountSchema = z.object({
     id: z.string().uuid().describe('Account ID'),
     name: z.string().min(1).optional().describe('Company name'),
     industry: z.string().optional().describe('Industry sector'),
-    website: z.string().url().optional().describe('Company website URL'),
+    website: z.union([z.string().url(), z.literal('')]).optional().describe('Company website URL'),
     tags: z.array(z.string()).optional().describe('Array of tag names'),
     assigned_to: z.string().uuid().nullable().optional().describe('Team member UUID to assign this account to'),
     team_id: z.string().uuid().optional().describe('Team ID this account belongs to'),

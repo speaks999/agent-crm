@@ -43,16 +43,57 @@ function TeamMemberModal({
 
         try {
             const headers = await getAuthHeaders();
-            const response = await fetch('/api/team', {
-                method: isEditing ? 'PUT' : 'POST',
-                headers,
-                credentials: 'include',
-                body: JSON.stringify(isEditing ? { id: member.id, ...formData } : formData),
-            });
+            
+            // If editing, use PUT to update existing member
+            if (isEditing) {
+                const response = await fetch('/api/team', {
+                    method: 'PUT',
+                    headers,
+                    credentials: 'include',
+                    body: JSON.stringify({ id: member.id, ...formData }),
+                });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to save');
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to update member');
+                }
+            } else {
+                // If adding new member, send invite instead
+                // First get current team ID
+                const teamResponse = await fetch('/api/teams/current', {
+                    headers,
+                    credentials: 'include',
+                });
+                
+                if (!teamResponse.ok) {
+                    throw new Error('Failed to get current team');
+                }
+                
+                const { team_id } = await teamResponse.json();
+                
+                if (!team_id) {
+                    throw new Error('No team selected');
+                }
+                
+                // Send team invite
+                const response = await fetch('/api/teams/invites', {
+                    method: 'POST',
+                    headers,
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        team_id,
+                        email: formData.email,
+                        role: formData.role,
+                    }),
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to send invite');
+                }
+                
+                const result = await response.json();
+                alert(`Invitation sent to ${formData.email}! They will appear on your team once they accept.`);
             }
 
             onSave();
@@ -72,7 +113,7 @@ function TeamMemberModal({
             >
                 <div className="flex items-center justify-between p-4 border-b border-border">
                     <h3 className="text-lg font-semibold text-foreground">
-                        {isEditing ? 'Edit Team Member' : 'Add Team Member'}
+                        {isEditing ? 'Edit Team Member' : 'Invite Team Member'}
                     </h3>
                     <button
                         onClick={onClose}
@@ -160,12 +201,12 @@ function TeamMemberModal({
                             {isSaving ? (
                                 <>
                                     <Loader2 size={16} className="animate-spin" />
-                                    Saving...
+                                    {isEditing ? 'Saving...' : 'Sending Invite...'}
                                 </>
                             ) : isEditing ? (
                                 'Save Changes'
                             ) : (
-                                'Add Member'
+                                'Send Invite'
                             )}
                         </button>
                     </div>
@@ -449,7 +490,7 @@ export default function TeamPage() {
                     className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                 >
                     <Plus size={20} />
-                    Add Member
+                    Invite Member
                 </button>
             </div>
 
@@ -476,7 +517,7 @@ export default function TeamPage() {
                         onClick={handleAddClick}
                         className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors"
                     >
-                        Add Your First Member
+                        Invite Your First Member
                     </button>
                 </div>
             )}

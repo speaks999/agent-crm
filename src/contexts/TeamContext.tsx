@@ -55,13 +55,19 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Note: Auth is handled via cookies (credentials: 'include'), not Bearer token
-    // to avoid 431 Request Header Fields Too Large errors
-    const getAuthHeaders = useCallback((): HeadersInit => {
+    // Note: Using Bearer token for authentication
+    const getAuthHeaders = useCallback(async (): Promise<HeadersInit> => {
+        if (!session?.access_token) {
+            return {
+                'Content-Type': 'application/json',
+            };
+        }
+        
         return {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
         };
-    }, []);
+    }, [session]);
 
     const refreshTeams = useCallback(async () => {
         if (!user || !session) {
@@ -73,7 +79,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
 
         try {
             setError(null);
-            const headers = getAuthHeaders();
+            const headers = await getAuthHeaders();
             
             // If no auth headers available yet, wait
             if (!session?.access_token) {
@@ -115,7 +121,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
         }
 
         try {
-            const headers = getAuthHeaders();
+            const headers = await getAuthHeaders();
             
             // If no auth headers available yet, skip
             if (!session?.access_token) {
@@ -152,7 +158,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             const response = await fetch('/api/teams/current', {
                 method: 'PUT',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeaders(),
                 credentials: 'include',
                 body: JSON.stringify({ team_id: teamId }),
             });
@@ -187,7 +193,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             const response = await fetch('/api/teams', {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeaders(),
                 credentials: 'include',
                 body: JSON.stringify({ name }),
             });
@@ -217,7 +223,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             const response = await fetch('/api/teams/invites', {
                 method: 'PUT',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeaders(),
                 credentials: 'include',
                 body: JSON.stringify({ invite_id: inviteId, action: 'accept' }),
             });
@@ -243,7 +249,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             const response = await fetch('/api/teams/invites', {
                 method: 'PUT',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeaders(),
                 credentials: 'include',
                 body: JSON.stringify({ invite_id: inviteId, action: 'decline' }),
             });
@@ -269,7 +275,7 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
             setError(null);
             const response = await fetch('/api/teams/invites', {
                 method: 'POST',
-                headers: getAuthHeaders(),
+                headers: await getAuthHeaders(),
                 credentials: 'include',
                 body: JSON.stringify({ team_id: teamId, email, role }),
             });

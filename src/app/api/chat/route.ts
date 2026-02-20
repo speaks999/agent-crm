@@ -116,6 +116,18 @@ Examples:
 - "create an account for Acme Corp" -> {"needsTool": true, "toolName": "create_account", "args": {"name": "Acme Corp"}}
 - "what can you do?" -> {"needsTool": false, "response": "I can help you manage..."}
 
+ACCOUNT/COMPANY CREATION - CRITICAL:
+When the user wants to create an account or add a company:
+1. If they provide a specific company name, use it: {"needsTool": true, "toolName": "create_account", "args": {"name": "Company Name"}}
+2. If they say "I want to add a company" without a name, ask for details: {"needsTool": false, "response": "I'd be happy to help you add a company! What's the company name? You can also optionally provide the industry and website."}
+3. If they only provide partial info, ask for the missing required field (company name)
+
+Rules for create_account:
+- name: REQUIRED - the company name
+- industry: OPTIONAL - the industry sector  
+- website: OPTIONAL - company website (must be valid URL format like https://example.com or can be empty)
+- DO NOT create an account without a company name - always ask first if not provided
+
 TASK/INTERACTION CREATION - CRITICAL:
 ANY request to create, add, schedule, or log a task, call, meeting, email, note, or reminder MUST use "create_interaction".
 DO NOT say you cannot complete the task - YOU CAN by using create_interaction.
@@ -123,7 +135,13 @@ DO NOT say you cannot complete the task - YOU CAN by using create_interaction.
 Rules:
 - type: "call" for phone calls, "meeting" for meetings, "email" for emails, "note" for notes/reminders/general tasks
 - title: The task description
-- due_date: Convert any mentioned date/time to ISO format. Today is ${new Date().toISOString().split('T')[0]}.
+- due_date: Convert any mentioned date/time to ISO format in the user's local timezone.
+  * Today's date (user's timezone): ${new Date().toLocaleDateString('en-US', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' })}
+  * Use YYYY-MM-DDTHH:mm:ss format
+  * "tomorrow" = add 1 day to today's date
+  * "next Monday" = calculate the next occurrence of that day
+  * If only date is mentioned (no time), use "T09:00:00"
+  * If time is mentioned, use that time (convert 5pm to 17:00:00)
 
 ALWAYS use create_interaction for these patterns:
 - "add a task to..." -> create_interaction
@@ -132,8 +150,11 @@ ALWAYS use create_interaction for these patterns:
 - "schedule..." -> create_interaction with type: "meeting"
 - "follow up with..." -> create_interaction
 
-Example: "Add a task to call Kale Smith tomorrow at 5pm"
-Response: {"needsTool": true, "toolName": "create_interaction", "args": {"type": "call", "title": "Call Kale Smith", "due_date": "${(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; })()}T17:00:00"}}
+Example: "Add a task to Meet with Mark on Feb 21st"
+Response: {"needsTool": true, "toolName": "create_interaction", "args": {"type": "meeting", "title": "Meet with Mark", "due_date": "2026-02-21T09:00:00"}}
+
+Example: "Call John tomorrow at 3pm"
+Response: {"needsTool": true, "toolName": "create_interaction", "args": {"type": "call", "title": "Call John", "due_date": "2026-02-20T15:00:00"}}
 
 UPDATE OPERATIONS - CRITICAL:
 - update_contact, update_account, update_deal, update_interaction ALL REQUIRE the record's UUID "id" field.
@@ -267,11 +288,12 @@ Example BAD format (DO NOT DO THIS):
             responseText = intent.response || "I'm here to help with your CRM. What would you like to do?";
         }
 
-        // Return JSON with text, structured content, and chart data
+        // Return JSON with text, structured content, chart data, and tool name
         const responseData = {
             text: responseText,
             structuredContent,
             chartData,
+            toolName: intent.needsTool ? intent.toolName : null,
         };
 
         return new Response(JSON.stringify(responseData), {

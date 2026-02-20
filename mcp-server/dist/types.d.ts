@@ -49,7 +49,7 @@ export interface Interaction {
 export declare const CreateAccountSchema: z.ZodObject<{
     name: z.ZodString;
     industry: z.ZodOptional<z.ZodString>;
-    website: z.ZodOptional<z.ZodString>;
+    website: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLiteral<"">]>>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
     assigned_to: z.ZodOptional<z.ZodString>;
     team_id: z.ZodOptional<z.ZodString>;
@@ -58,7 +58,7 @@ export declare const UpdateAccountSchema: z.ZodObject<{
     id: z.ZodString;
     name: z.ZodOptional<z.ZodString>;
     industry: z.ZodOptional<z.ZodString>;
-    website: z.ZodOptional<z.ZodString>;
+    website: z.ZodOptional<z.ZodUnion<readonly [z.ZodString, z.ZodLiteral<"">]>>;
     tags: z.ZodOptional<z.ZodArray<z.ZodString>>;
     assigned_to: z.ZodOptional<z.ZodNullable<z.ZodString>>;
     team_id: z.ZodOptional<z.ZodString>;
