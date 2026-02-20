@@ -65,11 +65,41 @@ export async function GET(req: NextRequest) {
         const user = await getUserFromRequest(req);
         
         if (!user) {
-            // Return empty invites for unauthenticated users
             return NextResponse.json({ invites: [] });
         }
 
-        // Get invites for user's email (normalized to lowercase to match stored format)
+        const { searchParams } = new URL(req.url);
+        const teamId = searchParams.get('team_id');
+
+        // If team_id is provided, return pending invites for that team (admin/owner only)
+        if (teamId) {
+            const { data: membership } = await supabaseAdmin
+                .from('team_memberships')
+                .select('role')
+                .eq('team_id', teamId)
+                .eq('user_id', user.id)
+                .single();
+
+            if (!membership || !['owner', 'admin'].includes(membership.role)) {
+                return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+            }
+
+            const { data: invites, error } = await supabaseAdmin
+                .from('team_invites')
+                .select('id, email, role, status, created_at, expires_at')
+                .eq('team_id', teamId)
+                .eq('status', 'pending')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching team invites:', error.message);
+                return NextResponse.json({ error: 'Failed to fetch invites' }, { status: 500 });
+            }
+
+            return NextResponse.json({ invites: invites || [] });
+        }
+
+        // Default: return invites addressed to the current user's email
         const { data: invites, error } = await supabaseAdmin
             .from('team_invites')
             .select(`
@@ -305,11 +335,11 @@ export async function PUT(req: NextRequest) {
             throw membershipError;
         }
 
-        // Also add user to team_members table so they appear on the team page
+        // Add user to team_members table so they appear on the team page
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(user.id);
         const metadata = userData?.user?.user_metadata || {};
         
-        await supabaseAdmin
+        const { error: teamMemberError } = await supabaseAdmin
             .from('team_members')
             .insert({
                 team_id: invite.team_id,
@@ -321,11 +351,23 @@ export async function PUT(req: NextRequest) {
                 active: true,
             });
 
+        if (teamMemberError) {
+            console.error('Error adding to team_members:', teamMemberError.message);
+        }
+
         // Update invite status
         await supabaseAdmin
             .from('team_invites')
             .update({ status: 'accepted' })
             .eq('id', invite_id);
+
+        // Switch user's current team to the one they just joined
+        await supabaseAdmin
+            .from('user_team_preferences')
+            .upsert({
+                user_id: user.id,
+                current_team_id: invite.team_id,
+            }, { onConflict: 'user_id' });
 
         // Fetch team details
         const { data: team } = await supabaseAdmin
@@ -340,6 +382,69 @@ export async function PUT(req: NextRequest) {
         });
     } catch (error: any) {
         console.error('Error processing invite:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+/**
+ * DELETE /api/teams/invites
+ * Revoke a pending invite (team admin/owner only)
+ */
+export async function DELETE(req: NextRequest) {
+    try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: 'Supabase env not configured' }, { status: 500 });
+        }
+        const user = await getUserFromRequest(req);
+
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { searchParams } = new URL(req.url);
+        const inviteId = searchParams.get('id');
+
+        if (!inviteId) {
+            return NextResponse.json({ error: 'Invite id is required' }, { status: 400 });
+        }
+
+        // Fetch the invite to verify it exists and is still pending
+        const { data: invite, error: inviteError } = await supabaseAdmin
+            .from('team_invites')
+            .select('id, team_id, status')
+            .eq('id', inviteId)
+            .eq('status', 'pending')
+            .single();
+
+        if (inviteError || !invite) {
+            return NextResponse.json({ error: 'Invite not found or already processed' }, { status: 404 });
+        }
+
+        // Verify the requesting user is an admin/owner of the invite's team
+        const { data: membership, error: membershipError } = await supabaseAdmin
+            .from('team_memberships')
+            .select('role')
+            .eq('team_id', invite.team_id)
+            .eq('user_id', user.id)
+            .single();
+
+        if (membershipError || !membership || !['owner', 'admin'].includes(membership.role)) {
+            return NextResponse.json({ error: 'You do not have permission to revoke invites for this team' }, { status: 403 });
+        }
+
+        // Mark the invite as revoked
+        const { error: updateError } = await supabaseAdmin
+            .from('team_invites')
+            .update({ status: 'revoked' })
+            .eq('id', inviteId);
+
+        if (updateError) {
+            throw updateError;
+        }
+
+        return NextResponse.json({ message: 'Invite revoked' });
+    } catch (error: any) {
+        console.error('Error revoking invite:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Get all teams the user is a member of
-        const { data: memberships, error: membershipError } = await supabaseAdmin
+        let { data: memberships, error: membershipError } = await supabaseAdmin
             .from('team_memberships')
             .select(`
                 role,
@@ -61,10 +61,72 @@ export async function GET(req: NextRequest) {
             `)
             .eq('user_id', user.id);
 
-        // If table doesn't exist or other error, return empty teams
         if (membershipError) {
             console.warn('Error fetching team memberships:', membershipError.message);
             return NextResponse.json({ teams: [], currentTeamId: null });
+        }
+
+        // Auto-create a default team if user has none (fallback for failed signup callbacks)
+        if (!memberships || memberships.length === 0) {
+            const metadata = user.user_metadata || {};
+            const companyName = metadata.company_name;
+            const firstName = metadata.first_name;
+            const lastName = metadata.last_name;
+
+            let teamName: string;
+            if (companyName) {
+                teamName = companyName;
+            } else if (firstName && lastName) {
+                teamName = `${firstName} ${lastName}'s Team`;
+            } else {
+                const localPart = (user.email || 'User').split('@')[0];
+                const capitalized = localPart.charAt(0).toUpperCase() + localPart.slice(1).toLowerCase();
+                teamName = `${capitalized}'s Team`;
+            }
+
+            const { data: team, error: teamError } = await supabaseAdmin
+                .from('teams')
+                .insert({ name: teamName, owner_id: user.id })
+                .select()
+                .single();
+
+            if (!teamError && team) {
+                await supabaseAdmin
+                    .from('team_memberships')
+                    .insert({ team_id: team.id, user_id: user.id, role: 'owner' });
+
+                await supabaseAdmin
+                    .from('team_members')
+                    .insert({
+                        team_id: team.id,
+                        user_id: user.id,
+                        first_name: firstName || '',
+                        last_name: lastName || '',
+                        email: user.email || '',
+                        role: 'admin',
+                        active: true,
+                    });
+
+                await supabaseAdmin
+                    .from('user_team_preferences')
+                    .upsert({ user_id: user.id, current_team_id: team.id }, { onConflict: 'user_id' });
+
+                console.log(`Auto-created team "${teamName}" for user ${user.email}`);
+
+                // Re-fetch memberships so the response includes the new team
+                const { data: refreshed } = await supabaseAdmin
+                    .from('team_memberships')
+                    .select(`
+                        role,
+                        team_id,
+                        teams (
+                            id, name, slug, logo_url, owner_id, created_at
+                        )
+                    `)
+                    .eq('user_id', user.id);
+
+                memberships = refreshed || [];
+            }
         }
 
         // Get current team preference
@@ -72,7 +134,7 @@ export async function GET(req: NextRequest) {
             .from('user_team_preferences')
             .select('current_team_id')
             .eq('user_id', user.id)
-            .maybeSingle(); // Use maybeSingle to avoid error when no row exists
+            .maybeSingle();
 
         const teams = memberships?.map(m => ({
             ...m.teams,

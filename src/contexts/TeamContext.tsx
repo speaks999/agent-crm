@@ -233,8 +233,9 @@ export function TeamProvider({ children }: { children: React.ReactNode }) {
                 throw new Error(data.error || 'Failed to accept invite');
             }
 
-            // Refresh both teams and invites
-            await Promise.all([refreshTeams(), refreshInvites()]);
+            // The API already switched current_team_id to the joined team.
+            // Reload the page so all data refetches under the new team context.
+            window.location.reload();
         } catch (err: any) {
             console.error('Error accepting invite:', err);
             setError(err.message);

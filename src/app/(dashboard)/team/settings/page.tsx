@@ -49,10 +49,13 @@ export default function TeamSettingsPage() {
     
     // Invite form
     const [showInviteForm, setShowInviteForm] = useState(false);
+    const [inviteFirstName, setInviteFirstName] = useState('');
+    const [inviteLastName, setInviteLastName] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('member');
     const [isSendingInvite, setIsSendingInvite] = useState(false);
     const [inviteSuccess, setInviteSuccess] = useState(false);
+    const [revokingInviteId, setRevokingInviteId] = useState<string | null>(null);
 
     // Edit team name
     const [isEditingName, setIsEditingName] = useState(false);
@@ -72,11 +75,20 @@ export default function TeamSettingsPage() {
 
         try {
             setLoading(true);
-            // Fetch team members and pending invites
-            // For now, we'll use placeholder data since we need to create these endpoints
-            // TODO: Create /api/teams/[id]/members endpoint
-            setMembers([]);
-            setPendingInvites([]);
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+            };
+
+            // Fetch pending invites for this team
+            const invitesRes = await fetch(
+                `/api/teams/invites?team_id=${currentTeam.id}`,
+                { headers, credentials: 'include' }
+            );
+            if (invitesRes.ok) {
+                const invitesData = await invitesRes.json();
+                setPendingInvites(invitesData.invites || []);
+            }
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -86,7 +98,7 @@ export default function TeamSettingsPage() {
 
     const handleSendInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentTeam || !inviteEmail.trim()) return;
+        if (!currentTeam || !inviteEmail.trim() || !inviteFirstName.trim() || !inviteLastName.trim()) return;
 
         setIsSendingInvite(true);
         setError(null);
@@ -95,8 +107,11 @@ export default function TeamSettingsPage() {
         try {
             await sendInvite(currentTeam.id, inviteEmail.trim(), inviteRole);
             setInviteSuccess(true);
+            setInviteFirstName('');
+            setInviteLastName('');
             setInviteEmail('');
             setInviteRole('member');
+            fetchTeamData();
             setTimeout(() => {
                 setShowInviteForm(false);
                 setInviteSuccess(false);
@@ -105,6 +120,35 @@ export default function TeamSettingsPage() {
             setError(err.message || 'Failed to send invite');
         } finally {
             setIsSendingInvite(false);
+        }
+    };
+
+    const handleRevokeInvite = async (inviteId: string) => {
+        if (!session?.access_token) return;
+
+        setRevokingInviteId(inviteId);
+        setError(null);
+
+        try {
+            const response = await fetch(`/api/teams/invites?id=${inviteId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`,
+                },
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to revoke invite');
+            }
+
+            setPendingInvites(prev => prev.filter(i => i.id !== inviteId));
+        } catch (err: any) {
+            setError(err.message || 'Failed to revoke invite');
+        } finally {
+            setRevokingInviteId(null);
         }
     };
 
@@ -300,27 +344,65 @@ export default function TeamSettingsPage() {
                     </div>
 
                     {showInviteForm && (
-                        <form onSubmit={handleSendInvite} className="mb-4">
-                            <div className="flex flex-wrap gap-3">
+                        <form onSubmit={handleSendInvite} className="mb-4 space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                        First Name *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={inviteFirstName}
+                                        onChange={(e) => setInviteFirstName(e.target.value)}
+                                        placeholder="First name"
+                                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                        required
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                        Last Name *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={inviteLastName}
+                                        onChange={(e) => setInviteLastName(e.target.value)}
+                                        placeholder="Last name"
+                                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                        required
+                                    />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    Email *
+                                </label>
                                 <input
                                     type="email"
                                     value={inviteEmail}
                                     onChange={(e) => setInviteEmail(e.target.value)}
                                     placeholder="colleague@company.com"
-                                    className="flex-1 min-w-[200px] px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                     required
                                 />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    Role
+                                </label>
                                 <select
                                     value={inviteRole}
                                     onChange={(e) => setInviteRole(e.target.value)}
-                                    className="px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                                    className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                                 >
                                     <option value="member">Member</option>
                                     <option value="admin">Admin</option>
                                 </select>
+                            </div>
+                            <div className="flex items-center gap-3 pt-1">
                                 <button
                                     type="submit"
-                                    disabled={isSendingInvite || !inviteEmail.trim()}
+                                    disabled={isSendingInvite || !inviteEmail.trim() || !inviteFirstName.trim() || !inviteLastName.trim()}
                                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {isSendingInvite ? (
@@ -344,6 +426,8 @@ export default function TeamSettingsPage() {
                                     type="button"
                                     onClick={() => {
                                         setShowInviteForm(false);
+                                        setInviteFirstName('');
+                                        setInviteLastName('');
                                         setInviteEmail('');
                                         setInviteRole('member');
                                     }}
@@ -352,7 +436,7 @@ export default function TeamSettingsPage() {
                                     Cancel
                                 </button>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
+                            <p className="text-xs text-muted-foreground">
                                 Invites expire after 7 days. The recipient will receive an email with instructions.
                             </p>
                         </form>
@@ -376,8 +460,17 @@ export default function TeamSettingsPage() {
                                                 {invite.role}
                                             </span>
                                         </div>
-                                        <button className="text-muted-foreground hover:text-destructive transition-colors">
-                                            <Trash2 size={16} />
+                                        <button
+                                            onClick={() => handleRevokeInvite(invite.id)}
+                                            disabled={revokingInviteId === invite.id}
+                                            className="text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                                            title="Revoke invite"
+                                        >
+                                            {revokingInviteId === invite.id ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Trash2 size={16} />
+                                            )}
                                         </button>
                                     </div>
                                 ))}
