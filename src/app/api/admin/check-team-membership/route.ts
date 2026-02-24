@@ -1,12 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null;
 
 async function getUserFromRequest(req: NextRequest) {
-    // Try to get from Authorization header first
+    if (!supabaseAdmin) return null;
     const authHeader = req.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
@@ -15,33 +18,14 @@ async function getUserFromRequest(req: NextRequest) {
             return user.id;
         }
     }
-
-    // Fallback: try to get from cookie
-    const cookieHeader = req.headers.get('cookie');
-    if (cookieHeader) {
-        // Parse cookies manually
-        const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=');
-            acc[key] = value;
-            return acc;
-        }, {} as Record<string, string>);
-
-        const authCookie = cookies['sb-agent-crm-auth-token'];
-        if (authCookie) {
-            try {
-                const session = JSON.parse(decodeURIComponent(authCookie));
-                return session.user?.id;
-            } catch (e) {
-                // Ignore parse errors
-            }
-        }
-    }
-
     return null;
 }
 
 export async function GET(req: NextRequest) {
     try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: 'Supabase env not configured' }, { status: 500 });
+        }
         const userId = await getUserFromRequest(req);
 
         if (!userId) {
@@ -91,6 +75,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: 'Supabase env not configured' }, { status: 500 });
+        }
         const userId = await getUserFromRequest(req);
 
         if (!userId) {

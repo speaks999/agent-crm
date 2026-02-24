@@ -322,52 +322,63 @@ export async function PUT(req: NextRequest) {
         }
 
         // Accept invite
-        // Add user to team_memberships
+        console.log(`[invites/PUT] Accepting invite ${invite_id} for user ${user.email} → team ${invite.team_id}`);
+
+        // Add user to team_memberships (ignore duplicate if they're already a member)
         const { error: membershipError } = await supabaseAdmin
             .from('team_memberships')
-            .insert({
+            .upsert({
                 team_id: invite.team_id,
                 user_id: user.id,
                 role: invite.role,
-            });
+            }, { onConflict: 'team_id,user_id' });
 
         if (membershipError) {
+            console.error('[invites/PUT] team_memberships upsert failed:', membershipError.message);
             throw membershipError;
         }
+        console.log('[invites/PUT] team_memberships upsert OK');
 
-        // Add user to team_members table so they appear on the team page
+        // Add user to team_members so they appear on the team page.
+        // The table has a legacy UNIQUE(email) constraint from before multi-team,
+        // so we must handle the case where the email already exists for another team.
         const { data: userData } = await supabaseAdmin.auth.admin.getUserById(user.id);
         const metadata = userData?.user?.user_metadata || {};
-        
-        const { error: teamMemberError } = await supabaseAdmin
-            .from('team_members')
-            .insert({
-                team_id: invite.team_id,
-                user_id: user.id,
-                first_name: metadata.first_name || '',
-                last_name: metadata.last_name || '',
-                email: user.email || '',
-                role: invite.role === 'owner' ? 'admin' : invite.role,
-                active: true,
-            });
 
-        if (teamMemberError) {
-            console.error('Error adding to team_members:', teamMemberError.message);
-        }
+        const teamMemberPayload = {
+            team_id: invite.team_id,
+            user_id: user.id,
+            first_name: metadata.first_name || '',
+            last_name: metadata.last_name || '',
+            email: user.email || '',
+            role: invite.role === 'owner' ? 'admin' : invite.role,
+            active: true,
+        };
+
+        await upsertTeamMember(supabaseAdmin, teamMemberPayload);
+        console.log('[invites/PUT] team_members handled');
 
         // Update invite status
-        await supabaseAdmin
+        const { error: statusError } = await supabaseAdmin
             .from('team_invites')
             .update({ status: 'accepted' })
             .eq('id', invite_id);
 
+        if (statusError) {
+            console.error('[invites/PUT] invite status update failed:', statusError.message);
+        }
+
         // Switch user's current team to the one they just joined
-        await supabaseAdmin
+        const { error: prefError } = await supabaseAdmin
             .from('user_team_preferences')
             .upsert({
                 user_id: user.id,
                 current_team_id: invite.team_id,
             }, { onConflict: 'user_id' });
+
+        if (prefError) {
+            console.error('[invites/PUT] user_team_preferences upsert failed:', prefError.message);
+        }
 
         // Fetch team details
         const { data: team } = await supabaseAdmin
@@ -376,6 +387,7 @@ export async function PUT(req: NextRequest) {
             .eq('id', invite.team_id)
             .single();
 
+        console.log(`[invites/PUT] User ${user.email} successfully joined team ${team?.name || invite.team_id}`);
         return NextResponse.json({ 
             message: 'Successfully joined the team',
             team
@@ -445,6 +457,110 @@ export async function DELETE(req: NextRequest) {
     } catch (error: any) {
         console.error('Error revoking invite:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+/**
+ * Safely insert or update a team_members row.
+ *
+ * The team_members table has a legacy UNIQUE(email) constraint from before
+ * multi-team support, and no UNIQUE(team_id, user_id) index.  A plain insert
+ * would fail when the email already exists for a different team.
+ *
+ * Strategy:
+ *  1. Check if a row for this team + user already exists → nothing to do.
+ *  2. Try a plain insert.
+ *  3. If the insert fails (unique email conflict), UPDATE the existing row
+ *     for this user_id so that it points to the new team.
+ */
+async function upsertTeamMember(
+    admin: NonNullable<typeof supabaseAdmin>,
+    payload: {
+        team_id: string;
+        user_id: string;
+        first_name: string;
+        last_name: string;
+        email: string;
+        role: string;
+        active: boolean;
+    },
+) {
+    // Already exists for this team?
+    const { data: existing } = await admin
+        .from('team_members')
+        .select('id')
+        .eq('team_id', payload.team_id)
+        .eq('user_id', payload.user_id)
+        .maybeSingle();
+
+    if (existing) {
+        // Update metadata in case it changed
+        const { error } = await admin
+            .from('team_members')
+            .update({
+                first_name: payload.first_name,
+                last_name: payload.last_name,
+                email: payload.email,
+                role: payload.role,
+                active: payload.active,
+            })
+            .eq('id', existing.id);
+        if (error) console.error('[upsertTeamMember] update failed:', error.message);
+        return;
+    }
+
+    // Try a plain insert first
+    const { error: insertErr } = await admin
+        .from('team_members')
+        .insert(payload);
+
+    if (!insertErr) return; // success
+
+    console.warn('[upsertTeamMember] insert failed, trying fallback:', insertErr.message);
+
+    // Unique email conflict — update the existing row for this user_id
+    const { data: byUser } = await admin
+        .from('team_members')
+        .select('id')
+        .eq('user_id', payload.user_id)
+        .maybeSingle();
+
+    if (byUser) {
+        const { error } = await admin
+            .from('team_members')
+            .update({
+                team_id: payload.team_id,
+                first_name: payload.first_name,
+                last_name: payload.last_name,
+                email: payload.email,
+                role: payload.role,
+                active: payload.active,
+            })
+            .eq('id', byUser.id);
+        if (error) console.error('[upsertTeamMember] update-by-user failed:', error.message);
+        return;
+    }
+
+    // Unique email conflict from a different user (shouldn't normally happen)
+    const { data: byEmail } = await admin
+        .from('team_members')
+        .select('id')
+        .eq('email', payload.email)
+        .maybeSingle();
+
+    if (byEmail) {
+        const { error } = await admin
+            .from('team_members')
+            .update({
+                team_id: payload.team_id,
+                user_id: payload.user_id,
+                first_name: payload.first_name,
+                last_name: payload.last_name,
+                role: payload.role,
+                active: payload.active,
+            })
+            .eq('id', byEmail.id);
+        if (error) console.error('[upsertTeamMember] update-by-email failed:', error.message);
     }
 }
 

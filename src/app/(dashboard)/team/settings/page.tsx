@@ -49,8 +49,6 @@ export default function TeamSettingsPage() {
     
     // Invite form
     const [showInviteForm, setShowInviteForm] = useState(false);
-    const [inviteFirstName, setInviteFirstName] = useState('');
-    const [inviteLastName, setInviteLastName] = useState('');
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviteRole, setInviteRole] = useState('member');
     const [isSendingInvite, setIsSendingInvite] = useState(false);
@@ -98,7 +96,7 @@ export default function TeamSettingsPage() {
 
     const handleSendInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!currentTeam || !inviteEmail.trim() || !inviteFirstName.trim() || !inviteLastName.trim()) return;
+        if (!currentTeam || !inviteEmail.trim()) return;
 
         setIsSendingInvite(true);
         setError(null);
@@ -107,8 +105,6 @@ export default function TeamSettingsPage() {
         try {
             await sendInvite(currentTeam.id, inviteEmail.trim(), inviteRole);
             setInviteSuccess(true);
-            setInviteFirstName('');
-            setInviteLastName('');
             setInviteEmail('');
             setInviteRole('member');
             fetchTeamData();
@@ -345,34 +341,6 @@ export default function TeamSettingsPage() {
 
                     {showInviteForm && (
                         <form onSubmit={handleSendInvite} className="mb-4 space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                        First Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={inviteFirstName}
-                                        onChange={(e) => setInviteFirstName(e.target.value)}
-                                        placeholder="First name"
-                                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                        required
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
-                                        Last Name *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={inviteLastName}
-                                        onChange={(e) => setInviteLastName(e.target.value)}
-                                        placeholder="Last name"
-                                        className="w-full px-4 py-2 bg-background border border-border rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-                                        required
-                                    />
-                                </div>
-                            </div>
                             <div>
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Email *
@@ -402,7 +370,7 @@ export default function TeamSettingsPage() {
                             <div className="flex items-center gap-3 pt-1">
                                 <button
                                     type="submit"
-                                    disabled={isSendingInvite || !inviteEmail.trim() || !inviteFirstName.trim() || !inviteLastName.trim()}
+                                    disabled={isSendingInvite || !inviteEmail.trim()}
                                     className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-glow transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
                                     {isSendingInvite ? (
@@ -426,8 +394,6 @@ export default function TeamSettingsPage() {
                                     type="button"
                                     onClick={() => {
                                         setShowInviteForm(false);
-                                        setInviteFirstName('');
-                                        setInviteLastName('');
                                         setInviteEmail('');
                                         setInviteRole('member');
                                     }}

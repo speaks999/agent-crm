@@ -1,11 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin = supabaseUrl && supabaseServiceKey
+    ? createClient(supabaseUrl, supabaseServiceKey)
+    : null;
 
 async function getUserFromRequest(req: NextRequest) {
+    if (!supabaseAdmin) return null;
     const authHeader = req.headers.get('authorization');
     if (authHeader?.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
@@ -19,6 +23,9 @@ async function getUserFromRequest(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        if (!supabaseAdmin) {
+            return NextResponse.json({ error: 'Supabase env not configured' }, { status: 500 });
+        }
         const userId = await getUserFromRequest(req);
 
         if (!userId) {
