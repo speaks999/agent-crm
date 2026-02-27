@@ -2,12 +2,10 @@ const INSIGHTLY_API_KEY = process.env.INSIGHTLY_API_KEY;
 const INSIGHTLY_POD = process.env.INSIGHTLY_POD || 'na1';
 const BASE_URL = `https://api.${INSIGHTLY_POD}.insightly.com/v3.1`;
 
-if (!INSIGHTLY_API_KEY) {
-    throw new Error('INSIGHTLY_API_KEY environment variable is not set');
-}
-
-// Base64 encode the API key for authentication
-const authHeader = `Basic ${Buffer.from(`${INSIGHTLY_API_KEY}:`).toString('base64')}`;
+// Base64 encode the API key for authentication (deferred to avoid build-time crash)
+const authHeader = INSIGHTLY_API_KEY
+    ? `Basic ${Buffer.from(`${INSIGHTLY_API_KEY}:`).toString('base64')}`
+    : '';
 
 interface InsightlyRequestOptions {
     method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
@@ -28,6 +26,10 @@ async function insightlyRequest<T>(
     options: InsightlyRequestOptions = {}
 ): Promise<T> {
     const { method = 'GET', body, params } = options;
+
+    if (!INSIGHTLY_API_KEY) {
+        throw new Error('INSIGHTLY_API_KEY environment variable is not set');
+    }
 
     // Build URL with query parameters
     const url = new URL(`${BASE_URL}${endpoint}`);

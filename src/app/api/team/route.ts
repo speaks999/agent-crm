@@ -168,7 +168,8 @@ export async function GET(req: Request) {
         
         console.log(`[Team API] Fetching team members for team: ${teamId}`);
         
-        const { data, error } = await supabase
+        // Use admin client for all queries to bypass RLS
+        const { data: teamMembers, error } = await supabaseAdmin
             .from('team_members')
             .select('*')
             .eq('team_id', teamId)
@@ -177,11 +178,81 @@ export async function GET(req: Request) {
 
         if (error) {
             console.error('[Team API] Error fetching team_members:', error);
-            throw error;
         }
 
-        console.log(`[Team API] Found ${data?.length || 0} team members`);
-        return Response.json(data || []);
+        // Get the canonical membership list for this team
+        const { data: memberships } = await supabaseAdmin
+            .from('team_memberships')
+            .select('user_id, role')
+            .eq('team_id', teamId);
+
+        const membershipCount = memberships?.length || 0;
+        const teamMemberCount = teamMembers?.length || 0;
+
+        console.log(`[Team API] team_members: ${teamMemberCount}, team_memberships: ${membershipCount}`);
+
+        // If team_members is already complete, return it
+        if (teamMemberCount >= membershipCount && teamMemberCount > 0) {
+            return Response.json(teamMembers);
+        }
+
+        // team_members is incomplete — backfill from team_memberships + auth metadata
+        const existingUserIds = new Set((teamMembers || []).map((m: any) => m.user_id).filter(Boolean));
+        const missingMembers = (memberships || []).filter(m => !existingUserIds.has(m.user_id));
+
+        console.log(`[Team API] Backfilling ${missingMembers.length} missing team_members from memberships`);
+
+        const backfilled: any[] = [];
+        for (const membership of missingMembers) {
+            const { data: authData } = await supabaseAdmin.auth.admin.getUserById(membership.user_id);
+            const meta = authData?.user?.user_metadata || {};
+
+            const payload = {
+                team_id: teamId,
+                user_id: membership.user_id,
+                first_name: meta.first_name || '',
+                last_name: meta.last_name || '',
+                email: authData?.user?.email || '',
+                role: membership.role === 'owner' ? 'admin' : membership.role,
+                active: true,
+            };
+
+            // Try to insert the missing row (handles legacy UNIQUE email constraint)
+            const { data: existingByUser } = await supabaseAdmin
+                .from('team_members')
+                .select('id, team_id')
+                .eq('user_id', membership.user_id)
+                .maybeSingle();
+
+            if (existingByUser && existingByUser.team_id === teamId) {
+                backfilled.push({ ...existingByUser, ...payload });
+            } else if (existingByUser) {
+                // Row exists for a different team — update it
+                await supabaseAdmin
+                    .from('team_members')
+                    .update({ team_id: teamId, first_name: payload.first_name, last_name: payload.last_name, email: payload.email, role: payload.role, active: true })
+                    .eq('id', existingByUser.id);
+                backfilled.push({ id: existingByUser.id, ...payload });
+            } else {
+                // No row at all — try insert
+                const { data: inserted, error: insertErr } = await supabaseAdmin
+                    .from('team_members')
+                    .insert(payload)
+                    .select()
+                    .single();
+                if (inserted) {
+                    backfilled.push(inserted);
+                } else if (insertErr) {
+                    console.warn(`[Team API] Could not backfill team_member for ${payload.email}:`, insertErr.message);
+                    // Return a synthetic row so the user still appears
+                    backfilled.push({ id: `synthetic-${membership.user_id}`, ...payload, created_at: new Date().toISOString() });
+                }
+            }
+        }
+
+        const merged = [...(teamMembers || []), ...backfilled];
+        console.log(`[Team API] Returning ${merged.length} total members`);
+        return Response.json(merged);
     } catch (error: any) {
         console.error('Error fetching team members:', error);
         return Response.json({ error: error.message }, { status: 500 });
