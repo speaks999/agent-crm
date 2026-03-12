@@ -9,7 +9,9 @@
         "start": "node dist/index.js",
         "dev": "tsc && node dist/index.js",
         "start:http": "node dist/server-http.js",
-        "dev:http": "tsc && node dist/server-http.js"
+        "dev:http": "tsc && node dist/server-http.js",
+        "start:insightly": "node dist/insightly-contacts.js",
+        "dev:insightly": "tsc && node dist/insightly-contacts.js"
     },
     "keywords": [
         "mcp",
