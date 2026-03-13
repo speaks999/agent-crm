@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
  * Ensure the user has at least one team. Creates one if they don't.
  */
 async function ensureUserHasTeam(
-  supabaseAdmin: ReturnType<typeof createClient>,
+  supabaseAdmin: any,
   user: { id: string; email?: string; user_metadata?: Record<string, any> },
 ) {
   const { data: existingMemberships, error: memErr } = await supabaseAdmin
@@ -208,7 +208,7 @@ function getTeamNameFromEmail(email: string): string {
  * UNIQUE(email) constraint that conflicts with multi-team support.
  */
 async function upsertTeamMember(
-  admin: ReturnType<typeof createClient>,
+  admin: any,
   payload: {
     team_id: string;
     user_id: string;
