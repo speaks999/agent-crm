@@ -8,6 +8,7 @@ import { getAuthHeaders } from '@/lib/fetchMCPData';
 
 interface TeamMember {
     id: string;
+    user_id?: string;
     first_name: string;
     last_name: string;
     email: string;
@@ -305,11 +306,13 @@ function TeamMemberCard({
     onEdit,
     onDelete,
     onClick,
+    isSelf,
 }: {
     member: TeamMember;
     onEdit: () => void;
     onDelete: () => void;
     onClick: () => void;
+    isSelf: boolean;
 }) {
     const [showMenu, setShowMenu] = useState(false);
 
@@ -366,17 +369,19 @@ function TeamMemberCard({
                                 <Pencil size={14} />
                                 Edit
                             </button>
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowMenu(false);
-                                    onDelete();
-                                }}
-                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
-                            >
-                                <Trash2 size={14} />
-                                Remove
-                            </button>
+                            {!isSelf && (
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShowMenu(false);
+                                        onDelete();
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors"
+                                >
+                                    <Trash2 size={14} />
+                                    Remove
+                                </button>
+                            )}
                         </div>
                     </>
                 )}
@@ -416,6 +421,7 @@ export default function TeamPage() {
     const [showModal, setShowModal] = useState(false);
     const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
     const [deletingMember, setDeletingMember] = useState<TeamMember | null>(null);
+    const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
     useEffect(() => {
         fetchTeamMembers();
@@ -423,9 +429,12 @@ export default function TeamPage() {
 
     async function fetchTeamMembers() {
         try {
-            // Get auth token from Supabase session
             const supabase = createBrowserClient();
             const { data: { session } } = await supabase.auth.getSession();
+
+            if (session?.user?.id) {
+                setCurrentUserId(session.user.id);
+            }
             
             const headers: HeadersInit = {
                 'Content-Type': 'application/json',
@@ -506,6 +515,7 @@ export default function TeamPage() {
                         onEdit={() => handleEditClick(member)}
                         onDelete={() => handleDeleteClick(member)}
                         onClick={() => handleCardClick(member)}
+                        isSelf={member.user_id === currentUserId}
                     />
                 ))}
             </div>

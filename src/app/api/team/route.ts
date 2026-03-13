@@ -478,9 +478,14 @@ export async function DELETE(req: Request) {
         // Get member details before deletion for notification
         const { data: memberData } = await supabase
             .from('team_members')
-            .select('email, first_name, team_id')
+            .select('email, first_name, team_id, user_id')
             .eq('id', id)
             .single();
+
+        // Prevent users from removing themselves
+        if (memberData?.user_id === user.id) {
+            return Response.json({ error: 'You cannot remove yourself from the team' }, { status: 403 });
+        }
 
         // Soft delete by setting active to false
         const { error } = await supabase

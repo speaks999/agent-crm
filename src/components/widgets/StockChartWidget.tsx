@@ -214,7 +214,7 @@ export function StockChartWidget({ config, onRemove, onResize, onSettings, onDra
                 )}
 
                 <p className="text-xs text-muted-foreground text-center">
-                    {meta?.isDemo ? '📊 Demo data' : '🔴 Live'} • {meta?.currency || 'USD'}
+                    {meta?.currency || 'USD'}
                 </p>
             </div>
         </WidgetWrapper>

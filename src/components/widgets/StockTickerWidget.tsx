@@ -257,9 +257,6 @@ export function StockTickerWidget({ config, onRemove, onResize, onSettings, onUp
                             </div>
                             <div className="flex items-center justify-between pt-2 border-t border-border flex-shrink-0">
                                 <div className="flex items-center gap-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        {stocks[0]?.isDemo ? '📊 Demo' : '🔴 Live'}
-                                    </p>
                                     <button
                                         onClick={() => setIsEditing(true)}
                                         className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
